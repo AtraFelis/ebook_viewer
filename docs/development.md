@@ -25,3 +25,7 @@
 ## 이번 로컬 전환
 
 사용자가 Windows 로컬 전환을 요청했습니다. [동기화 절차와 재개 프롬프트](local-handoff.md)를 따릅니다. Context7 추가 조사와 공식 호환 표/SDK 대조 후 P0를 이어갑니다. 도구 구성은 [ADR 제안](adr/0001-p0-toolchain-and-renderer.md)이며 아직 의존성 승인 전입니다.
+
+## 2026-10-16 로컬 확인 결과
+
+로컬 전환 및 문서 검증 결과는 [SESSION](../SESSION.md)과 [Windows P0 이력](history/2026-10-16-05-windows-p0-verification.md)을 따른다. 작업 위치는 `C:\Users\cotjs\workspace\ebook_viewer`이며 승인된 개발 구성에 로컬 환경을 맞춘다. JDK 17 실행 확인과 Android 빌드·SDK 설치 완료를 구분한다. Android SDK/Studio/adb는 조사 위치에서 발견되지 않았다.

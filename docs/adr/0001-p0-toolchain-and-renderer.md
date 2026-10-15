@@ -63,3 +63,16 @@ PdfRenderer를 우선 검증하고, API 23–34에서도 검색/암호화가 필
 ## 승인 범위
 
 이 ADR의 도구 후보로 초기화하고 Kotlin stdlib를 도입하며 P0 View/Canvas+PdfRenderer 프로토타입을 진행하는 구성안이다. 승인 후 호환 표 잔여 확인, JDK/SDK 설치, Wrapper 검증, 빌드/테스트/Lint/ktlint/CI 순으로 진행한다. 충돌하는 호환 결과가 나오면 확정으로 기록하지 않고 구성안을 수정한다. applicationId는 출시용 사용자 도메인을 가정하지 않는 개발용 식별자로 정한다. 최종 Compose/저장/PDF 대안 런타임 의존성은 이 승인 범위 밖이다.
+
+## Windows 추가 검증 — 2026-10-16
+
+상태는 계속 **제안 / 승인 전 / 빌드·기기 검증 전**이다. 위 조사 당시의 환경·접근 제약은 과거 기록이며 아래 결과로 보완한다. 사용자는 로컬 설치에 개발을 맞추지 않고 승인된 개발 구성에 로컬을 맞추기로 했다.
+
+- [AGP 8.7 공식 릴리스](https://developer.android.com/build/releases/agp-8-7-0-release-notes): 8.7.2 수정 이력 포함. 최대 API 35, Gradle 최소/기본 8.9, JDK 최소/기본 17, Build Tools 최소/기본 34.0.0 확인. 따라서 기존 Build Tools 35.0.0 후보를 **34.0.0 후보로 수정**한다. compile/target 35와 Build Tools 버전은 별개이며 실제 빌드 전이다.
+- [Kotlin 공식 호환 표](https://kotlinlang.org/docs/gradle-configure-project.html): KGP 2.1.20–2.1.21의 Gradle 7.6.3–8.12.1 및 AGP 7.3.1–8.7.2 확인.
+- [Gradle v8.9.0 공식 표](https://raw.githubusercontent.com/gradle/gradle/v8.9.0/platforms/documentation/docs/src/docs/userguide/releases/compatibility.adoc): Java 17 실행 7.3+, Java 21 실행 8.5+. 로컬 Java 21을 이유로 JDK 17 제안을 바꾸지 않는다.
+- Context7 `/websites/developer_android_studio`는 8.7.2 지정에도 최신 AGP 자료를 반환했다. `/websites/developer_android`는 API 35 searchText와 PdfRendererPreV 자료를 혼합 반환했다. 버전 고정 문서 ID는 제공되지 않았으며 단독 근거로 사용하지 않는다.
+- [공식 AOSP SDK API 35 정의](https://android.googlesource.com/platform/prebuilts/sdk/+/refs/heads/android15-release/35/public/api/android.txt): `PdfRenderer(ParcelFileDescriptor, LoadParams)`, `LoadParams.Builder.setPassword(String)`, `Page.getTextContents()`, `searchText(String)`, `selectContent(SelectionBoundary, SelectionBoundary)` 및 두 render 오버로드 확인. selectContent 결과는 nullable PageSelection이다. branch URL은 mutable이며 설치 SDK 패키지 리비전/해시와 android.jar 컴파일 대조는 남아 있다.
+- [공식 PdfRenderer 문서](https://developer.android.com/reference/android/graphics/pdf/PdfRenderer)는 LoadParams 생성자의 API 35 추가, seek 가능한 FD, renderer의 FD 소유, worker thread 호출과 잘못된 비밀번호의 SecurityException을 확인한다. SDK Extensions/PdfRendererPreV는 별도 지원 경로이며 API 23–34 전체 지원으로 일반화하지 않는다.
+
+승인 요청 구성은 Kotlin stdlib 2.1.20(Apache-2.0)을 앱 런타임에 추가하고 플랫폼 Activity/SAF/Executor 및 PdfRenderer+View/Canvas로 P0를 만드는 것이다. Java-only는 Kotlin 계약과 맞지 않으며 Compose는 추가 의존성·통합 검증, PDFium은 JNI/ABI·배포 크기·업데이트 부담, MuPDF는 AGPL/상용 조건이 있어 후속 비교로 둔다. stdlib 전이 의존성은 도입 전 확인하며 승인 범위를 벗어나는 항목은 재검토한다. JDK 17 배포판·패치·해시는 초기화 전에 고정한다. 로컬 Temurin 17.0.15 실행 확인은 해당 패치 채택 승인이 아니다.

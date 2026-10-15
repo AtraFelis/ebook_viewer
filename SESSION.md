@@ -4,31 +4,23 @@
 
 ## 현재 상태
 
-문서 기반 준비 후 P0 기술 조사에 착수했습니다. 앱·Wrapper·SDK 초기화와 기기 실행은 아직 미착수입니다. 조사 시작 기준 HEAD는 `3a68f76`이며 작업 시작 시 Git 변경은 없었습니다. 기존 AGENTS 계약을 보존했습니다.
+Windows 로컬 전환 및 승인에 의존하지 않는 P0 환경·문서 검증 완료. P0 전체 완료는 아니다. 앱·Wrapper·SDK 초기화, 빌드와 기기 성능 검증은 미실행이다. [ADR 0001](docs/adr/0001-p0-toolchain-and-renderer.md)은 여전히 제안/승인 전이다.
 
-[ADR 0001](docs/adr/0001-p0-toolchain-and-renderer.md)에 도구 후보, PDF 엔진 매트릭스, 수명/취소/타일 검증 설계와 출처를 기록했습니다. 상태는 제안이며 승인·호환 빌드·실기기 검증 완료가 아닙니다.
+지정 폴더가 비어 있어 원격 저장소를 같은 위치에 clone했다. 보존할 기존 파일/체크아웃은 없었다. main에서 fetch 및 pull --ff-only 성공, 양쪽 SHA `d850b158d26d8d47005cd1721252552d6824bc1a` 일치. reset/clean/강제 push 없음.
 
-## 확인한 환경과 제약
+## 로컬 점검과 검증
 
-- Java 런타임 21.0.12.1 존재. javac/Gradle/sdkmanager/adb/kotlinc는 PATH에서 확인되지 않았습니다.
-- `/dev/kvm` 없음. 기기 연결 확인은 adb 부재로 미실행이며, 실기기 성능 판정 불가입니다.
-- 일부 공식 문서 호스트는 프록시 403. 공식 Maven 메타데이터, Kotlin GitHub 호환 표, Gradle 체크섬, PDF 공개 소스는 읽었습니다. 네트워크 정책 우회 없음.
-- 새 런타임 의존성·스택 확정은 AGENTS 승인 규칙 적용. 현재 추가한 런타임 의존성은 없습니다.
+- PATH Java/javac: Oracle 21.0.7. 별도 설치 Temurin 17.0.15+6의 java/javac 실행 확인. 이것은 Android 빌드 성공을 뜻하지 않는다.
+- Gradle/kotlinc/sdkmanager/adb는 PATH에서 미발견. Android SDK/Studio는 기본 설치 경로·설치 목록·프로세스에서 미발견. 임의 설치 경로까지 부재라고 단정하지 않는다. adb devices는 도구 부재로 미실행, 기기 연결 상태는 미확인.
+- Context7 사용 가능. AGP 요청은 최신판 자료를 반환해 8.7.2 근거로 사용하지 않음. PDF 조회는 일부 API 35 자료와 다른 클래스 자료가 섞여 공식 SDK 정의로 대조.
+- 공식 AGP 8.7 표: Gradle 8.9/JDK 17/최대 API 35, Build Tools 최소·기본 34.0.0. Kotlin 2.1.20 호환 범위와 Gradle 8.9의 Java 17 실행 지원 재확인.
+- 공식 AOSP API 35 SDK 텍스트 정의에서 LoadParams와 PdfRenderer 텍스트/검색/선택 서명 확인. 설치한 android.jar 대조·컴파일은 미실행.
+- 사용자 지침: 로컬 설치 버전에 개발 구성을 맞추지 않고, 검증·승인된 개발 구성에 로컬 환경을 맞춘다. 기존 JDK 패치를 자동 채택하지 않는다.
 
-## 로컬 전환 요청
+## 다음 행동과 승인 경계
 
-사용자가 GitHub push 후 Windows 로컬로 전환하기로 했습니다. [전환 절차와 로컬 채팅 프롬프트](docs/local-handoff.md)를 사용합니다. Context7 MCP는 이번 조사에서 사용하지 않았으며, 로컬에서 가용성 확인 후 추가 검증할 항목입니다. push 승인은 의존성 구성 승인과 별개입니다.
+1. ADR 구성안 승인: Kotlin/stdlib 2.1.20, AGP 8.7.2, Gradle 8.9, JDK 17, compile/target 35/min 23, Build Tools 34.0.0, P0 PdfRenderer+View/Canvas. Compose 셸 최종 선택은 별도.
+2. 승인 후 JDK 배포판/패치/해시 및 SDK 패키지 리비전 고정, 로컬 설치, Wrapper 검증, 앱 초기화. 전이 의존성·라이선스·검증 메타데이터 확인.
+3. 빌드/단위 테스트/Lint/ktlint/CI 실제 실행. API 23/35 기기 기능 및 대표 실기기 성능 측정.
 
-## 다음 행동
-
-1. ADR 구성안 승인: Kotlin 2.1.20 stdlib, AGP 8.7.2/Gradle 8.9/JDK 17, SDK 35/min 23 후보, P0 PdfRenderer+View/Canvas.
-2. AGP 공식 호환 표 잔여 확인, JDK/SDK 패치·배포 해시 고정, 검증된 Wrapper 및 앱 초기화. Compose 셸 최종 선택은 별도.
-3. 빌드·단위 테스트·Android Lint·ktlint와 CI 실제 실행.
-4. 합성 PDF 자료와 타일/공통 줌 프로토타입 검증. 기기 확보 후 기능·성능 측정.
-5. 검증된 환경 설치/시작 절차 저장 및 새 환경 복원 별도 확인.
-
-## 작업 위치와 보존
-
-클라우드 작업 위치 `/workspace/ebook_viewer`. PC 경로 `C:\Users\cotjs\workspace\ebook_viewer`; 사용자가 PC 작업을 시작한다고 할 때 해당 환경에서 변경을 확인하고 pull합니다. 현재 PC 연결은 검증하지 않았습니다.
-
-이번 조사·전환 문서는 사용자 요청에 따라 GitHub main에 커밋·push하는 보존 대상입니다. 원격 보존 여부는 push 결과와 원격 SHA 일치로 확인하며, 로컬 PC의 pull은 별도입니다. 이전 문서 보존 이력은 docs/history에 유지했습니다. 실제 명령과 결과는 [P0 조사 이력](docs/history/2026-10-16-03-p0-investigation.md)에 기록합니다.
+작업 위치는 `C:\Users\cotjs\workspace\ebook_viewer`. 이번 문서 변경은 승인된 GitHub 보존 대상이며 런타임 구성 승인은 별개다. 커밋·push의 최종 결과는 채팅에서 원격 SHA 대조 후 보고한다. 상세 명령·제약은 [로컬 P0 이력](docs/history/2026-10-16-05-windows-p0-verification.md)에 기록했다.

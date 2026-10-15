@@ -13,7 +13,10 @@
 ## Android 환경 — P0
 
 - [x] P0 도구 후보·엔진 지원 조사와 제안 ADR 작성(부분 근거 확인; 승인/실행 검증 아님).
-- [ ] AGP 공식 호환 표 잔여 확인 및 실제 도구 조합 빌드 검증.
+- [x] AGP 8.7 공식 호환 표, Kotlin 2.1.20 범위, Gradle 8.9 Java 호환 문서 대조.
+- [x] Windows Git 동기화와 로컬 JDK/SDK/Studio/adb 탐색(기기 연결 확인은 adb 부재로 미실행).
+- [x] Context7 호출 및 공식 AOSP API 35 SDK 텍스트 서명 대조.
+- [ ] 설치 SDK android.jar 대조 및 실제 도구 조합 빌드 검증.
 
 - [ ] 호환 도구/SDK 버전과 엔진 지원 매트릭스 및 ADR.
 - [ ] 의존성 구성 승인, 버전 고정, 검증된 Wrapper.
