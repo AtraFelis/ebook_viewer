@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-기획/문서 단계로 앱·Gradle Wrapper·CI가 없습니다. 이전 환경에서 Java 21 실행은 확인했지만 새 환경의 전체 도구·SDK·기기는 아직 검증하지 않았습니다. 빌드 가능한 Android 환경 완료를 의미하지 않습니다.
+기획/문서 단계로 앱·Gradle Wrapper·CI가 없습니다. 현재 클라우드에서 Java 21 런타임은 확인했지만 javac/Gradle/sdkmanager/adb는 PATH에서 발견되지 않았습니다. Windows 로컬 도구·SDK·기기는 별도 확인이 필요합니다. 빌드 가능한 Android 환경 완료를 의미하지 않습니다.
 
 ## P0 초기화 절차
 
@@ -21,3 +21,7 @@
 ## 클라우드 및 PC 동기화
 
 작업은 기본 클라우드에서 합니다. PC 작업 요청 시 `C:\Users\cotjs\workspace\ebook_viewer`를 해당 PC의 Codex에서 열고 원격·브랜치·미커밋 변경을 확인합니다. 깨끗한 추적 브랜치에서 `git pull --ff-only`를 우선 사용합니다. divergence나 변경 충돌이면 사용자 변경을 보존하고 진단합니다. 클라우드에서 PC pull을 실행했다고 주장하지 않습니다.
+
+## 이번 로컬 전환
+
+사용자가 Windows 로컬 전환을 요청했습니다. [동기화 절차와 재개 프롬프트](local-handoff.md)를 따릅니다. Context7 추가 조사와 공식 호환 표/SDK 대조 후 P0를 이어갑니다. 도구 구성은 [ADR 제안](adr/0001-p0-toolchain-and-renderer.md)이며 아직 의존성 승인 전입니다.

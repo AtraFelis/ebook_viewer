@@ -4,30 +4,31 @@
 
 ## 현재 상태
 
-Android PDF 뷰어의 초기 문서를 준비했습니다. 이전 클라우드 환경이 unavailable로 바뀌었고 미커밋 문서가 새 환경에 없어 대화 내용을 기준으로 재구성했습니다. 이전 파일과 바이트 단위로 같은 복구라고 주장하지 않습니다.
+문서 기반 준비 후 P0 기술 조사에 착수했습니다. 앱·Wrapper·SDK 초기화와 기기 실행은 아직 미착수입니다. 조사 시작 기준 HEAD는 `3a68f76`이며 작업 시작 시 Git 변경은 없었습니다. 기존 AGENTS 계약을 보존했습니다.
 
-문서 준비 완료 / Android 앱 구현·도구 초기화는 미착수입니다. 기술 기준은 AGENTS.md, 완료 기준은 CHECKLIST.md를 따릅니다.
+[ADR 0001](docs/adr/0001-p0-toolchain-and-renderer.md)에 도구 후보, PDF 엔진 매트릭스, 수명/취소/타일 검증 설계와 출처를 기록했습니다. 상태는 제안이며 승인·호환 빌드·실기기 검증 완료가 아닙니다.
 
-## 최근 변경과 검증
+## 확인한 환경과 제약
 
-README, AGENTS, SESSION, CHECKLIST, docs 기획·구조·계획·테스트·규칙·이력과 .gitignore를 재생성했습니다. 링크·필수 파일·후행 공백 검사 결과는 history에 기록합니다. 앱 빌드·기기 실행·성능은 미실행입니다.
+- Java 런타임 21.0.12.1 존재. javac/Gradle/sdkmanager/adb/kotlinc는 PATH에서 확인되지 않았습니다.
+- `/dev/kvm` 없음. 기기 연결 확인은 adb 부재로 미실행이며, 실기기 성능 판정 불가입니다.
+- 일부 공식 문서 호스트는 프록시 403. 공식 Maven 메타데이터, Kotlin GitHub 호환 표, Gradle 체크섬, PDF 공개 소스는 읽었습니다. 네트워크 정책 우회 없음.
+- 새 런타임 의존성·스택 확정은 AGENTS 승인 규칙 적용. 현재 추가한 런타임 의존성은 없습니다.
+
+## 로컬 전환 요청
+
+사용자가 GitHub push 후 Windows 로컬로 전환하기로 했습니다. [전환 절차와 로컬 채팅 프롬프트](docs/local-handoff.md)를 사용합니다. Context7 MCP는 이번 조사에서 사용하지 않았으며, 로컬에서 가용성 확인 후 추가 검증할 항목입니다. push 승인은 의존성 구성 승인과 별개입니다.
 
 ## 다음 행동
 
-1. P0에서 Kotlin/AGP/Gradle/JDK/SDK 호환 버전과 PDF 엔진 지원 매트릭스 조사.
-2. 의존성 구성안을 제시하고 AGENTS의 승인 규칙 적용.
-3. Android 앱·검증된 Wrapper·최소 테스트·Lint/ktlint·CI 초기화.
-4. 빈 앱 실행 후 연속 스크롤 프로토타입과 실기기 성능 검증.
-5. 실제 검증한 설치·시작 절차를 클라우드 설정에 저장. 환경 게시와 새 작업 복원은 별도 확인.
+1. ADR 구성안 승인: Kotlin 2.1.20 stdlib, AGP 8.7.2/Gradle 8.9/JDK 17, SDK 35/min 23 후보, P0 PdfRenderer+View/Canvas.
+2. AGP 공식 호환 표 잔여 확인, JDK/SDK 패치·배포 해시 고정, 검증된 Wrapper 및 앱 초기화. Compose 셸 최종 선택은 별도.
+3. 빌드·단위 테스트·Android Lint·ktlint와 CI 실제 실행.
+4. 합성 PDF 자료와 타일/공통 줌 프로토타입 검증. 기기 확보 후 기능·성능 측정.
+5. 검증된 환경 설치/시작 절차 저장 및 새 환경 복원 별도 확인.
 
-## 작업 위치
+## 작업 위치와 보존
 
-평소 클라우드에서 작업합니다. PC 경로는 `C:\Users\cotjs\workspace\ebook_viewer`. 사용자가 PC 작업을 시작한다고 할 때 해당 로컬 환경에서 변경을 확인하고 pull합니다. 현재 클라우드에서는 PC 접근/연결을 검증하지 않았습니다.
+클라우드 작업 위치 `/workspace/ebook_viewer`. PC 경로 `C:\Users\cotjs\workspace\ebook_viewer`; 사용자가 PC 작업을 시작한다고 할 때 해당 환경에서 변경을 확인하고 pull합니다. 현재 PC 연결은 검증하지 않았습니다.
 
-## 미결
-
-렌더러, 도구 버전, 최소 API, UI 통합 방식, 실기기 접근 가능 여부는 미결입니다. 기본 읽기에 비밀/API 키는 필요하지 않습니다. 사용자 승인으로 최초 문서 커밋 `480fc25`를 main에 push했고 원격 SHA 일치를 확인했습니다. 로컬 main은 origin/main을 추적합니다. 이 인수인계 갱신도 함께 커밋·push하여 보존합니다.
-
-## 사용자 계약 수정 보존
-
-사용자가 수정한 AGENTS.md(문서 충돌 시 계약 우선 명시, 마지막 작업 위치 문단 삭제)를 그대로 보존하여 커밋·push하는 작업입니다. 앱 구현 상태와 P0 체크는 변경하지 않습니다. 상세는 docs/history/2026-10-16-02-agents-update.md 참조.
+이번 조사·전환 문서는 사용자 요청에 따라 GitHub main에 커밋·push하는 보존 대상입니다. 원격 보존 여부는 push 결과와 원격 SHA 일치로 확인하며, 로컬 PC의 pull은 별도입니다. 이전 문서 보존 이력은 docs/history에 유지했습니다. 실제 명령과 결과는 [P0 조사 이력](docs/history/2026-10-16-03-p0-investigation.md)에 기록합니다.

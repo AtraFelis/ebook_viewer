@@ -7,7 +7,9 @@
 | [CHECKLIST](../CHECKLIST.md) | 완료 판정 |
 | [기획](product/requirements.md) | UX와 범위 |
 | [구조](architecture/continuous-viewer.md) | 좌표·제스처·렌더링 |
+| [로컬 전환](local-handoff.md) | Windows 동기화·점검·채팅 프롬프트 |
 | [개발 환경](development.md) | 현재 상태·초기화 절차 |
+| [P0 ADR 제안](adr/0001-p0-toolchain-and-renderer.md) | 도구·엔진 후보, 근거와 미결 |
 | [개발 계획](plan/roadmap.md) | 단계와 완료 조건 |
 | [검증](testing/strategy.md) | 기능·성능 기준 |
 | [개발 규칙](rule/development.md) | 구현 원칙 |
