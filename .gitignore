@@ -1,0 +1,22 @@
+# Android local configuration and outputs
+local.properties
+.gradle/
+.kotlin/
+**/build/
+*.iml
+.idea/
+
+# Secrets and signing
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+
+# Private documents and artifacts
+local-documents/
+local-artifacts/
+*.hprof
+*.perfetto-trace
+.DS_Store
+Thumbs.db
