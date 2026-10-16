@@ -37,4 +37,4 @@ adb shell am instrument -w -e suite immersive dev.example.ebookviewer.p0.test/de
 
 ## 다음 행동과 한계
 
-19개 회귀와 SESSION/CHECKLIST/사용법을 갱신해 별도 기능 PR로 정리한다. 이 후속 브랜치의 원격 CI는 PR 등록 후 확인한다. P1 전체 완료가 아니며 다음 범위는 자동/사용자 지정 외부 배경색, 이후 간격/크기 모드·페이지 이동/북마크다. 실제 개인 PDF 손입력·물리 회전 센서·설정의 강제 프로세스 종료/기기 재부팅·다른 API는 미검증이다. 별도 성능 최적화와 장시간 벤치마크는 사용자 정정에 따라 반복하지 않았다.
+19개 회귀와 SESSION/CHECKLIST/사용법을 갱신하고 구현 `ff1ea45`를 [PR #2](https://github.com/AtraFelis/ebook_viewer/pull/2)로 등록했다. [최신 head CI](https://github.com/AtraFelis/ebook_viewer/pull/2/checks)는 등록 시 진행 중이며 아직 통과로 기록하지 않는다. 사용자 병합 전 에이전트가 병합하지 않는다. P1 전체 완료가 아니며 다음 범위는 자동/사용자 지정 외부 배경색, 이후 간격/크기 모드·페이지 이동/북마크다. 실제 개인 PDF 손입력·물리 회전 센서·설정의 강제 프로세스 종료/기기 재부팅·다른 API는 미검증이다. 별도 성능 최적화와 장시간 벤치마크는 사용자 정정에 따라 반복하지 않았다.
