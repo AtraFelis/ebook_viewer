@@ -11,6 +11,8 @@ import org.junit.runner.notification.RunListener
 /** Small JUnit bridge for this fixed P0 suite; no extra application runtime dependencies. */
 class P0Instrumentation : Instrumentation() {
     private var probe = false
+    var restartPhase: String? = null
+        private set
     var probeSeconds = 30
         private set
     var probeRuns = 3
@@ -18,6 +20,9 @@ class P0Instrumentation : Instrumentation() {
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
+        restartPhase = arguments?.getString("libraryRestart")
+        require(restartPhase == null || restartPhase in listOf("seed", "verify"))
+        require(!probe || restartPhase == null)
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -66,12 +71,18 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (probe) {
+        val result = if (restartPhase != null) {
+            core.run(LibraryRestartDeviceTest::class.java)
+        } else if (probe) {
             core.run(
                 DebugFrameProbe::class.java
             )
         } else {
-            core.run(PdfRendererDeviceTest::class.java, GestureDeviceTest::class.java)
+            core.run(
+                PdfRendererDeviceTest::class.java,
+                GestureDeviceTest::class.java,
+                LibraryDeviceTest::class.java
+            )
         }
         finish(
             Activity.RESULT_OK,

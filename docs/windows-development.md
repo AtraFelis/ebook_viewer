@@ -31,7 +31,7 @@ adb shell am start -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainAct
 
 첫 화면의 “합성 100페이지”는 600×800 / 800×600 point를 교차 배치한 비공개 정보 없는 문서를 worker에서 생성한다. “PDF 열기”는 SAF를 사용한다. 합성 파일은 FD를 연 뒤 임시 이름을 삭제한다. 실제 측정 자료의 고정 SHA/기기 trace는 다음 기기 검증 시 별도 저장한다.
 
-검증 순서: 첫 표시 → 핀치와 두 축 이동 → 페이지 경계 왕복 → 플링 중 반전 → 회전 → 빠른 문서 교체 → 종료 → 암호화/손상/provider 오류. 이후 `testing/strategy.md`의 대표 실기기 3회 측정으로 진행한다. APK 빌드 통과는 이 검증의 대체물이 아니다.
+검증 순서: 첫 표시 → 핀치와 두 축 이동 → 페이지 경계 왕복 → 플링 중 반전 → 회전 → 문서 교체/목록에서 이어 읽기 → 종료 → 암호화/손상/provider 오류. 사용자 정정으로 P1 별도 최적화/반복 성능 측정은 필수가 아니며, 성능 악화가 의심될 때 필요한 계측을 추가한다. APK 빌드 통과는 기능/기기 검증의 대체물이 아니다.
 
 ## 현재 구현 범위와 제한
 
@@ -39,10 +39,11 @@ adb shell am start -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainAct
 
 - 플랫폼 Activity + View/Canvas, 기본 API PdfRenderer, single worker 수명 관리. 텍스트/암호화 API 35 확장은 SDK 서명만 확인했으며 UI에 구현하지 않았다.
 - 문서 전체 공통 zoom, gap 0 원본 크기 배치, 가시 영역 512px 타일, 64MiB 바이트 LRU, 문서/요청 세대 검사. active native render는 즉시 중단할 수 없으며 close는 worker에서 순서대로 수행한다.
-- 회전 시 문서 중심·zoom Bundle 복원 경로 구현. API 33 Activity 재생성에서 합성 문서와 동일 zoom 복원은 통과했다. 물리 회전/프로세스 강제 종료 복원은 미검증이다.
+- 회전 시 페이지 내부 중심·zoom Bundle 복원, 최근/읽던 목록에서 문서별 위치 복원을 구현했다. API 33 합성 PDF의 A/B 전환·Activity 재실행과 저장 후 force-stop/다른 프로세스에서 이어 열기를 통과했다. 물리 회전/개인 PDF/provider별 검증은 남아 있다.
 - 첫 4페이지를 먼저 표시하고 나머지 크기는 worker에서 2페이지씩 추가한다. 기존 페이지 위치·사용자 줌을 유지한다. 회전 복원 시에는 전체 크기를 먼저 확보해 정확한 경계에서 위치를 복원한다. 렌더 배율은 반 옥타브 단계로 올림하며 사용자 줌은 연속값이다. 가시 페이지의 긴 변 최대 512px 미리보기를 우선 표시하고 현재/이전 배율 타일과 같은 64MiB 캐시를 공유한다. 아주 빠른 이동에서는 아직 준비되지 않은 영역이 남을 수 있다.
 - 캐시 64MiB는 총 메모리 상한이 아니다. worker 비트맵·UI 게시 대기·플랫폼 native 메모리는 별도 측정 대상이다.
-- 비탐색 provider는 임시 복사 대신 현재 일반 오류 안내. 북마크/최근 문서/설정·완전한 접근성·오류 분류와 재시도는 P1 이전 보완 대상이다.
+- 읽기 기록은 앱 내부 AtomicFile/버전 1 코덱이며 저장·SAF 메타데이터/권한 처리는 별도 단일 I/O 큐다. 목록으로 돌아가기와 실패 후 파일 재선택을 제공한다. 기록 삭제는 원본 PDF를 삭제하지 않는다. 자체 합성 버튼 문서는 목록에 등록하지 않는다.
+- 비탐색 provider는 임시 복사 대신 현재 일반 오류 안내. 전체 화면/설정/방향/배경색·북마크·완전한 접근성·오류 분류는 후속이다. 실제 provider 영구 권한과 재부팅 수용도 남아 있다.
 
 ## 의존성 및 검사 정책
 
@@ -50,6 +51,6 @@ adb shell am start -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainAct
 
 `gradle/verification-metadata.xml`은 최초 공식 HTTPS 다운로드를 신뢰 기준으로 SHA-256을 생성했다. 전체 의존성의 독립 서명 검증을 주장하지 않는다. 변경 승인 후에만 `--write-locks --write-verification-metadata sha256`로 갱신하고 diff/출처를 검토한다. 일반 검사는 strict를 유지한다.
 
-ktlintCheck는 읽기 전용, ktlintFormat은 명시적 포맷 명령이다. Android Lint는 warningsAsErrors이며 승인한 버전을 유지하기 위한 AndroidGradlePluginVersion 권고만 informational로 남긴다. 기기 테스트는 JUnit 4와 최소 Instrumentation 브리지로 실행하며 앱 런타임 의존성은 늘리지 않았다. API 33에서 11개 기기 테스트가 통과했다. 최종 성능 수치/한계는 history/2026-10-16-09-p0-local-validation.md를 따른다. 원격 Windows CI는 통과했다. 실제 새 PC의 드라이버/Studio/기기 연결 복원은 미검증이다.
+ktlintCheck는 읽기 전용, ktlintFormat은 명시적 포맷 명령이다. Android Lint는 warningsAsErrors이며 승인한 버전을 유지하기 위한 AndroidGradlePluginVersion 권고만 informational로 남긴다. 기기 테스트는 JUnit 4와 최소 Instrumentation 브리지로 실행하며 앱 런타임 의존성은 늘리지 않았다. 현재 단위 9개, API 33 debug 계측 15개와 별도 프로세스 복원 seed/verify 각 1개가 통과했다. 별도 복원 명령과 결과는 [P1 이력](history/2026-10-17-01-p1-reading-library.md)을 따른다. 최종 P0 성능 수치/한계는 history/2026-10-16-09-p0-local-validation.md를 따른다. P0와 P1 구현 9fdb405의 원격 Windows CI가 통과했으며 [PR/CI 결과](history/2026-10-17-02-p1-library-pr.md)에 기록했다. 실제 새 PC의 드라이버/Studio/기기 연결 복원은 미검증이다.
 
 산출물: `app/build/outputs/apk/debug/app-debug.apk`, `app/build/reports/tests/testDebugUnitTest`, `app/build/reports/lint-results-debug.html`. debug APK는 출시 서명물이 아니다. apksigner는 서명 검증에 성공했으며 AGP의 META-INF app-metadata.properties 엔트리가 개별 보호되지 않는다는 경고도 기록했다.

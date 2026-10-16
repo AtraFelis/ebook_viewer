@@ -1,12 +1,14 @@
 # SESSION.md — 세션 인수인계
 
-최종 갱신: 2026-10-16 (Asia/Seoul)
+최종 갱신: 2026-10-17 (Asia/Seoul)
 
 ## 현재 상태
 
-현재 개인용 SM-N981N(API 33)·합성 자료 범위의 P0 기술 검증과 원격 CI를 완료했다. 사용자는 이 기기에서 동작하면 충분하다고 결정했다. API 23·35/다른 기기는 이번 완료 조건에서 제외하며 minSdk 23 선언을 기기 검증 완료로 표현하지 않는다. 사용자가 이번 변경의 main push를 “push 해”로 명시 승인했고 실제 원격 CI도 통과했다.
+P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구현했다. 현재 API 33 debug 계측 15개, 별도 프로세스 복원 seed/force-stop/verify, strict 빌드·단위 9개·Lint·ktlint 통과. 기기에 새 debug APK 설치/실행 완료. 구현 `9fdb405`를 `codex/p1-reading-library`에 push하고 [PR #1](https://github.com/AtraFelis/ebook_viewer/pull/1)을 만들었다. 새 런타임 의존성 없음. [구현 검증](docs/history/2026-10-17-01-p1-reading-library.md), [PR/CI 이력](docs/history/2026-10-17-02-p1-library-pr.md).
 
-현재 체크아웃 main, 구현 커밋 `0863969`를 origin/main에 일반 push했다. GitHub Actions 실행 38885324826이 새 Windows runner에서 도구 설치/Wrapper 검증/앱·테스트 APK 빌드/단위/Lint/ktlint strict를 통과했다. reset/clean/강제 push 없음. 작업 경로는 `C:\Users\cotjs\workspace\ebook_viewer`.
+현재 개인용 SM-N981N(API 33)·합성 자료 범위의 P0 기술 검증과 원격 CI를 완료했다. 사용자는 이 기기에서 동작하면 충분하다고 결정했다. API 23·35/다른 기기는 이번 완료 조건에서 제외하며 minSdk 23 선언을 기기 검증 완료로 표현하지 않는다. 사용자가 P0 변경의 main push를 “push 해”로 명시 승인했고 실제 원격 CI도 통과했다.
+
+현재 P1 작업 브랜치는 `codex/p1-reading-library`이며 현재 체크아웃의 변경을 그대로 보존해 생성했다. P0 구현 커밋 `0863969`를 origin/main에 일반 push했다. GitHub Actions 실행 38885324826이 새 Windows runner에서 도구 설치/Wrapper 검증/앱·테스트 APK 빌드/단위/Lint/ktlint strict를 통과했다. reset/clean/강제 push 없음. 작업 경로는 `C:\Users\cotjs\workspace\ebook_viewer`.
 
 - 승인 구성: Kotlin/stdlib 2.1.20, AGP 8.7.2, Gradle 8.9, Temurin 17.0.20.1+1, compile/target 35/min 23, Platform 35 rev2, Build Tools 34.0.0. Android Studio는 미설치, CLI 사용. 시스템 Java는 바꾸지 않고 프로젝트 설치본을 사용한다.
 - 플랫폼 Activity/SAF + PdfRenderer + View/Canvas. 첫 4페이지를 먼저 제공하고 나머지 크기를 single worker에서 점진 조사한다. 사용자 줌/좌표 유지. 회전 복원은 정확한 전체 크기를 먼저 확보하므로 새 문서 첫 표시보다 오래 걸릴 수 있다.
@@ -17,10 +19,12 @@
 
 ## 승인과 다음 행동
 
-런타임은 승인된 stdlib 2.1.20과 전이 annotations 13.0뿐이다. JUnit/ktlint는 검사 전용. Compose 최종 선택, 새 저장/PDF 라이브러리는 미선정이며 새 런타임 의존성 승인 규칙을 유지한다.
+런타임은 승인된 stdlib 2.1.20과 전이 annotations 13.0뿐이다. JUnit/ktlint는 검사 전용. P1 읽기 기록은 플랫폼 AtomicFile/버전 1 코덱을 사용한다([ADR 0002](docs/adr/0002-local-reading-records.md)). Compose 최종 선택, 새 저장/PDF 라이브러리는 미선정이며 새 런타임 의존성 승인 규칙을 유지한다.
 
-1. P0 현재 범위 완료: 구현 커밋 `0863969` main push 및 CI 38885324826 성공. 결과 문서만 후속 커밋한다.
-2. 다음 단계는 P1 핵심 MVP 보완이다. 새 Windows CI의 CLI 도구 복원은 검증했지만 실제 새 PC의 드라이버/Android Studio/기기 연결 복원은 미검증이다.
-3. 후속: 손입력/물리 회전·개인 PDF 수용 확인, 빠른 이동의 미준비 영역, 비탐색 provider 임시 복사, 오류/재시도, 북마크/최근 문서/설정/접근성. API 33 암호화 읽기는 미지원이며 일반 오류 안내한다. 다른 기기/API와 새 PC 복원은 미검증.
+1. P0 현재 범위 완료: 구현 `0863969` 및 결과 문서 `08011b3`를 main에 push했고 CI 38885324826 성공. P1은 사용자 승인으로 기능별 PR 방식을 사용한다. 첫 [PR #1](https://github.com/AtraFelis/ebook_viewer/pull/1)을 main 대상으로 생성했고 구현 `9fdb405`의 [Windows CI 38922213502](https://github.com/AtraFelis/ebook_viewer/actions/runs/38922213502)가 strict 빌드·단위·Lint·ktlint를 통과했다. 인수인계 문서 후속 커밋의 최종 검사 상태는 PR checks로 확인한다. 아직 병합하지 않았다.
+2. 사용자 P1 요구사항을 [로드맵](docs/plan/roadmap.md)에 통합했고, Sol High에 적합한 첫 범위로 최근/읽던 PDF 목록과 이어 읽기를 구현했다. URI 기준 단일 기록, 내부 앵커/줌/가로 위치, 비동기 원자 저장, 권한 요청/재선택/기록 삭제를 제공한다. 새 문서 첫 표시 후 빠르게 나가도 기록을 남기도록 계측에서 발견한 누락을 수정했다. 전체 화면/중앙 탭 설정/방향 고정 → 자동·지정 외부 배경색 → 기존 간격/크기 모드·페이지 이동·북마크·오류 UX가 다음 범위다.
+3. 사용자 정정: 현재 성능은 충분하므로 별도 렌더링/스크롤 최적화 및 빠른 이동의 미준비 영역 개선은 P1 필수에서 제외한다. 기존 성능과 줌/앵커·캐시/수명 계약은 유지하고 새 기능에 따른 회귀는 검증한다. 손입력·물리 회전·개인 PDF로 기능 수용을 확인한다.
+4. 새 Windows CI의 CLI 도구 복원은 검증했지만 실제 새 PC의 드라이버/Android Studio/기기 연결 복원과 다른 기기/API는 미검증이다. API 33 암호화 읽기·검색 등은 P2 범위다. 새 저장/UI 라이브러리를 채택하지 않았으며 필요 시 별도 구성 승인 후 도입한다.
+5. 실제 SAF provider 영구 권한·재부팅·권한 소실 재연결과 개인 PDF 손입력 수용은 남아 있다. 비탐색 provider 임시 복사, 전체 화면/설정/방향/배경색, 간격/모드/북마크도 후속이다. 갑작스러운 종료 직전 미제출/미완료 이동은 유실될 수 있으며 손상된 기록 파일의 복구 UI는 아직 없다. 이번 통과는 합성 자료와 앱 내부 파일 URI 기준이다.
 
 [push·CI 결과](docs/history/2026-10-16-10-github-push-and-ci.md), [최종 검증·명령·원본 위치](docs/history/2026-10-16-09-p0-local-validation.md), [첫 표시 개선](docs/history/2026-10-16-08-first-page-priority.md), [Windows 실행](docs/windows-development.md), [ADR](docs/adr/0001-p0-toolchain-and-renderer.md).

@@ -34,6 +34,7 @@ class PdfCanvasView @JvmOverloads constructor(
     private var fallback = emptyList<Tile>()
     private var restored: Bundle? = null
     private var pendingPages: List<PageSize>? = null
+    var onPositionChanged: (() -> Unit)? = null
     private val cache = object : LruCache<Tile, Bitmap>(64 * 1024 * 1024) {
         override fun sizeOf(key: Tile, value: Bitmap): Int = value.allocationByteCount
     }
@@ -142,9 +143,21 @@ class PdfCanvasView @JvmOverloads constructor(
             viewport.x = 0.0
             viewport.y = 0.0
         } else {
-            viewport.zoom = saved.getDouble("zoom", 1.0)
-            viewport.x = width / 2.0 - saved.getDouble("centerX") * viewport.zoom
-            viewport.y = height / 2.0 - saved.getDouble("centerY") * viewport.zoom
+            viewport.zoom = saved.getDouble("zoom", 1.0).coerceIn(0.1, 8.0)
+            val document = requireNotNull(layout)
+            val page = saved.getInt("page").coerceIn(document.pages.indices)
+            val centerX = if (saved.containsKey("fractionX")) {
+                document.left(page) + saved.getDouble("fractionX") * document.pages[page].width
+            } else {
+                saved.getDouble("centerX")
+            }
+            val centerY = if (saved.containsKey("fractionY")) {
+                document.tops[page] + saved.getDouble("fractionY") * document.pages[page].height
+            } else {
+                saved.getDouble("centerY")
+            }
+            viewport.x = width / 2.0 - centerX * viewport.zoom
+            viewport.y = height / 2.0 - centerY * viewport.zoom
             restored = null
         }
         constrain()
@@ -161,7 +174,37 @@ class PdfCanvasView @JvmOverloads constructor(
                 "page",
                 requireNotNull(layout).pageAt((height / 2.0 - viewport.y) / viewport.zoom)
             )
+            readingPosition()?.let {
+                putDouble("fractionX", it.x)
+                putDouble("fractionY", it.y)
+            }
         }
+    }
+
+    fun readingPosition(): ReadingPosition? {
+        val document = layout ?: return null
+        val centerX = (width / 2.0 - viewport.x) / viewport.zoom
+        val centerY = (height / 2.0 - viewport.y) / viewport.zoom
+        val page = document.pageAt(centerY)
+        return ReadingPosition(
+            page,
+            (centerX - document.left(page)) / document.pages[page].width,
+            ((centerY - document.tops[page]) / document.pages[page].height).coerceIn(0.0, 1.0),
+            viewport.zoom
+        )
+    }
+
+    fun restorePosition(position: ReadingPosition?) {
+        restoreViewport(
+            position?.let {
+                Bundle().apply {
+                    putInt("page", it.page)
+                    putDouble("fractionX", it.x)
+                    putDouble("fractionY", it.y)
+                    putDouble("zoom", it.zoom)
+                }
+            }
+        )
     }
 
     fun restoreViewport(saved: Bundle?) {
@@ -201,6 +244,7 @@ class PdfCanvasView @JvmOverloads constructor(
         layout?.let { viewport.constrain(it, width, height) }
         updateTiles()
         invalidate()
+        if (layout != null) onPositionChanged?.invoke()
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

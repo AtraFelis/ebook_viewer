@@ -18,7 +18,8 @@ import java.util.concurrent.atomic.AtomicReference
 class PdfWorker(
     private val onLoaded: (List<PageSize>) -> Unit,
     private val onTile: (Tile, Bitmap) -> Unit,
-    private val onError: () -> Unit
+    private val onError: () -> Unit,
+    private val onPageCount: (Int) -> Unit = {}
 ) {
     private data class Request(val document: Long, val generation: Long, val tiles: List<Tile>)
 
@@ -60,6 +61,8 @@ class PdfWorker(
                 }
                 renderer = opened
                 require(opened.pageCount > 0)
+                val pageCount = opened.pageCount
+                main.post { if (document.get() == id) onPageCount(pageCount) }
                 val pages = ArrayList<PageSize>()
                 // A zoomed-out restored viewport can span many pages; use exact bounds before clamping.
                 val initialCount = if (restore) opened.pageCount else minOf(4, opened.pageCount)
@@ -173,9 +176,8 @@ class PdfWorker(
             tile in latest.tiles
     }
 
-    fun close() {
+    fun closeDocument() {
         if (closed) return
-        closed = true
         document.incrementAndGet()
         generation.incrementAndGet()
         pending.set(null)
@@ -185,6 +187,12 @@ class PdfWorker(
             renderer?.close()
             renderer = null
         }
+    }
+
+    fun close() {
+        if (closed) return
+        closeDocument()
+        closed = true
         executor.shutdown()
     }
 }
