@@ -14,7 +14,7 @@
 | 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
 | 앱 UI | P0 플랫폼 Activity + View/Canvas 승인. Compose 셸 최종 선택은 후속 비교 |
 | PDF | P0 PdfRenderer 승인. 현재 API 33 합성 문서 계측 완료, 다른 기기 미검증. 범위·제한은 ADR 0001 |
-| 파일·데이터 | 로컬 우선, Storage Access Framework. 저장 라이브러리 미선정 |
+| 파일·데이터 | 로컬 우선, SAF. P1 읽기 기록은 플랫폼 AtomicFile/버전 1 코덱(ADR 0002), 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
 
@@ -27,9 +27,9 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일 테스트 6개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록 코덱 테스트 9개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 테스트 11개·앱 실행 통과 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 debug 계측 15개·앱 실행 통과, 별도 프로세스 복원 2단계 통과 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 

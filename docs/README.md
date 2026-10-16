@@ -22,3 +22,5 @@
 현재 기기의 [최종 P0 로컬 검증과 원격 CI 상태](history/2026-10-16-09-p0-local-validation.md)를 먼저 확인합니다.
 
 후속 [main push·원격 CI 성공 결과와 P1 인수인계](history/2026-10-16-10-github-push-and-ci.md)까지 확인합니다.
+
+현재 P1의 [로컬 읽기 기록 ADR](adr/0002-local-reading-records.md)과 [목록·이어 읽기 구현/검증](history/2026-10-17-01-p1-reading-library.md)을 확인합니다. P1 변경은 아직 로컬 미커밋·미푸시입니다.

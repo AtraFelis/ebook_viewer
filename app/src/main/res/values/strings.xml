@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PDF Viewer P0</string>
+    <string name="app_name">PDF Viewer</string>
     <string name="open_pdf">PDF 열기</string>
     <string name="sample_pdf">합성 100페이지</string>
     <string name="ready">PDF를 열거나 합성 문서로 렌더링을 확인하세요.</string>
@@ -8,4 +8,17 @@
     <string name="load_error">문서를 열거나 렌더링할 수 없습니다. 손상·암호화·접근 권한 또는 탐색 불가능한 파일일 수 있습니다.</string>
     <string name="document_ready">준비된 %1$d페이지 · 핀치 확대 / 자유 이동</string>
     <string name="viewer_description">연속 PDF 읽기 영역</string>
+    <string name="document_list">문서 목록</string>
+    <string name="continue_reading">읽던 Ebook · 이어 읽기</string>
+    <string name="recent_documents">최근 읽은 PDF</string>
+    <string name="no_documents">아직 읽은 문서가 없습니다.</string>
+    <string name="untitled_pdf">PDF 문서</string>
+    <string name="reading_entry">%1$s · %2$d / %3$d페이지</string>
+    <string name="select_again">파일 다시 선택</string>
+    <string name="temporary_access">준비된 %1$d페이지 · 임시 접근 권한: 앱이나 기기 재시작 후 파일을 다시 선택해야 할 수 있습니다.</string>
+    <string name="library_error">읽기 기록을 불러올 수 없습니다. 기존 기록은 덮어쓰지 않았습니다.</string>
+    <string name="save_error">읽기 위치를 저장하지 못했습니다. 저장 공간을 확인해 주세요.</string>
+    <string name="remove_record">기록에서 삭제</string>
+    <string name="remove_record_message">목록과 읽기 위치를 삭제할까요? 원본 PDF 파일은 삭제하지 않습니다.</string>
+    <string name="remove_record_hint">항목을 길게 누르면 원본 파일을 유지하고 기록만 삭제할 수 있습니다.</string>
 </resources>
