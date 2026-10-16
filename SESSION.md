@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-사용자의 확대 한도/과도한 축소 피드백을 `codex/reader-zoom-range`에서 구현/기기 검증을 완료했다(PR #2 문서 head `3d7b6d5`부터 분리). 최대 배율 8→32, 짧은 변 너비 맞춤의 75% 핀치 축소 하한이며 회전/기존 기록의 작은 배율은 강제 재맞춤하지 않는다. strict 빌드·단위 12개·Lint·ktlint 통과, API 33 전체 20개 회귀/앱 설치·실행까지 통과했다. 첫 중앙 반복 탭/뒤로가기 실패를 이중 탭 간섭 제거로 보완한 뒤 전체를 재검증했다. 확대 수정 자체의 원격 CI는 PR 등록 후 별도 확인한다. [변경·검증 이력](docs/history/2026-10-17-04-zoom-range.md). 새 런타임 의존성 없음.
+사용자의 확대 한도/과도한 축소 피드백을 `codex/reader-zoom-range`에서 구현/기기 검증을 완료했다(PR #2 문서 head `3d7b6d5`부터 분리). 최대 배율 8→32, 짧은 변 너비 맞춤의 75% 핀치 축소 하한이며 회전/기존 기록의 작은 배율은 강제 재맞춤하지 않는다. strict 빌드·단위 12개·Lint·ktlint 통과, API 33 전체 20개 회귀/앱 설치·실행까지 통과했다. 첫 중앙 반복 탭/뒤로가기 실패를 이중 탭 간섭 제거로 보완한 뒤 전체를 재검증했다. 구현 `cb2cc6c`를 main 대상 [PR #3](https://github.com/AtraFelis/ebook_viewer/pull/3)으로 등록했다. [최종 head CI](https://github.com/AtraFelis/ebook_viewer/pull/3/checks)는 별도 확인하며 로컬 통과와 구분한다. [변경·검증 이력](docs/history/2026-10-17-04-zoom-range.md). 새 런타임 의존성 없음.
 
 후속 브랜치 `codex/p1-immersive-reading`에서 전체 화면·중앙 탭 메뉴·방향 설정을 구현했다. 새 API 33 UI/설정 테스트 4개와 기존 포함 전체 19개 회귀, strict 빌드·단위 9개·Lint·ktlint 통과. 기기에 새 debug APK 설치/실행 완료. 새 런타임 의존성 없음. [ADR 0003](docs/adr/0003-immersive-reader-and-orientation.md), [진행/검증 이력](docs/history/2026-10-17-03-immersive-reading.md). 구현 `ff1ea45`를 [PR #2](https://github.com/AtraFelis/ebook_viewer/pull/2)로 등록했다. 최종 문서 head `3d7b6d5`의 [Windows CI 38927859821](https://github.com/AtraFelis/ebook_viewer/actions/runs/38927859821)까지 성공했다. 사용자가 PR #2를 병합했고 fetch로 origin/main `70829a7` 및 부모 head 포함을 확인했다.
 
