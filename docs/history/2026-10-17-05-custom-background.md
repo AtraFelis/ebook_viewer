@@ -34,3 +34,5 @@ strict 앱/계측 APK 빌드·단위 15개·Lint 오류/경고 0·ktlintCheck �
 ## 다음 행동
 
 검토 가능한 기능 PR로 분리하며 원격 CI는 실제 실행 결과를 별도 확인한다. P1 전체 완료는 아니며 다음은 간격/크기 모드·페이지 이동/북마크·오류 UX 등 남은 MVP다.
+
+구현 `e6753bf`를 일반 push하고 main 대상 [PR #4](https://github.com/AtraFelis/ebook_viewer/pull/4)로 등록/채팅에 연결했다. [최신 head CI](https://github.com/AtraFelis/ebook_viewer/pull/4/checks)는 등록 시 진행 중이며 통과로 기록하지 않는다. 사용자 직접 병합 전 에이전트 병합 없음.
