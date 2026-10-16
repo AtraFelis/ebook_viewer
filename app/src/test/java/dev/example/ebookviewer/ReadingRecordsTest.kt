@@ -10,6 +10,23 @@ import org.junit.Test
 
 class ReadingRecordsTest {
     @Test
+    fun expandedZoomAndLegacySmallZoomRoundTrip() {
+        val records = listOf(0.1, 8.0, 32.0).mapIndexed { index, zoom ->
+            ReadingRecord(
+                "content://fixture/$index",
+                "Zoom $index",
+                10,
+                100,
+                ReadingPosition(42, 0.71, 0.23, zoom)
+            )
+        }
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.write(output, records)
+        assertEquals(records, ReadingRecordsCodec.read(ByteArrayInputStream(output.toByteArray())))
+        assertThrows(IllegalArgumentException::class.java) { ReadingPosition(0, 0.5, 0.5, 32.1) }
+    }
+
+    @Test
     fun independentDocumentsRoundTripWithNormalizedPositionsAndRecentOrdering() {
         val first =
             ReadingRecord(

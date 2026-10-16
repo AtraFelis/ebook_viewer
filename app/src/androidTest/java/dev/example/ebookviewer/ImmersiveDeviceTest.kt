@@ -43,6 +43,7 @@ class ImmersiveDeviceTest {
             assertTools(activity, false)
             assertAnchor(before, ui.state(view))
             ui.tap(view)
+            assertTools(activity, true)
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
             ui.await("Back did not hide tools") {
                 !activity.findViewById<View>(R.id.reader_tools).isShown

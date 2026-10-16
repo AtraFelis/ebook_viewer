@@ -97,9 +97,24 @@ class DocumentLayout(val pages: List<PageSize>) {
     }
 }
 
+/** Absolute scale is screen pixels per PDF point, independent of the current fit width. */
+object ZoomLimits {
+    const val MIN_SAVED = 0.1
+    const val MAX = 32.0
+
+    fun gestureMinimum(documentWidth: Double, width: Int, height: Int): Double =
+        (min(width, height) * 0.75 / documentWidth).coerceIn(MIN_SAVED, MAX)
+}
+
 class Viewport(var zoom: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0) {
-    fun zoomAt(factor: Double, focusX: Double, focusY: Double) {
-        val next = (zoom * factor).coerceIn(0.1, 8.0)
+    fun zoomAt(
+        factor: Double,
+        focusX: Double,
+        focusY: Double,
+        minimumZoom: Double = ZoomLimits.MIN_SAVED
+    ) {
+        // Preserve old small saved scales and allow gradual zoom-in without a sudden jump.
+        val next = (zoom * factor).coerceIn(min(zoom, minimumZoom), ZoomLimits.MAX)
         val ratio = next / zoom
         x = focusX - (focusX - x) * ratio
         y = focusY - (focusY - y) * ratio

@@ -21,8 +21,8 @@ class DocumentLayoutTest {
     @Test
     fun highZoomRequestsOnlyVisibleTilesAndClipsLastTile() {
         val document = DocumentLayout(listOf(PageSize(1200, 1600)))
-        val tiles = document.visibleTiles(Viewport(4.0, -1024.0, -2048.0), 512, 512)
-        assertEquals(listOf(Tile(0, 4.0, 1024, 2048, 512, 512)), tiles)
+        val tiles = document.visibleTiles(Viewport(32.0, -1024.0, -2048.0), 512, 512)
+        assertEquals(listOf(Tile(0, 32.0, 1024, 2048, 512, 512)), tiles)
         val edge = DocumentLayout(listOf(PageSize(600, 800))).visibleTiles(Viewport(), 600, 800)
         assertEquals(4, edge.size)
         assertEquals(Tile(0, 1.0, 512, 512, 88, 288), edge.last())
@@ -58,6 +58,30 @@ class DocumentLayoutTest {
         viewport.zoomAt(1.8, 250.0, 400.0)
         assertEquals(docX, (250.0 - viewport.x) / viewport.zoom, 0.000001)
         assertEquals(docY, (400.0 - viewport.y) / viewport.zoom, 0.000001)
+    }
+
+    @Test
+    fun zoomStopsAtBothBoundsWithoutMovingTheFocusPoint() {
+        val viewport = Viewport(8.0, -1000.0, -2000.0)
+        val docX = (250.0 - viewport.x) / viewport.zoom
+        val docY = (400.0 - viewport.y) / viewport.zoom
+        viewport.zoomAt(100.0, 250.0, 400.0, 0.75)
+        assertEquals(32.0, viewport.zoom, 0.0)
+        viewport.zoomAt(0.0001, 250.0, 400.0, 0.75)
+        assertEquals(0.75, viewport.zoom, 0.0)
+        assertEquals(docX, (250.0 - viewport.x) / viewport.zoom, 0.000001)
+        assertEquals(docY, (400.0 - viewport.y) / viewport.zoom, 0.000001)
+    }
+
+    @Test
+    fun minimumUsesShortEdgeAndOldSavedZoomCanGrowGradually() {
+        assertEquals(0.75, ZoomLimits.gestureMinimum(600.0, 600, 1000), 0.0)
+        assertEquals(0.75, ZoomLimits.gestureMinimum(600.0, 1000, 600), 0.0)
+        val viewport = Viewport(0.1)
+        viewport.zoomAt(0.5, 250.0, 400.0, 0.75)
+        assertEquals(0.1, viewport.zoom, 0.0)
+        viewport.zoomAt(1.2, 250.0, 400.0, 0.75)
+        assertEquals(0.12, viewport.zoom, 0.000001)
     }
 
     @Test

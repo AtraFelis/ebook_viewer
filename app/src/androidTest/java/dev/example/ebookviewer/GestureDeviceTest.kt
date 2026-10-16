@@ -7,6 +7,31 @@ import org.junit.Test
 
 class GestureDeviceTest {
     @Test
+    fun repeatedPinchesReachLargerZoomAndStopExcessiveReduction() {
+        val instrumentation = PdfRendererDeviceTest.instrumentation
+        val ui = DeviceGestures(instrumentation)
+        val activity = ui.launch()
+        try {
+            val view = ui.sample(activity)
+            // SyntheticDocument alternates 600pt and 800pt wide pages.
+            val documentWidth = 800.0
+            repeat(8) { ui.pinch(view) }
+            assertEquals(32.0, ui.state(view).getDouble("zoom"), 0.000001)
+            ui.awaitReady(activity)
+            ui.assertCacheBound(view)
+            repeat(12) { ui.pinch(view, outward = false) }
+            val minimum = ZoomLimits.gestureMinimum(documentWidth, view.width, view.height)
+            assertEquals(minimum, ui.state(view).getDouble("zoom"), 0.000001)
+            ui.pinch(view, outward = false)
+            assertEquals(minimum, ui.state(view).getDouble("zoom"), 0.000001)
+            ui.awaitReady(activity)
+            ui.assertCacheBound(view)
+        } finally {
+            instrumentation.runOnMainSync { activity.finish() }
+        }
+    }
+
+    @Test
     fun pinchAndTwentyPageRoundTripPreserveZoom() {
         val instrumentation = PdfRendererDeviceTest.instrumentation
         val ui = DeviceGestures(instrumentation)
@@ -47,9 +72,10 @@ class GestureDeviceTest {
         val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         try {
             val view = ui.sample(activity)
-            ui.pinch(view)
+            repeat(6) { ui.pinch(view) }
             repeat(4) { ui.drag(view, true) }
             val before = ui.state(view)
+            assertTrue(before.getDouble("zoom") > 8.0)
             val requested = if (view.width <
                 view.height
             ) {

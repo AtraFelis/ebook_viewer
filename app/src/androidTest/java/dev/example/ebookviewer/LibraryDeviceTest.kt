@@ -82,8 +82,10 @@ class LibraryDeviceTest {
             var view = ui.awaitReady(activity)
             ui.pinch(view)
             repeat(7) { ui.drag(view, true) }
+            repeat(5) { ui.pinch(view) }
             val firstPosition = position(view)
             assertTrue(firstPosition.page > 0)
+            assertTrue(firstPosition.zoom > 8.0)
             open(activity, second)
             view = ui.awaitReady(activity)
             ui.pinch(view)
