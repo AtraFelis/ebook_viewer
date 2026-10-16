@@ -2,6 +2,8 @@
 
 작성: 2026-10-16 (Asia/Seoul).
 
+이 문서는 클라우드 조사 직후의 전환 기록이다. 이후 구성 승인·로컬 초기화·API 33 기기 검증이 진행되었다. 현재 상태는 [SESSION](../SESSION.md), 실행 절차는 [Windows 개발](windows-development.md), 최신 검증은 [제스처·측정 이력](history/2026-10-16-07-gestures-and-probe.md)을 따른다.
+
 ## 전환 범위
 
 GitHub 저장소: https://github.com/AtraFelis/ebook_viewer

@@ -1,0 +1,31 @@
+name: Android checks
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Windows toolchain
+        shell: pwsh
+        run: ./scripts/bootstrap-windows.ps1 -AcceptAndroidSdkLicenses
+      - name: Verify Wrapper and run checks
+        shell: pwsh
+        run: |
+          . ./scripts/android-env.ps1
+          $expected = '498495120a03b9a6ab5d155f5de3c8f0d986a449153702fb80fc80e134484f17'
+          if ((Get-FileHash gradle/wrapper/gradle-wrapper.jar -Algorithm SHA256).Hash -ne $expected) {
+            throw 'Wrapper checksum mismatch'
+          }
+          ./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug ktlintCheck --dependency-verification strict --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

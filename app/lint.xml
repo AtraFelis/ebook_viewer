@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- ADR 0001 deliberately pins the approved compatibility set. Keep upgrade advice
+         visible without treating 'not latest' as a correctness failure. -->
+    <issue id="AndroidGradlePluginVersion" severity="informational" />
+</lint>

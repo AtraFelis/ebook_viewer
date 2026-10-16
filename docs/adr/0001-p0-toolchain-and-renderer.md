@@ -76,3 +76,25 @@ PdfRenderer를 우선 검증하고, API 23–34에서도 검색/암호화가 필
 - [공식 PdfRenderer 문서](https://developer.android.com/reference/android/graphics/pdf/PdfRenderer)는 LoadParams 생성자의 API 35 추가, seek 가능한 FD, renderer의 FD 소유, worker thread 호출과 잘못된 비밀번호의 SecurityException을 확인한다. SDK Extensions/PdfRendererPreV는 별도 지원 경로이며 API 23–34 전체 지원으로 일반화하지 않는다.
 
 승인 요청 구성은 Kotlin stdlib 2.1.20(Apache-2.0)을 앱 런타임에 추가하고 플랫폼 Activity/SAF/Executor 및 PdfRenderer+View/Canvas로 P0를 만드는 것이다. Java-only는 Kotlin 계약과 맞지 않으며 Compose는 추가 의존성·통합 검증, PDFium은 JNI/ABI·배포 크기·업데이트 부담, MuPDF는 AGPL/상용 조건이 있어 후속 비교로 둔다. stdlib 전이 의존성은 도입 전 확인하며 승인 범위를 벗어나는 항목은 재검토한다. JDK 17 배포판·패치·해시는 초기화 전에 고정한다. 로컬 Temurin 17.0.15 실행 확인은 해당 패치 채택 승인이 아니다.
+
+## 승인 및 초기화 — 2026-10-16
+
+사용자가 구체적 구성 요청에 “좋아”로 승인했다. 최신 상태는 **P0 구성 승인 / 로컬 debug 빌드·검사 통과 / 기기 검증 전**이다. 앞 절의 제안·미실행 표현은 초기 조사 당시의 기록이며 이 절로 갱신한다.
+
+채택: Kotlin/KGP/stdlib 2.1.20, AGP 8.7.2, Wrapper 8.9, JDK 17, compile/target 35, min 23, SDK Platform 35 revision 2, Build Tools 34.0.0. P0 플랫폼 Activity/SAF/Executor+PdfRenderer+View/Canvas. Compose 최종 선택은 미결. 개발용 applicationId는 `dev.example.ebookviewer.p0`이며 출시용 소유 도메인을 주장하지 않는다.
+
+JDK는 공식 Adoptium API에서 확인한 Temurin 17.0.20.1+1로 고정했으며 기존 로컬 17.0.15를 자동 채택하지 않았다. Windows 배포 ZIP SHA-256은 `e53a79c3c3d86865bd7e787903884331068e71321714ffd44f145785affc7cb0`. SDK 4개 패키지는 공식 repository2-1.xml의 SHA-1 대조 후 SHA-256을 [도구 잠금](../../scripts/windows-toolchain.lock.json)에 기록했다. Gradle ZIP 및 Wrapper JAR 공식 SHA-256 모두 일치. 설치 SDK의 javap로 API 35 메서드 확인했다.
+
+런타임 트리는 stdlib 2.1.20 → annotations 13.0만 확인. 두 POM은 Apache-2.0이며 annotations는 nullability 메타데이터 전이 의존성이다. JUnit/ktlint는 검사 전용. lockfile과 verification-metadata는 최초 공식 HTTPS 다운로드를 기준으로 생성 후 strict 검증 통과했다. 독립적인 전체 전이 서명 감사 완료를 의미하지 않는다.
+
+빌드/5개 단위 테스트/Android Lint/ktlint 통과. Lint의 새 AGP 버전 권고는 이 ADR의 의도적 고정 때문에 informational로 유지하며 다른 경고는 오류 처리한다. adb 연결 기기 없음. 프로토타입의 화면·회전·자원 수명·성능 실측은 남아 있다. 초기화·구현 범위와 제한은 [Windows 실행 문서](../windows-development.md) 및 [이력](../history/2026-10-16-06-p0-bootstrap.md)을 따른다.
+
+추가 결과: 이후 연결된 API 33 실기기 SM-N981N에서 앱 설치/실행 및 기기 테스트 4개(타일 픽셀, 손상 문서, production worker, 합성 100페이지 UI 열기/Activity 재생성 줌 복원)가 통과했다. 테스트용 JUnit을 androidTest에도 재사용했으며 앱 runtime은 불변이다. 실제 핀치/물리 회전/프레임·메모리 성능과 API 23·35 검증은 미완료다.
+
+## 현재 기기 개인용 검증 — 2026-10-16
+
+사용자 결정으로 P0 대상은 현재 SM-N981N(API 33)의 개인용 읽기로 한정한다. API 23·35/다른 기기는 이번 완료 조건에서 제외하며 미검증으로 남긴다. Kotlin/AGP/SDK/엔진 승인 구성은 변경하지 않는다.
+
+제스처 주입, 방향 변경 앵커 복원, 교체된 문서 FD 해제를 포함한 계측 7개와 단위 6개 통과. 배율 단계 캐시와 기존 타일 재사용을 구현했으나 디버그 전후 3회에서 타일 준비 지연은 해소되지 않았다. 비디버그 profile variant(로컬 debug 서명, 난독화 비활성)를 추가해 동일 자료 3회와 10분 메모리 검증을 진행한다. 새 런타임 의존성은 없다. 상세 실제 결과/한계는 [측정 이력](../history/2026-10-16-07-gestures-and-probe.md)을 따른다. P0 전체 완료 및 다른 기기 지원을 선언하지 않는다.
+
+최종 추가 결과: 전체 페이지 크기 순회를 첫 표시와 분리하고 가시 미리보기를 도입했다. 최종 계측11개/단위6개 통과, 비디버그 30초3회 첫 타일486~869ms와 프레임 잠정 기준/64MiB 캐시를 충족했다. 같은 APK의 10분1회도 완주했다. 현재 기기·합성 자료의 로컬 기술 검증은 완료했고 승인한 플랫폼 PdfRenderer+View/Canvas를 유지한다. 빠른 이동의 일부 미준비 영역과 복원 지연 등 한계는 남아 있다. 원격 CI는 main push의 자동 승인 검토 거절로 미실행이므로 P0 전체의 CI 확인은 후속이다. [최종 기록](../history/2026-10-16-09-p0-local-validation.md)을 따른다.

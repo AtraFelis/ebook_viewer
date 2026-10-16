@@ -11,27 +11,27 @@
 | 영역 | 계약 및 상태 |
 | --- | --- |
 | 플랫폼·언어 | Android 네이티브 / Kotlin |
-| 빌드 | Gradle Kotlin DSL 및 Wrapper 도입 예정, 버전 미선정 |
-| 앱 UI | Jetpack Compose 우선 검토, 읽기 영역은 View/Canvas 통합과 비교 |
-| PDF | 미선정. PdfRenderer 및 대안의 API·성능·라이선스 검증 후 ADR 작성 |
+| 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
+| 앱 UI | P0 플랫폼 Activity + View/Canvas 승인. Compose 셸 최종 선택은 후속 비교 |
+| PDF | P0 PdfRenderer 승인. 현재 API 33 합성 문서 계측 완료, 다른 기기 미검증. 범위·제한은 ADR 0001 |
 | 파일·데이터 | 로컬 우선, Storage Access Framework. 저장 라이브러리 미선정 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
-| SDK·도구 | P0에서 호환 버전 확정. Java 존재만으로 호환성을 가정하지 않음 |
+| SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
 
 새 런타임 의존성 도입이나 승인된 스택 변경 전 목적·대안·라이선스·영향을 제시하고 사용자 승인을 받습니다. 제안과 확정 사항을 구분하고 결정은 ADR과 이 표에 반영합니다.
 
 ## 빌드·테스트
 
-작업 디렉터리: `/workspace/ebook_viewer`.
+작업 디렉터리: `C:\Users\cotjs\workspace\ebook_viewer`. PowerShell에서 먼저 `. ./scripts/android-env.ps1` 실행.
 
-| 목적 | 초기화 후 예정 명령 | 현재 상태 |
+| 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
-| 빌드 | `./gradlew :app:assembleDebug` | Wrapper/app 부재로 미실행 |
-| 단위 테스트 | `./gradlew :app:testDebugUnitTest` | 설정/테스트 부재로 미실행 |
-| Android Lint | `./gradlew :app:lintDebug` | 설정 부재로 미실행 |
-| 기기 테스트 | `./gradlew :app:connectedDebugAndroidTest` | 앱·기기 필요, 미실행 |
+| 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일 테스트 6개 통과 |
+| Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 테스트 11개·앱 실행 통과 |
 
-ktlint는 Kotlin 스타일 검사 후보입니다. Android Lint와 역할을 구분하며 버전·Gradle 작업 이름을 실제 초기화 후 고정합니다. 로컬과 CI에서 같은 규칙을 사용하고 자동 포맷은 명시적으로 실행합니다. 위 예정 명령을 검증된 명령으로 보고하지 않습니다.
+ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 
 ## 코드 스타일
 

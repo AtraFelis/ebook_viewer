@@ -1,0 +1,37 @@
+[
+  {
+    "file": "jdk.zip",
+    "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_windows_hotspot_17.0.20.1_1.zip",
+    "sha256": "e53a79c3c3d86865bd7e787903884331068e71321714ffd44f145785affc7cb0",
+    "archiveRoot": "jdk-17.0.20.1+1",
+    "destination": "toolchains/jdk-17.0.20.1+1"
+  },
+  {
+    "file": "platform-35_r02.zip",
+    "url": "https://dl.google.com/android/repository/platform-35_r02.zip",
+    "sha256": "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0",
+    "archiveRoot": "android-35",
+    "destination": "android-sdk/platforms/android-35"
+  },
+  {
+    "file": "build-tools_r34-windows.zip",
+    "url": "https://dl.google.com/android/repository/build-tools_r34-windows.zip",
+    "sha256": "9be665ad74ef22bf0e489b37db465074484df79b95f26d759945d5c25a47b326",
+    "archiveRoot": "android-14",
+    "destination": "android-sdk/build-tools/34.0.0"
+  },
+  {
+    "file": "platform-tools_r37.0.1-win.zip",
+    "url": "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+    "sha256": "45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99",
+    "archiveRoot": "platform-tools",
+    "destination": "android-sdk/platform-tools"
+  },
+  {
+    "file": "commandlinetools-win-11076708_latest.zip",
+    "url": "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip",
+    "sha256": "4d6931209eebb1bfb7c7e8b240a6a3cb3ab24479ea294f3539429574b1eec862",
+    "archiveRoot": "cmdline-tools",
+    "destination": "android-sdk/cmdline-tools/12.0"
+  }
+]
