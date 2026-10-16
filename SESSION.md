@@ -4,9 +4,9 @@
 
 ## 현재 상태
 
-P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구현했다. 현재 API 33 debug 계측 15개, 별도 프로세스 복원 seed/force-stop/verify, strict 빌드·단위 9개·Lint·ktlint 통과. 기기에 새 debug APK 설치/실행 완료. P1 계획과 구현은 아직 로컬 미커밋·미푸시이며 새 런타임 의존성 없음. [상세 이력](docs/history/2026-10-17-01-p1-reading-library.md).
+P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구현했다. 현재 API 33 debug 계측 15개, 별도 프로세스 복원 seed/force-stop/verify, strict 빌드·단위 9개·Lint·ktlint 통과. 기기에 새 debug APK 설치/실행 완료. 구현 `9fdb405`를 `codex/p1-reading-library`에 push하고 [PR #1](https://github.com/AtraFelis/ebook_viewer/pull/1)을 만들었다. 새 런타임 의존성 없음. [구현 검증](docs/history/2026-10-17-01-p1-reading-library.md), [PR/CI 이력](docs/history/2026-10-17-02-p1-library-pr.md).
 
-현재 개인용 SM-N981N(API 33)·합성 자료 범위의 P0 기술 검증과 원격 CI를 완료했다. 사용자는 이 기기에서 동작하면 충분하다고 결정했다. API 23·35/다른 기기는 이번 완료 조건에서 제외하며 minSdk 23 선언을 기기 검증 완료로 표현하지 않는다. 사용자가 이번 변경의 main push를 “push 해”로 명시 승인했고 실제 원격 CI도 통과했다.
+현재 개인용 SM-N981N(API 33)·합성 자료 범위의 P0 기술 검증과 원격 CI를 완료했다. 사용자는 이 기기에서 동작하면 충분하다고 결정했다. API 23·35/다른 기기는 이번 완료 조건에서 제외하며 minSdk 23 선언을 기기 검증 완료로 표현하지 않는다. 사용자가 P0 변경의 main push를 “push 해”로 명시 승인했고 실제 원격 CI도 통과했다.
 
 현재 P1 작업 브랜치는 `codex/p1-reading-library`이며 현재 체크아웃의 변경을 그대로 보존해 생성했다. P0 구현 커밋 `0863969`를 origin/main에 일반 push했다. GitHub Actions 실행 38885324826이 새 Windows runner에서 도구 설치/Wrapper 검증/앱·테스트 APK 빌드/단위/Lint/ktlint strict를 통과했다. reset/clean/강제 push 없음. 작업 경로는 `C:\Users\cotjs\workspace\ebook_viewer`.
 
@@ -21,7 +21,7 @@ P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구�
 
 런타임은 승인된 stdlib 2.1.20과 전이 annotations 13.0뿐이다. JUnit/ktlint는 검사 전용. P1 읽기 기록은 플랫폼 AtomicFile/버전 1 코덱을 사용한다([ADR 0002](docs/adr/0002-local-reading-records.md)). Compose 최종 선택, 새 저장/PDF 라이브러리는 미선정이며 새 런타임 의존성 승인 규칙을 유지한다.
 
-1. P0 현재 범위 완료: 구현 `0863969` 및 결과 문서 `08011b3`를 main에 push했고 CI 38885324826 성공. 이번 P1 계획/구현은 로컬 미커밋·미푸시이며 P1 원격 CI는 미실행이다.
+1. P0 현재 범위 완료: 구현 `0863969` 및 결과 문서 `08011b3`를 main에 push했고 CI 38885324826 성공. P1은 사용자 승인으로 기능별 PR 방식을 사용한다. 첫 [PR #1](https://github.com/AtraFelis/ebook_viewer/pull/1)을 main 대상으로 생성했고 구현 `9fdb405`의 [Windows CI 38922213502](https://github.com/AtraFelis/ebook_viewer/actions/runs/38922213502)가 strict 빌드·단위·Lint·ktlint를 통과했다. 인수인계 문서 후속 커밋의 최종 검사 상태는 PR checks로 확인한다. 아직 병합하지 않았다.
 2. 사용자 P1 요구사항을 [로드맵](docs/plan/roadmap.md)에 통합했고, Sol High에 적합한 첫 범위로 최근/읽던 PDF 목록과 이어 읽기를 구현했다. URI 기준 단일 기록, 내부 앵커/줌/가로 위치, 비동기 원자 저장, 권한 요청/재선택/기록 삭제를 제공한다. 새 문서 첫 표시 후 빠르게 나가도 기록을 남기도록 계측에서 발견한 누락을 수정했다. 전체 화면/중앙 탭 설정/방향 고정 → 자동·지정 외부 배경색 → 기존 간격/크기 모드·페이지 이동·북마크·오류 UX가 다음 범위다.
 3. 사용자 정정: 현재 성능은 충분하므로 별도 렌더링/스크롤 최적화 및 빠른 이동의 미준비 영역 개선은 P1 필수에서 제외한다. 기존 성능과 줌/앵커·캐시/수명 계약은 유지하고 새 기능에 따른 회귀는 검증한다. 손입력·물리 회전·개인 PDF로 기능 수용을 확인한다.
 4. 새 Windows CI의 CLI 도구 복원은 검증했지만 실제 새 PC의 드라이버/Android Studio/기기 연결 복원과 다른 기기/API는 미검증이다. API 33 암호화 읽기·검색 등은 P2 범위다. 새 저장/UI 라이브러리를 채택하지 않았으며 필요 시 별도 구성 승인 후 도입한다.
