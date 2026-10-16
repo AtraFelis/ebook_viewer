@@ -28,3 +28,5 @@
 PR #1 병합 이후 [몰입형 읽기/방향 ADR](adr/0003-immersive-reader-and-orientation.md)과 [후속 구현·검증](history/2026-10-17-03-immersive-reading.md)을 이어서 확인합니다.
 
 사용자 확대/축소 피드백 반영과 PR #2 최종 CI 결과는 [배율 범위 변경 이력](history/2026-10-17-04-zoom-range.md)을 확인합니다.
+
+[외부 배경색 ADR](adr/0004-custom-reader-background.md)과 [P1 수동 색상 검증](history/2026-10-17-05-custom-background.md)을 확인합니다. 자동 색 추출은 P2로 이관했고, [스크롤 선명도 복구 지연의 P2 계획](plan/p2-sharpness-recovery.md)을 별도로 관리합니다.

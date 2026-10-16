@@ -37,6 +37,18 @@ class PdfCanvasView @JvmOverloads constructor(
     private var restored: Bundle? = null
     private var pendingPages: List<PageSize>? = null
     var onPositionChanged: (() -> Unit)? = null
+    var onBackgroundColorChanged: ((Int) -> Unit)? = null
+    private var outsideColor = DEFAULT_BACKGROUND_COLOR
+
+    fun setBackgroundSettings(settings: BackgroundSettings) {
+        if (outsideColor == settings.customColor) return
+        outsideColor = settings.customColor
+        onBackgroundColorChanged?.invoke(outsideColor)
+        invalidate()
+    }
+
+    fun outsideBackgroundColor(): Int = outsideColor
+
     private val cache = object : LruCache<Tile, Bitmap>(64 * 1024 * 1024) {
         override fun sizeOf(key: Tile, value: Bitmap): Int = value.allocationByteCount
     }
@@ -333,7 +345,7 @@ class PdfCanvasView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawColor(Color.DKGRAY)
+        canvas.drawColor(outsideColor)
         if (layout == null) return
         for (tile in requested) drawTile(canvas, tile, null)
         for (tile in previews) cache.get(tile)?.let { drawTile(canvas, tile, it) }
