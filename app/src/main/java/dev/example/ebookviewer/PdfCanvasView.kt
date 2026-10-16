@@ -25,6 +25,8 @@ class PdfCanvasView @JvmOverloads constructor(
     private val viewport = Viewport()
     private val destination = RectF()
     private var pendingClick = false
+    private var tapAllowed = true
+    private var hadMultiplePointers = false
     private var layout: DocumentLayout? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private var requested = emptyList<Tile>()
@@ -100,7 +102,10 @@ class PdfCanvasView @JvmOverloads constructor(
                 }
 
                 override fun onSingleTapUp(event: MotionEvent): Boolean {
-                    pendingClick = true
+                    pendingClick = tapAllowed &&
+                        !hadMultiplePointers &&
+                        event.x in width / 3f..width * 2f / 3f &&
+                        event.y in height / 3f..height * 2f / 3f
                     return true
                 }
             }
@@ -262,6 +267,13 @@ class PdfCanvasView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                tapAllowed = scroller.isFinished
+                hadMultiplePointers = false
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> hadMultiplePointers = true
+        }
         scaleDetector.onTouchEvent(event)
         gestures.onTouchEvent(event)
         if (pendingClick) {

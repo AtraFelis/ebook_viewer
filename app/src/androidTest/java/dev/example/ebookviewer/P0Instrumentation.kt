@@ -11,6 +11,7 @@ import org.junit.runner.notification.RunListener
 /** Small JUnit bridge for this fixed P0 suite; no extra application runtime dependencies. */
 class P0Instrumentation : Instrumentation() {
     private var probe = false
+    private var immersiveOnly = false
     var restartPhase: String? = null
         private set
     var probeSeconds = 30
@@ -20,9 +21,13 @@ class P0Instrumentation : Instrumentation() {
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
+        val suite = arguments?.getString("suite")
+        require(suite == null || suite == "immersive")
+        immersiveOnly = suite == "immersive"
         restartPhase = arguments?.getString("libraryRestart")
         require(restartPhase == null || restartPhase in listOf("seed", "verify"))
         require(!probe || restartPhase == null)
+        require(!immersiveOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -66,12 +71,14 @@ class P0Instrumentation : Instrumentation() {
                 val result = status(description)
                 failure?.let {
                     result.putString("stack", it.trace)
-                    result.putString(REPORT_KEY_STREAMRESULT, it.message)
+                    result.putString(REPORT_KEY_STREAMRESULT, it.trace)
                 }
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (restartPhase != null) {
+        val result = if (immersiveOnly) {
+            core.run(ImmersiveDeviceTest::class.java)
+        } else if (restartPhase != null) {
             core.run(LibraryRestartDeviceTest::class.java)
         } else if (probe) {
             core.run(
@@ -81,7 +88,8 @@ class P0Instrumentation : Instrumentation() {
             core.run(
                 PdfRendererDeviceTest::class.java,
                 GestureDeviceTest::class.java,
-                LibraryDeviceTest::class.java
+                LibraryDeviceTest::class.java,
+                ImmersiveDeviceTest::class.java
             )
         }
         finish(
