@@ -26,3 +26,5 @@
 현재 P1의 [로컬 읽기 기록 ADR](adr/0002-local-reading-records.md), [목록·이어 읽기 구현/검증](history/2026-10-17-01-p1-reading-library.md), [PR #1/CI 이력](history/2026-10-17-02-p1-library-pr.md)을 확인합니다. 기능별 PR로 검토하며 P1 전체 완료와 구분합니다.
 
 PR #1 병합 이후 [몰입형 읽기/방향 ADR](adr/0003-immersive-reader-and-orientation.md)과 [후속 구현·검증](history/2026-10-17-03-immersive-reading.md)을 이어서 확인합니다.
+
+사용자 확대/축소 피드백 반영과 PR #2 최종 CI 결과는 [배율 범위 변경 이력](history/2026-10-17-04-zoom-range.md)을 확인합니다.

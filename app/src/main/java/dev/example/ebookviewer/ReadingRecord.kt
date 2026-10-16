@@ -9,7 +9,7 @@ import java.io.OutputStream
 data class ReadingPosition(val page: Int, val x: Double, val y: Double, val zoom: Double) {
     init {
         require(page >= 0 && x.isFinite() && y.isFinite() && y in 0.0..1.0)
-        require(zoom.isFinite() && zoom in 0.1..8.0)
+        require(zoom.isFinite() && zoom in ZoomLimits.MIN_SAVED..ZoomLimits.MAX)
     }
 }
 

@@ -46,11 +46,13 @@ class PdfCanvasView @JvmOverloads constructor(
             context,
             object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    val document = layout ?: return false
                     scroller.forceFinished(true)
                     viewport.zoomAt(
                         detector.scaleFactor.toDouble(),
                         detector.focusX.toDouble(),
-                        detector.focusY.toDouble()
+                        detector.focusY.toDouble(),
+                        ZoomLimits.gestureMinimum(document.width, width, height)
                     )
                     constrain()
                     return true
@@ -114,6 +116,8 @@ class PdfCanvasView @JvmOverloads constructor(
     init {
         contentDescription = context.getString(R.string.viewer_description)
         isClickable = true
+        // Only single-tap controls are supported; fast repeated taps must still toggle tools.
+        gestures.setOnDoubleTapListener(null)
     }
 
     fun reset() {
@@ -144,11 +148,13 @@ class PdfCanvasView @JvmOverloads constructor(
         val saved = restored
         if (saved == null) {
             viewport.zoom =
-                (width.coerceAtLeast(1) / requireNotNull(layout).width).coerceIn(0.1, 8.0)
+                (width.coerceAtLeast(1) / requireNotNull(layout).width)
+                    .coerceIn(ZoomLimits.MIN_SAVED, ZoomLimits.MAX)
             viewport.x = 0.0
             viewport.y = 0.0
         } else {
-            viewport.zoom = saved.getDouble("zoom", 1.0).coerceIn(0.1, 8.0)
+            viewport.zoom = saved.getDouble("zoom", 1.0)
+                .coerceIn(ZoomLimits.MIN_SAVED, ZoomLimits.MAX)
             val document = requireNotNull(layout)
             val page = saved.getInt("page").coerceIn(document.pages.indices)
             val centerX = if (saved.containsKey("fractionX")) {
