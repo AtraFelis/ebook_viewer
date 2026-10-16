@@ -24,11 +24,42 @@ class DeviceGestures(private val instrumentation: Instrumentation) {
         }
     }
 
-    fun launch(): Activity = instrumentation.startActivitySync(
-        Intent(instrumentation.targetContext, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    fun launch(): Activity {
+        val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
+        try {
+            var activity = instrumentation.startActivitySync(
+                Intent(instrumentation.targetContext, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                }
+            )
+            keepAwake(activity)
+            var stableSince = SystemClock.uptimeMillis()
+            await("Activity did not settle after launch") {
+                val latest = monitor.lastActivity ?: activity
+                if (latest !== activity) {
+                    activity = latest
+                    stableSince = SystemClock.uptimeMillis()
+                    activity.window.addFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    )
+                }
+                !activity.isDestroyed &&
+                    !activity.isFinishing &&
+                    activity.window.decorView.hasWindowFocus() &&
+                    SystemClock.uptimeMillis() - stableSince >= 250
+            }
+            return activity
+        } finally {
+            instrumentation.removeMonitor(monitor)
         }
-    )
+    }
+
+    private fun keepAwake(activity: Activity) {
+        // Test-window lifetime only; do not alter the user's device timeout or app preference.
+        instrumentation.runOnMainSync {
+            activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     fun sample(activity: Activity): PdfCanvasView {
         instrumentation.runOnMainSync {
@@ -41,8 +72,10 @@ class DeviceGestures(private val instrumentation: Instrumentation) {
     }
 
     fun awaitReady(activity: Activity): PdfCanvasView {
+        keepAwake(activity)
         var viewer: PdfCanvasView? = null
-        await("Visible tiles not ready") {
+        // Restoring a saved viewport scans the complete page catalog before rendering.
+        await("Visible tiles not ready", timeoutMs = 30_000) {
             viewer = views(activity.window.decorView).filterIsInstance<PdfCanvasView>().single()
             val state = requireNotNull(viewer).renderState()
             state.visibleTiles > 0 && state.visibleTiles == state.readyTiles
@@ -50,21 +83,44 @@ class DeviceGestures(private val instrumentation: Instrumentation) {
         return requireNotNull(viewer)
     }
 
-    fun await(message: String, condition: () -> Boolean) {
-        val deadline = SystemClock.uptimeMillis() + 15_000
+    fun await(message: String, timeoutMs: Long = 15_000, condition: () -> Boolean) {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
         while (SystemClock.uptimeMillis() < deadline) {
             var ready = false
-            instrumentation.runOnMainSync { ready = condition() }
+            onMain { ready = condition() }
             if (ready) return
             SystemClock.sleep(25)
         }
         throw AssertionError(message)
     }
 
+    fun <T> onMain(action: () -> T): T {
+        var result: Result<T>? = null
+        instrumentation.runOnMainSync { result = runCatching(action) }
+        return requireNotNull(result).getOrThrow()
+    }
+
     fun state(view: PdfCanvasView): Bundle {
         var result: Bundle? = null
         instrumentation.runOnMainSync { result = view.saveViewport() }
         return requireNotNull(result)
+    }
+
+    fun tap(view: PdfCanvasView, xFraction: Float = 0.5f, yFraction: Float = 0.5f) {
+        val down = SystemClock.uptimeMillis()
+        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+            val event = MotionEvent.obtain(
+                down,
+                SystemClock.uptimeMillis(),
+                action,
+                view.width * xFraction,
+                view.height * yFraction,
+                0
+            )
+            instrumentation.runOnMainSync { view.dispatchTouchEvent(event) }
+            event.recycle()
+            SystemClock.sleep(25)
+        }
     }
 
     fun drag(view: PdfCanvasView, forward: Boolean, fling: Boolean = false) {
@@ -133,7 +189,7 @@ class DeviceGestures(private val instrumentation: Instrumentation) {
     }
 
     fun assertCacheBound(view: PdfCanvasView) {
-        instrumentation.runOnMainSync {
+        onMain {
             assertTrue("Cache exceeded 64 MiB", view.renderState().cachedBytes <= 64 * 1024 * 1024)
         }
     }

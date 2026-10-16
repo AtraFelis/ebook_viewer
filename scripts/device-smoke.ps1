@@ -44,7 +44,7 @@ try {
         $arguments += 'dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation'
         $result = Invoke-DeviceAdb $arguments
         $result | Write-Host
-        $expectedTests = if ($Probe) { 1 } else { 15 }
+        $expectedTests = if ($Probe) { 1 } else { 19 }
         if (($result -join "`n") -notmatch "P0 tests=$expectedTests, failures=0") {
             throw 'Device tests did not report the expected successes.'
         }
@@ -61,7 +61,7 @@ try {
     }
     $launch = Invoke-DeviceAdb @('shell', 'am', 'start', '-W', '-n', 'dev.example.ebookviewer.p0/dev.example.ebookviewer.MainActivity')
     if (($launch -join "`n") -notmatch 'Status: ok') { throw 'Activity launch was not confirmed.' }
-    Write-Host 'Activity launch confirmed. Manually check the synthetic PDF, pinch, fling, rotation, and document switching.'
+    Write-Host 'Activity launch confirmed. Manually check PDF reading, center tap, settings orientation, pinch, fling, and document switching.'
 } finally {
     Pop-Location
 }
