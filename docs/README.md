@@ -20,3 +20,5 @@
 계획은 plan, 현재 동작 계약은 product/architecture, 실제 결과는 history에 기록합니다.
 
 현재 기기의 [최종 P0 로컬 검증과 원격 CI 상태](history/2026-10-16-09-p0-local-validation.md)를 먼저 확인합니다.
+
+후속 [main push·원격 CI 성공 결과와 P1 인수인계](history/2026-10-16-10-github-push-and-ci.md)까지 확인합니다.

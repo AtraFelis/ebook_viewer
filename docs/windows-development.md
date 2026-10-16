@@ -1,6 +1,6 @@
 # Windows 개발 환경과 P0 실행
 
-2026-10-16 (Asia/Seoul). 사용자 승인 구성으로 로컬 빌드·검사를 완료했다. API 33 실기기 설치·기본 렌더 테스트·앱 실행을 확인했다. 현재 기기에서 합성 자료 성능을 측정했으며 최종 결과는 history에 기록한다. 다른 API와 원격 CI는 미검증이다.
+2026-10-16 (Asia/Seoul). 사용자 승인 구성으로 로컬 빌드·검사를 완료했다. API 33 실기기 설치·기본 렌더 테스트·앱 실행을 확인했다. 현재 기기에서 합성 자료 성능을 측정했으며 최종 결과는 history에 기록한다. 원격 Windows CI는 통과했고 다른 API는 미검증이다.
 
 ## 설치와 검사
 
@@ -50,6 +50,6 @@ adb shell am start -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainAct
 
 `gradle/verification-metadata.xml`은 최초 공식 HTTPS 다운로드를 신뢰 기준으로 SHA-256을 생성했다. 전체 의존성의 독립 서명 검증을 주장하지 않는다. 변경 승인 후에만 `--write-locks --write-verification-metadata sha256`로 갱신하고 diff/출처를 검토한다. 일반 검사는 strict를 유지한다.
 
-ktlintCheck는 읽기 전용, ktlintFormat은 명시적 포맷 명령이다. Android Lint는 warningsAsErrors이며 승인한 버전을 유지하기 위한 AndroidGradlePluginVersion 권고만 informational로 남긴다. 기기 테스트는 JUnit 4와 최소 Instrumentation 브리지로 실행하며 앱 런타임 의존성은 늘리지 않았다. API 33에서 11개 기기 테스트가 통과했다. 최종 성능 수치/한계는 history/2026-10-16-09-p0-local-validation.md를 따른다. 원격 CI/새 PC 복원은 미실행이다.
+ktlintCheck는 읽기 전용, ktlintFormat은 명시적 포맷 명령이다. Android Lint는 warningsAsErrors이며 승인한 버전을 유지하기 위한 AndroidGradlePluginVersion 권고만 informational로 남긴다. 기기 테스트는 JUnit 4와 최소 Instrumentation 브리지로 실행하며 앱 런타임 의존성은 늘리지 않았다. API 33에서 11개 기기 테스트가 통과했다. 최종 성능 수치/한계는 history/2026-10-16-09-p0-local-validation.md를 따른다. 원격 Windows CI는 통과했다. 실제 새 PC의 드라이버/Studio/기기 연결 복원은 미검증이다.
 
 산출물: `app/build/outputs/apk/debug/app-debug.apk`, `app/build/reports/tests/testDebugUnitTest`, `app/build/reports/lint-results-debug.html`. debug APK는 출시 서명물이 아니다. apksigner는 서명 검증에 성공했으며 AGP의 META-INF app-metadata.properties 엔트리가 개별 보호되지 않는다는 경고도 기록했다.

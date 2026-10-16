@@ -1,6 +1,6 @@
 # 개발 환경
 
-현재 Windows에서 승인된 P0 도구 구성으로 앱 debug 빌드·단위 테스트·Lint·ktlint가 통과했다. API 33 기기 설치·실행·계측 테스트 11개도 통과했다. 현재 기기 합성 자료의 로컬 기술 검증은 완료했고 원격 CI와 새 환경 완전 복원은 미실행이다.
+현재 Windows에서 승인된 P0 도구 구성으로 앱 debug 빌드·단위 테스트·Lint·ktlint가 통과했다. API 33 기기 설치·실행·계측 테스트 11개도 통과했다. 현재 기기 합성 자료의 로컬 기술 검증은 완료했고 새 Windows CI의 도구 설치·빌드/검사도 통과했다. 실제 새 PC의 드라이버/Studio/기기 연결 복원은 미검증이다.
 
 [Windows 설치·시작 절차](windows-development.md)를 따른다. [ADR 0001](adr/0001-p0-toolchain-and-renderer.md)은 승인 구성과 과거 조사 근거를, [SESSION](../SESSION.md)은 현재 상태와 다음 행동을 기록한다.
 
