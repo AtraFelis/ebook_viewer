@@ -31,6 +31,7 @@ class MainActivity : Activity() {
     private lateinit var homeScreen: LinearLayout
     private lateinit var readerTools: LinearLayout
     private lateinit var readingWindow: ReadingWindow
+    private lateinit var root: FrameLayout
     private var settingsDialog: AlertDialog? = null
     private var reading = false
     private lateinit var libraryView: LinearLayout
@@ -163,7 +164,7 @@ class MainActivity : Activity() {
                 }
             )
         }
-        val root = FrameLayout(this).apply {
+        root = FrameLayout(this).apply {
             setBackgroundColor(Color.DKGRAY)
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
             addView(homeScreen, FrameLayout.LayoutParams(-1, -1))
@@ -213,6 +214,7 @@ class MainActivity : Activity() {
                 insets
             }
         }
+        viewer.onBackgroundColorChanged = { if (reading) root.setBackgroundColor(it) }
         setContentView(root)
         if (Build.VERSION.SDK_INT >= 33) {
             onBackInvokedDispatcher.registerOnBackInvokedCallback(
@@ -229,6 +231,11 @@ class MainActivity : Activity() {
                 // AUTO preserves the platform's rotation policy across Activity recreation.
                 if (it != OrientationMode.AUTO) applyOrientation(it)
             }.onFailure { reportError(R.string.settings_error) }
+        }
+        settings.loadBackground { result ->
+            if (isDestroyed) return@loadBackground
+            result.onSuccess(viewer::setBackgroundSettings)
+                .onFailure { reportError(R.string.settings_error) }
         }
         reselectRecord = savedInstanceState?.getString("reselectUri")?.let { uri ->
             ReadingRecord(uri, getString(R.string.untitled_pdf), 0)
@@ -378,6 +385,7 @@ class MainActivity : Activity() {
 
     private fun showReader() {
         reading = true
+        root.setBackgroundColor(viewer.outsideBackgroundColor())
         homeScreen.visibility = View.GONE
         viewer.visibility = View.VISIBLE
         homeButton.visibility = View.VISIBLE
@@ -393,6 +401,7 @@ class MainActivity : Activity() {
         activeRecord = null
         synthetic = false
         reading = false
+        root.setBackgroundColor(Color.DKGRAY)
         worker.closeDocument()
         viewer.reset()
         viewer.restoreViewport(null)
@@ -518,7 +527,16 @@ class MainActivity : Activity() {
                         getString(R.string.orientation_landscape)
                     )
                 val dialog = AlertDialog.Builder(this)
-                    .setTitle(R.string.orientation_title)
+                    .setTitle(R.string.reader_settings_title)
+                    .setView(
+                        Button(this).apply {
+                            setText(R.string.background_settings)
+                            setOnClickListener {
+                                settingsDialog?.dismiss()
+                                showBackgroundSettings()
+                            }
+                        }
+                    )
                     .setSingleChoiceItems(labels, mode.ordinal) { selectedDialog, index ->
                         selectedDialog.dismiss()
                         val selected = OrientationMode.entries[index]
@@ -533,6 +551,27 @@ class MainActivity : Activity() {
                     }
                     .setNegativeButton(R.string.close_settings, null)
                     .create()
+                settingsDialog = dialog
+                dialog.setOnDismissListener {
+                    settingsDialog = null
+                    hideTools()
+                }
+                dialog.show()
+            }.onFailure { reportError(R.string.settings_error) }
+        }
+    }
+
+    private fun showBackgroundSettings() {
+        settings.loadBackground { result ->
+            if (isDestroyed || settingsDialog != null) return@loadBackground
+            result.onSuccess { current ->
+                val dialog = backgroundSettingsDialog(current) { selected ->
+                    settings.saveBackground(selected) { saved ->
+                        if (isDestroyed) return@saveBackground
+                        saved.onSuccess(viewer::setBackgroundSettings)
+                            .onFailure { reportError(R.string.settings_error) }
+                    }
+                }
                 settingsDialog = dialog
                 dialog.setOnDismissListener {
                     settingsDialog = null

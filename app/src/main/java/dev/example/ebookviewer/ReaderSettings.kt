@@ -16,6 +16,38 @@ class ReaderSettingsRepository(private val file: () -> File) : java.io.Closeable
     private val executor = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
     private var stored: OrientationMode? = null
+    private var storedBackground: BackgroundSettings? = null
+
+    private fun backgroundFile(): File = file().let { File(it.parentFile, "${it.name}.background") }
+
+    fun loadBackground(complete: (Result<BackgroundSettings>) -> Unit) =
+        submit(complete) { readBackground() }
+
+    private fun readBackground(): BackgroundSettings = storedBackground ?: run {
+        val path = backgroundFile()
+        try {
+            AtomicFile(path).openRead().use(BackgroundSettingsCodec::read)
+        } catch (error: FileNotFoundException) {
+            if (path.exists()) throw error
+            BackgroundSettings()
+        }
+    }.also { storedBackground = it }
+
+    fun saveBackground(value: BackgroundSettings, complete: (Result<BackgroundSettings>) -> Unit) =
+        submit(complete) {
+            readBackground()
+            val atomic = AtomicFile(backgroundFile())
+            val stream = atomic.startWrite()
+            try {
+                BackgroundSettingsCodec.write(stream, value)
+                atomic.finishWrite(stream)
+                storedBackground = value
+                value
+            } catch (error: Exception) {
+                atomic.failWrite(stream)
+                throw error
+            }
+        }
 
     fun load(complete: (Result<OrientationMode>) -> Unit) = submit(complete) { read() }
 
@@ -56,7 +88,7 @@ class ReaderSettingsRepository(private val file: () -> File) : java.io.Closeable
             }
         }
 
-    private fun submit(complete: (Result<OrientationMode>) -> Unit, task: () -> OrientationMode) {
+    private fun <T> submit(complete: (Result<T>) -> Unit, task: () -> T) {
         executor.execute {
             val result = try {
                 Result.success(task())

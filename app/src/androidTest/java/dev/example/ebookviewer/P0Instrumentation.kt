@@ -12,6 +12,7 @@ import org.junit.runner.notification.RunListener
 class P0Instrumentation : Instrumentation() {
     private var probe = false
     private var immersiveOnly = false
+    private var backgroundOnly = false
     var restartPhase: String? = null
         private set
     var probeSeconds = 30
@@ -22,12 +23,14 @@ class P0Instrumentation : Instrumentation() {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
         val suite = arguments?.getString("suite")
-        require(suite == null || suite == "immersive")
+        require(suite == null || suite in listOf("immersive", "background"))
         immersiveOnly = suite == "immersive"
+        backgroundOnly = suite == "background"
         restartPhase = arguments?.getString("libraryRestart")
         require(restartPhase == null || restartPhase in listOf("seed", "verify"))
         require(!probe || restartPhase == null)
         require(!immersiveOnly || (!probe && restartPhase == null))
+        require(!backgroundOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -76,7 +79,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (immersiveOnly) {
+        val result = if (backgroundOnly) {
+            core.run(BackgroundDeviceTest::class.java)
+        } else if (immersiveOnly) {
             core.run(ImmersiveDeviceTest::class.java)
         } else if (restartPhase != null) {
             core.run(LibraryRestartDeviceTest::class.java)
@@ -89,7 +94,8 @@ class P0Instrumentation : Instrumentation() {
                 PdfRendererDeviceTest::class.java,
                 GestureDeviceTest::class.java,
                 LibraryDeviceTest::class.java,
-                ImmersiveDeviceTest::class.java
+                ImmersiveDeviceTest::class.java,
+                BackgroundDeviceTest::class.java
             )
         }
         finish(
