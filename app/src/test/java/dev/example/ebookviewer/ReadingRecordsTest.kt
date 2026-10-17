@@ -10,6 +10,42 @@ import org.junit.Test
 
 class ReadingRecordsTest {
     @Test
+    fun legacyVersionOneMigratesAndVersionTwoKeepsIndependentLayouts() {
+        val legacy = ByteArrayOutputStream()
+        DataOutputStream(legacy).apply {
+            writeInt(0x45565231)
+            writeInt(1)
+            writeInt(1)
+            writeUTF("legacy")
+            writeUTF("Legacy")
+            writeLong(1)
+            writeInt(100)
+            writeBoolean(true)
+            writeInt(8)
+            writeDouble(0.4)
+            writeDouble(0.7)
+            writeDouble(2.0)
+        }
+        val migrated = ReadingRecordsCodec.read(ByteArrayInputStream(legacy.toByteArray())).single()
+        assertEquals(PageLayoutSettings(), migrated.pageLayout)
+        assertEquals(ReadingPosition(8, 0.4, 0.7, 2.0), migrated.position)
+        val records = listOf(
+            migrated,
+            migrated.copy(
+                uri = "new",
+                pageLayout = PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24)
+            )
+        )
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.write(output, records)
+        assertEquals(records, ReadingRecordsCodec.read(ByteArrayInputStream(output.toByteArray())))
+        val invalid = output.toByteArray().also { it[it.lastIndex] = 73 }
+        assertThrows(IllegalArgumentException::class.java) {
+            ReadingRecordsCodec.read(ByteArrayInputStream(invalid))
+        }
+    }
+
+    @Test
     fun expandedZoomAndLegacySmallZoomRoundTrip() {
         val records = listOf(0.1, 8.0, 32.0).mapIndexed { index, zoom ->
             ReadingRecord(

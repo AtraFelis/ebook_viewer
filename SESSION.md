@@ -4,6 +4,16 @@
 
 ## 현재 상태
 
+구현 소스가 같은 `b35a962`의 [Windows CI 39007698593](https://github.com/AtraFelis/ebook_viewer/actions/runs/39007698593)는 성공했다. 이 결과와 최종 상태 문서만 갱신한 후속 head의 [실시간 checks](https://github.com/AtraFelis/ebook_viewer/pull/6/checks)를 구분한다. CodeRabbit 실제 리뷰는 한도 소진으로 미실행이며, 다음 일은 한도 복구 후 리뷰 확인과 P1 파일 접근/오류 UX·개인 PDF 수용이다.
+
+PR #6에 [수동 리뷰 댓글](https://github.com/AtraFelis/ebook_viewer/pull/6#issuecomment-6230354554)을 한 번 등록했고 접수 응답을 확인했다. 그러나 CodeRabbit이 무료 OSS 리뷰 한도 소진과 당시 29분 후 재사용 가능을 안내해 **실제 리뷰는 미실행**이다. 성공 상태를 리뷰 완료로 보고하지 않으며 중복 재요청하지 않았다. CI는 별도로 진행하며 최신 결과는 [PR checks](https://github.com/AtraFelis/ebook_viewer/pull/6/checks)/본문을 확인한다. 한도 복구 후 후속 작업에서 현재 head/접수 이력을 다시 확인하고 수동 리뷰를 진행한다.
+
+페이지 크기·간격 구현 `8be274b`에 origin/main `1aece35`를 일반 merge한 `7cd490f`를 push하고 [PR #6](https://github.com/AtraFelis/ebook_viewer/pull/6)을 등록했다. merge 전후 검증한 앱/스크립트 차이는 없었다. 로컬/기기 결과는 아래와 같으며 [원격 checks](https://github.com/AtraFelis/ebook_viewer/pull/6/checks)는 게시 후 별도 확인한다. PR마다 수동 CodeRabbit 요청 규칙을 적용하고 접수/실제 리뷰를 구분한다. 병합은 사용자가 한다.
+
+PR #5는 CodeRabbit이 head `751dbc0`의 23개 파일 실제 검토를 완료해 지적이 없었고 CI도 통과했다. 사용자가 병합한 origin/main `1aece35`와 부모 head 포함을 확인했다. 다음 브랜치 `codex/p1-page-layout`에서 문서별 원본/너비 통일·간격 설정과 v1→v2 읽기 기록 호환을 구현했다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint 및 신규 API 33 계측 3개·최종 전체 30개·앱 실행을 통과했다. 첫 전체 2개 실패는 저장된 가로 고정과 테스트의 직접 회전/고정 스와이프 횟수 충돌을 보완한 뒤 재검증했다. PR #6을 등록했고 앱/계측 소스가 같은 b35a962의 원격 CI 39007698593도 성공했다. 최신 문서 head checks는 별도 확인한다. [ADR 0006](docs/adr/0006-page-layout-and-reading-records-v2.md), [실패 수정·명령·결과](docs/history/2026-10-17-08-page-layout.md). 개인 PDF/실제 provider와 P1 전체 완료는 별도다.
+
+사용자 지시로 모든 PR 생성 시 CodeRabbit 수동 요청, 후속 리뷰의 타당성 판단·수정/검증 후 같은 브랜치 push를 AGENTS/[Git 규칙](docs/rule/git.md)에 저장했다. PR #5는 자동 리뷰 제외를 확인해 수동 명령을 한 번 등록했고 실제 검토 완료까지 확인했다. [절차/실제 대응 이력](docs/history/2026-10-17-07-pr-review-workflow.md).
+
 `codex/p1-navigation-bookmarks`에서 페이지 이동·북마크 및 사용자 지정 번호 표시/숨김을 구현/검증했다. 번호는 기본 숨김이며 설정을 켜도 Canvas 크기/배율은 유지한다. 페이지/북마크 이동은 현재 줌·유효 가로 위치를 보존한다. strict 빌드·단위 19개·Lint·ktlint 및 신규 API 33 계측 4개 통과, 저장 경로 보완 후 최종 전체 27개 회귀·앱 설치/실행까지 통과했다. 구현 `8861ae7`의 [Windows CI 38935046856](https://github.com/AtraFelis/ebook_viewer/actions/runs/38935046856)는 성공했다. 중단돼 있던 PR 등록을 마무리해 [PR #5](https://github.com/AtraFelis/ebook_viewer/pull/5)를 만들었다. [최종 head checks](https://github.com/AtraFelis/ebook_viewer/pull/5/checks)는 별도 확인하며 병합은 사용자 몫이다. [ADR 0005](docs/adr/0005-navigation-bookmarks-and-page-numbers.md), [명령·결과](docs/history/2026-10-17-06-navigation-bookmarks.md). 새 런타임 의존성 없음.
 
 `codex/p1-background-color`에서 P1 수동 외부 배경색을 구현/검증했다. 기본/임의 RGB 색상, 미리보기·입력 검증·취소, 별도 AtomicFile 설정 저장을 추가했다([ADR 0004](docs/adr/0004-custom-reader-background.md)). strict 빌드·단위 15개·Lint·ktlint 통과, API 33 전체 23개 회귀·앱 설치/실행까지 통과했다. 구현 `e6753bf`를 main 대상 [PR #4](https://github.com/AtraFelis/ebook_viewer/pull/4)로 등록했다. 최종 head `be0de9d`의 [CI 38932215957](https://github.com/AtraFelis/ebook_viewer/actions/runs/38932215957)가 통과했고 사용자가 병합했다. fetch/조상 검사로 origin/main `24ef93b`를 확인했다. 자동 색 추출과 스크롤 선명도 복구 지연은 사용자 범위 조정으로 P2에 남긴다. [이번 결과](docs/history/2026-10-17-05-custom-background.md), [선명도 P2 계획](docs/plan/p2-sharpness-recovery.md).
@@ -27,12 +37,12 @@ P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구�
 
 ## 승인과 다음 행동
 
-런타임은 승인된 stdlib 2.1.20과 전이 annotations 13.0뿐이다. JUnit/ktlint는 검사 전용. P1 읽기 기록/방향/배경색 설정은 각각 플랫폼 AtomicFile/버전 1을 사용한다([ADR 0002](docs/adr/0002-local-reading-records.md), [ADR 0003](docs/adr/0003-immersive-reader-and-orientation.md)). Compose 최종 선택, 새 저장/PDF 라이브러리는 미선정이며 새 런타임 의존성 승인 규칙을 유지한다.
+런타임은 승인된 stdlib 2.1.20과 전이 annotations 13.0뿐이다. JUnit/ktlint는 검사 전용. P1은 플랫폼 AtomicFile을 사용하며 읽기 기록은 v1 호환/v2 쓰기([ADR 0006](docs/adr/0006-page-layout-and-reading-records-v2.md)), 방향/배경색/번호와 북마크는 별도 v1이다. Compose 최종 선택, 새 저장/PDF 라이브러리는 미선정이며 새 런타임 의존성 승인 규칙을 유지한다.
 
 1. P0 현재 범위 완료: 구현 `0863969` 및 결과 문서 `08011b3`를 main에 push했고 CI 38885324826 성공. P1은 사용자 승인으로 기능별 PR 방식을 사용한다. 첫 [PR #1](https://github.com/AtraFelis/ebook_viewer/pull/1)은 구현/문서 최종 head `df3ef15`의 [Windows CI 38923209449](https://github.com/AtraFelis/ebook_viewer/actions/runs/38923209449)까지 통과했고 사용자가 `a67b0a8`로 병합했다. 전체 화면/방향 기능은 PR #2로 분리했다.
-2. 사용자 P1 요구사항을 [로드맵](docs/plan/roadmap.md)에 통합했고, 목록/이어 읽기, 전체 화면·중앙 탭 도구·방향 설정, 수동 외부 배경색까지 구현했다. 읽기 도구에는 설정/목록/읽기 복귀와 페이지 이동/북마크를 제공하며 페이지 번호 표시는 사용자 선택이다. 페이지 이동/북마크 검증과 PR 등록을 완료했다. 다음 구현은 페이지 간격/원본 크기·너비 통일 모드, 이어서 파일 접근/오류 UX와 실제 provider 검증, 개인 PDF 기능 수용 순서다.
+2. 사용자 P1 요구사항을 [로드맵](docs/plan/roadmap.md)에 통합했고, 목록/이어 읽기, 전체 화면·중앙 탭 도구·방향 설정, 수동 외부 배경색까지 구현했다. 읽기 도구에는 설정/목록/읽기 복귀와 페이지 이동/북마크를 제공하며 페이지 번호 표시는 사용자 선택이다. 페이지 이동/북마크 검증과 PR 등록을 완료했다. 페이지 간격/원본 크기·너비 통일 모드는 로컬 및 API 33 기기 검증을 완료했다. 다음은 파일 접근/오류 UX와 실제 provider 검증, 개인 PDF 기능 수용 순서다.
 3. 2026-10-17 사용자 결정: 스크롤 선명도 복구 지연은 [P2 전용 계획](docs/plan/p2-sharpness-recovery.md)에 문서화하고 개선은 P2에서 한다. 자동 배경색도 P2로 이관하며 P1은 수동 색상/설정 보존으로 완성한다. 현재 성능은 충분하므로 별도 렌더링/스크롤 최적화 및 빠른 이동의 미준비 영역 개선은 P1 필수에서 제외한다. 기존 성능과 줌/앵커·캐시/수명 계약은 유지하고 새 기능에 따른 회귀는 검증한다. 손입력·물리 회전·개인 PDF로 기능 수용을 확인한다.
 4. 새 Windows CI의 CLI 도구 복원은 검증했지만 실제 새 PC의 드라이버/Android Studio/기기 연결 복원과 다른 기기/API는 미검증이다. API 33 암호화 읽기·검색 등은 P2 범위다. 새 저장/UI 라이브러리를 채택하지 않았으며 필요 시 별도 구성 승인 후 도입한다.
-5. 실제 SAF provider 영구 권한·재부팅·권한 소실 재연결과 개인 PDF 손입력/물리 회전 센서 수용은 남아 있다. 비탐색 provider 임시 복사와 간격/모드, 개인 PDF 수용은 후속이다. 방향 설정의 별도 강제 프로세스 종료/기기 재부팅은 미검증이다. 갑작스러운 종료 직전 미제출/미완료 이동은 유실될 수 있으며 손상된 기록/설정의 복구 UI는 아직 없다. 이번 통과는 API 33 합성 자료/앱 내부 파일 URI와 주입 입력 기준이다.
+5. 실제 SAF provider 영구 권한·재부팅·권한 소실 재연결과 개인 PDF 손입력/물리 회전 센서 수용은 남아 있다. 비탐색 provider 임시 복사와 개인 PDF 수용은 후속이다. 방향 설정의 별도 강제 프로세스 종료/기기 재부팅은 미검증이다. 갑작스러운 종료 직전 미제출/미완료 이동은 유실될 수 있으며 손상된 기록/설정의 복구 UI는 아직 없다. 이번 통과는 API 33 합성 자료/앱 내부 파일 URI와 주입 입력 기준이다.
 
 [push·CI 결과](docs/history/2026-10-16-10-github-push-and-ci.md), [최종 검증·명령·원본 위치](docs/history/2026-10-16-09-p0-local-validation.md), [첫 표시 개선](docs/history/2026-10-16-08-first-page-priority.md), [Windows 실행](docs/windows-development.md), [ADR](docs/adr/0001-p0-toolchain-and-renderer.md).

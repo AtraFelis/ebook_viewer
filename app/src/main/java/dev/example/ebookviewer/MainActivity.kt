@@ -413,13 +413,15 @@ class MainActivity : Activity() {
                 title ?: previous?.title ?: fallbackTitle,
                 System.currentTimeMillis(),
                 previous?.pageCount ?: 0,
-                previous?.position
+                previous?.position,
+                previous?.pageLayout ?: PageLayoutSettings()
             ) to durable
         }) { result ->
             if (isDestroyed || generation != opening) return@execute
             result.onSuccess { (record, durable) ->
                 activeRecord = record
                 durableAccess = durable
+                viewer.setPageLayoutSettings(record.pageLayout)
                 if (viewport !=
                     null
                 ) {
@@ -447,6 +449,7 @@ class MainActivity : Activity() {
         loaded = false
         expectedPages = 0
         viewer.reset()
+        viewer.setPageLayoutSettings(PageLayoutSettings())
         viewer.restoreViewport(viewport)
         showReader()
         setStatus(R.string.loading)
@@ -556,7 +559,7 @@ class MainActivity : Activity() {
         if (!loaded) return
         val record = activeRecord ?: return
         val position = viewer.readingPosition() ?: return
-        val updated = record.copy(position = position)
+        val updated = record.copy(position = position, pageLayout = viewer.pageLayoutSettings())
         activeRecord = updated
         val replacement = replacedUri
         if (replacement != null && replacement != updated.uri) {
@@ -778,6 +781,24 @@ class MainActivity : Activity() {
     }
 
     private fun settingsControls(): LinearLayout {
+        val layoutButton = Button(this).apply {
+            setText(R.string.page_layout_settings)
+            isEnabled = loaded && reading
+            setOnClickListener {
+                settingsDialog?.dismiss()
+                val dialog = pageLayoutDialog(viewer.pageLayoutSettings()) {
+                    viewer.setPageLayoutSettings(it)
+                    cancelSave()
+                    saveReading()
+                }
+                settingsDialog = dialog
+                dialog.setOnDismissListener {
+                    settingsDialog = null
+                    hideTools()
+                }
+                dialog.show()
+            }
+        }
         val backgroundButton = Button(this).apply {
             setText(R.string.background_settings)
             setOnClickListener {
@@ -812,6 +833,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             addView(backgroundButton)
             addView(checkbox)
+            addView(layoutButton)
         }
     }
 

@@ -14,6 +14,7 @@ class P0Instrumentation : Instrumentation() {
     private var immersiveOnly = false
     private var backgroundOnly = false
     private var navigationOnly = false
+    private var layoutOnly = false
     var restartPhase: String? = null
         private set
     var probeSeconds = 30
@@ -24,16 +25,18 @@ class P0Instrumentation : Instrumentation() {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
         val suite = arguments?.getString("suite")
-        require(suite == null || suite in listOf("immersive", "background", "navigation"))
+        require(suite == null || suite in listOf("immersive", "background", "navigation", "layout"))
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
         navigationOnly = suite == "navigation"
+        layoutOnly = suite == "layout"
         restartPhase = arguments?.getString("libraryRestart")
         require(restartPhase == null || restartPhase in listOf("seed", "verify"))
         require(!probe || restartPhase == null)
         require(!immersiveOnly || (!probe && restartPhase == null))
         require(!backgroundOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
+        require(!layoutOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -82,7 +85,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (navigationOnly) {
+        val result = if (layoutOnly) {
+            core.run(PageLayoutDeviceTest::class.java)
+        } else if (navigationOnly) {
             core.run(NavigationDeviceTest::class.java)
         } else if (backgroundOnly) {
             core.run(BackgroundDeviceTest::class.java)
@@ -101,7 +106,8 @@ class P0Instrumentation : Instrumentation() {
                 LibraryDeviceTest::class.java,
                 ImmersiveDeviceTest::class.java,
                 BackgroundDeviceTest::class.java,
-                NavigationDeviceTest::class.java
+                NavigationDeviceTest::class.java,
+                PageLayoutDeviceTest::class.java
             )
         }
         finish(

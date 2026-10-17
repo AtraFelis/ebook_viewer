@@ -14,7 +14,7 @@
 | 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
 | 앱 UI | 플랫폼 Activity + View/Canvas, P1 전체 화면/중앙 탭 도구/방향 설정. Compose 셸 최종 선택은 후속 비교 |
 | PDF | P0 PdfRenderer 승인. 현재 API 33 합성 문서 계측 완료, 다른 기기 미검증. 범위·제한은 ADR 0001 |
-| 파일·데이터 | 로컬 우선, SAF. 읽기 기록/북마크/방향/배경색/번호 표시를 플랫폼 AtomicFile/별도 버전 1에 저장(ADR 0002~0005), 추가 저장 라이브러리 없음 |
+| 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v2는 문서별 크기/간격을 추가하고 v1을 읽음(ADR 0006). 북마크/방향/배경색/번호 표시는 별도 v1(ADR 0002~0005). 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
 
@@ -27,9 +27,9 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록 코덱 테스트 19개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록 코덱 테스트 22개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 debug 계측 27개·앱 실행 통과. 이전 읽기 기록 프로세스 복원 2단계 통과 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 30개·앱 실행 통과. 이전 프로세스 복원 2단계는 별도 이력 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 
@@ -53,5 +53,7 @@ ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시�
 7. 빌드 성공만으로 실기기 스크롤 성능이나 환경 복원 완료를 선언하지 않음.
 
 ## 완료와 인수인계
+
+PR 생성마다 CodeRabbit에 `@coderabbitai review`를 수동 요청하고 실제 접수/리뷰 상태를 확인합니다. 건너뜀 체크의 성공을 리뷰 완료로 보고하지 않습니다. 이후 리뷰는 코드·계약·현재 범위와 대조해 타당한 지적을 수정하고 필요한 검증 후 같은 PR 브랜치에 일반 push합니다. 수정 push 뒤 필요하면 새 head의 재검토를 한 번 요청하되 진행 중/동일 head 요청은 중복하지 않습니다. 채택하지 않은 지적은 근거와 미결을 기록합니다. 새 의존성 승인·사용자 변경 보존 규칙을 유지하며 PR 병합은 사용자가 합니다. 세부 절차는 [Git 규칙](docs/rule/git.md)을 따릅니다.
 
 필요한 검증을 실행하고 통과·실패·건너뜀·미실행을 구분합니다. 변경의 위험을 확인하는 테스트를 추가하되 문서 변경에 의미 없는 앱 테스트를 만들지 않습니다. SESSION과 CHECKLIST를 갱신하고 실제 명령·결과·미결 문제는 docs/history에 기록합니다.
