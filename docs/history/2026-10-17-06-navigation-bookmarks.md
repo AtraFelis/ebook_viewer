@@ -38,3 +38,9 @@ strict 빌드·단위 19개·Lint 오류/경고 0·ktlint 통과. 초기 긴 줄
 ## 다음 행동
 
 최종 기기 회귀와 문서 확인 후 별도 기능 PR로 올린다. P1 전체 완료는 아니며 이후 간격/크기 모드·파일/오류 UX 등 남은 수용을 진행한다.
+
+## 중단 작업 마무리
+
+사용자가 이어서 진행하고 완료/다음 범위를 정리하도록 요청했다. Git 작업 트리는 깨끗했고 구현 `8861ae7`은 이미 origin에 push돼 있었다. [push CI 38935046856](https://github.com/AtraFelis/ebook_viewer/actions/runs/38935046856)의 head가 해당 구현 커밋이며 success임을 확인했다. PR 미등록만 남아 있어 main 대상 [PR #5](https://github.com/AtraFelis/ebook_viewer/pull/5)를 만들고 채팅에 연결했다. fetch/조상 검사로 부모 PR #4가 main에 포함됨을 재확인했다.
+
+이번 마무리는 PR 등록과 상태 문서 갱신뿐이며 앱 코드를 바꾸지 않았으므로 앱/기기 테스트를 반복하지 않았다. 구현 커밋 CI 성공과 [PR 최종 head checks](https://github.com/AtraFelis/ebook_viewer/pull/5/checks)를 구분한다. 에이전트 병합 없음. 다음 구현 순서는 페이지 간격/원본 크기·너비 통일 모드 → 파일 접근/오류 UX와 실제 provider 수용 → 개인 PDF 기능 확인이다. 자동 색상/선명도 복구 지연은 P2다.
