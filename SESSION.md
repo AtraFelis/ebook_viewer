@@ -4,6 +4,12 @@
 
 ## 현재 상태
 
+사용자가 최종 접근 기능 APK에서 개인 PDF 열기·몇 페이지 이동·목록→이어 읽기가 “정상”이라고 확인했다. 내용/파일명은 받지 않았다. 자동 계측과 사용자 수용 자기보고를 구분하며 전체 설정/물리 회전/재부팅/다른 API 수용 완료로 확대하지 않는다.
+
+`codex/p1-document-access`에서 원인별 오류·목록 복귀·재시도/재선택과 취소 가능한 provider 접근을 구현했다. 비탐색 파일은 256MiB 상한/30초 무응답 기준으로 익명 임시 inode에 복사하고, 탐색 가능한 파일은 그대로 연다. provider 조회/열기는 PDF worker에 두고 기록 큐를 막지 않는다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint 통과. 첫 신규 6개 중 1개 실패는 테스트 monitor의 Intent category/MIME 누락으로 진단했고 수정 후 provider 단독 1개는 통과했다. 최종 전체 API 33 계측 36개/실패 0·앱 설치/실행을 통과했다. [ADR 0007](docs/adr/0007-document-access-and-failure-recovery.md), [명령·실패 수정·결과](docs/history/2026-10-17-09-document-access.md). 새 런타임 의존성 없음. 실제 DocumentsUI/제조사 provider 전반·재부팅·암호화 파일은 별도 미검증이며, 개인 PDF 기본 열기/이어 읽기는 위 사용자 확인 범위다.
+
+PR #6 최종 head `a45d2d9`의 Windows CI 39007984185가 성공했고 사용자가 병합했다. fetch 후 origin/main은 `b41b0c9`다. CodeRabbit 실제 리뷰는 당시 무료 한도 소진으로 수행되지 않았다. 다음 기능 PR도 생성 시 수동 리뷰를 요청하고 현재 head/응답을 확인한다.
+
 구현 소스가 같은 `b35a962`의 [Windows CI 39007698593](https://github.com/AtraFelis/ebook_viewer/actions/runs/39007698593)는 성공했다. 이 결과와 최종 상태 문서만 갱신한 후속 head의 [실시간 checks](https://github.com/AtraFelis/ebook_viewer/pull/6/checks)를 구분한다. CodeRabbit 실제 리뷰는 한도 소진으로 미실행이며, 다음 일은 한도 복구 후 리뷰 확인과 P1 파일 접근/오류 UX·개인 PDF 수용이다.
 
 PR #6에 [수동 리뷰 댓글](https://github.com/AtraFelis/ebook_viewer/pull/6#issuecomment-6230354554)을 한 번 등록했고 접수 응답을 확인했다. 그러나 CodeRabbit이 무료 OSS 리뷰 한도 소진과 당시 29분 후 재사용 가능을 안내해 **실제 리뷰는 미실행**이다. 성공 상태를 리뷰 완료로 보고하지 않으며 중복 재요청하지 않았다. CI는 별도로 진행하며 최신 결과는 [PR checks](https://github.com/AtraFelis/ebook_viewer/pull/6/checks)/본문을 확인한다. 한도 복구 후 후속 작업에서 현재 head/접수 이력을 다시 확인하고 수동 리뷰를 진행한다.
@@ -40,9 +46,9 @@ P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구�
 런타임은 승인된 stdlib 2.1.20과 전이 annotations 13.0뿐이다. JUnit/ktlint는 검사 전용. P1은 플랫폼 AtomicFile을 사용하며 읽기 기록은 v1 호환/v2 쓰기([ADR 0006](docs/adr/0006-page-layout-and-reading-records-v2.md)), 방향/배경색/번호와 북마크는 별도 v1이다. Compose 최종 선택, 새 저장/PDF 라이브러리는 미선정이며 새 런타임 의존성 승인 규칙을 유지한다.
 
 1. P0 현재 범위 완료: 구현 `0863969` 및 결과 문서 `08011b3`를 main에 push했고 CI 38885324826 성공. P1은 사용자 승인으로 기능별 PR 방식을 사용한다. 첫 [PR #1](https://github.com/AtraFelis/ebook_viewer/pull/1)은 구현/문서 최종 head `df3ef15`의 [Windows CI 38923209449](https://github.com/AtraFelis/ebook_viewer/actions/runs/38923209449)까지 통과했고 사용자가 `a67b0a8`로 병합했다. 전체 화면/방향 기능은 PR #2로 분리했다.
-2. 사용자 P1 요구사항을 [로드맵](docs/plan/roadmap.md)에 통합했고, 목록/이어 읽기, 전체 화면·중앙 탭 도구·방향 설정, 수동 외부 배경색까지 구현했다. 읽기 도구에는 설정/목록/읽기 복귀와 페이지 이동/북마크를 제공하며 페이지 번호 표시는 사용자 선택이다. 페이지 이동/북마크 검증과 PR 등록을 완료했다. 페이지 간격/원본 크기·너비 통일 모드는 로컬 및 API 33 기기 검증을 완료했다. 다음은 파일 접근/오류 UX와 실제 provider 검증, 개인 PDF 기능 수용 순서다.
+2. 사용자 P1 요구사항을 [로드맵](docs/plan/roadmap.md)에 통합했고, 목록/이어 읽기, 전체 화면·중앙 탭 도구·방향 설정, 수동 외부 배경색까지 구현했다. 읽기 도구에는 설정/목록/읽기 복귀와 페이지 이동/북마크를 제공하며 페이지 번호 표시는 사용자 선택이다. 페이지 이동/북마크 검증과 PR 등록을 완료했다. 페이지 간격/원본 크기·너비 통일 모드는 로컬 및 API 33 기기 검증을 완료했다. 파일 접근/오류 UX와 합성 provider 검증까지 구현/검증했다. 다음은 실제 파일 선택 UI/개인 PDF 수용과 수명·메모리 압박 회귀다.
 3. 2026-10-17 사용자 결정: 스크롤 선명도 복구 지연은 [P2 전용 계획](docs/plan/p2-sharpness-recovery.md)에 문서화하고 개선은 P2에서 한다. 자동 배경색도 P2로 이관하며 P1은 수동 색상/설정 보존으로 완성한다. 현재 성능은 충분하므로 별도 렌더링/스크롤 최적화 및 빠른 이동의 미준비 영역 개선은 P1 필수에서 제외한다. 기존 성능과 줌/앵커·캐시/수명 계약은 유지하고 새 기능에 따른 회귀는 검증한다. 손입력·물리 회전·개인 PDF로 기능 수용을 확인한다.
 4. 새 Windows CI의 CLI 도구 복원은 검증했지만 실제 새 PC의 드라이버/Android Studio/기기 연결 복원과 다른 기기/API는 미검증이다. API 33 암호화 읽기·검색 등은 P2 범위다. 새 저장/UI 라이브러리를 채택하지 않았으며 필요 시 별도 구성 승인 후 도입한다.
-5. 실제 SAF provider 영구 권한·재부팅·권한 소실 재연결과 개인 PDF 손입력/물리 회전 센서 수용은 남아 있다. 비탐색 provider 임시 복사와 개인 PDF 수용은 후속이다. 방향 설정의 별도 강제 프로세스 종료/기기 재부팅은 미검증이다. 갑작스러운 종료 직전 미제출/미완료 이동은 유실될 수 있으며 손상된 기록/설정의 복구 UI는 아직 없다. 이번 통과는 API 33 합성 자료/앱 내부 파일 URI와 주입 입력 기준이다.
+5. 실제 SAF provider 영구 권한·재부팅·권한 소실 재연결과 개인 PDF 손입력/물리 회전 센서 수용은 남아 있다. 비탐색 provider 제한 복사는 합성 provider로 검증했고, 실제 제조사 파일 선택 UI/개인 PDF 수용은 후속이다. 방향 설정의 별도 강제 프로세스 종료/기기 재부팅은 미검증이다. 갑작스러운 종료 직전 미제출/미완료 이동은 유실될 수 있으며 손상된 기록/설정의 복구 UI는 아직 없다. 이번 통과는 API 33 합성 자료/앱 내부 파일 URI와 주입 입력 기준이다.
 
 [push·CI 결과](docs/history/2026-10-16-10-github-push-and-ci.md), [최종 검증·명령·원본 위치](docs/history/2026-10-16-09-p0-local-validation.md), [첫 표시 개선](docs/history/2026-10-16-08-first-page-priority.md), [Windows 실행](docs/windows-development.md), [ADR](docs/adr/0001-p0-toolchain-and-renderer.md).

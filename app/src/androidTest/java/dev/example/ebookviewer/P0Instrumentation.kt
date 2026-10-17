@@ -5,6 +5,7 @@ import android.app.Instrumentation
 import android.os.Bundle
 import org.junit.runner.Description
 import org.junit.runner.JUnitCore
+import org.junit.runner.Request
 import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunListener
 
@@ -15,6 +16,8 @@ class P0Instrumentation : Instrumentation() {
     private var backgroundOnly = false
     private var navigationOnly = false
     private var layoutOnly = false
+    private var accessOnly = false
+    private var accessMethod: String? = null
     var restartPhase: String? = null
         private set
     var probeSeconds = 30
@@ -25,11 +28,21 @@ class P0Instrumentation : Instrumentation() {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
         val suite = arguments?.getString("suite")
-        require(suite == null || suite in listOf("immersive", "background", "navigation", "layout"))
+        require(
+            suite == null ||
+                suite in listOf("immersive", "background", "navigation", "layout", "access")
+        )
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
         navigationOnly = suite == "navigation"
         layoutOnly = suite == "layout"
+        accessOnly = suite == "access"
+        accessMethod = arguments?.getString("method")
+        require(accessMethod == null || accessOnly)
+        val validMethod = DocumentAccessDeviceTest::class.java.declaredMethods.any {
+            it.name == accessMethod && it.isAnnotationPresent(org.junit.Test::class.java)
+        }
+        require(accessMethod == null || validMethod)
         restartPhase = arguments?.getString("libraryRestart")
         require(restartPhase == null || restartPhase in listOf("seed", "verify"))
         require(!probe || restartPhase == null)
@@ -37,6 +50,7 @@ class P0Instrumentation : Instrumentation() {
         require(!backgroundOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
         require(!layoutOnly || (!probe && restartPhase == null))
+        require(!accessOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -85,7 +99,14 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (layoutOnly) {
+        val result = if (accessOnly) {
+            val method = accessMethod
+            if (method == null) {
+                core.run(DocumentAccessDeviceTest::class.java)
+            } else {
+                core.run(Request.method(DocumentAccessDeviceTest::class.java, method))
+            }
+        } else if (layoutOnly) {
             core.run(PageLayoutDeviceTest::class.java)
         } else if (navigationOnly) {
             core.run(NavigationDeviceTest::class.java)
@@ -107,7 +128,8 @@ class P0Instrumentation : Instrumentation() {
                 ImmersiveDeviceTest::class.java,
                 BackgroundDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
-                PageLayoutDeviceTest::class.java
+                PageLayoutDeviceTest::class.java,
+                DocumentAccessDeviceTest::class.java
             )
         }
         finish(
