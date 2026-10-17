@@ -4,6 +4,8 @@
 
 ## 현재 상태
 
+역방향 설정을 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)로 등록했다(구현 5ae584b, 검증 기록 head 02ed26f). PR #8이 OPEN이어서 기준은 `codex/p1-reader-lifecycle`이며 사용자 병합 순서는 #8→#9다. 앱/테스트는 검증한 소스 그대로다. 이 등록 기록 push 후 현재 head에 CodeRabbit 수동 리뷰를 한 번 요청하며 [원격 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)와 실제 응답을 확인한다.
+
 `codex/p1-reverse-orientation`에서 가로/세로 역방향 고정을 추가했다. 기존 이름 기반 방향 설정 v1을 읽고 다섯 선택을 저장한다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint, API 33 immersive 5개와 최종 전체 41개/실패 0·앱 실행을 통과했다. 두 축의 실제 display rotation 180도, 읽기 줌/앵커·전체 화면·재실행 선택을 확인했다. [최신 명령/결과](docs/history/2026-10-17-11-reverse-orientation.md). 새 런타임 의존성 없음. 개인 기기 기존 기능의 사용자 수용과 새 역방향 자동 계측을 구분한다.
 
 부모 [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)의 최종 head `63ad063`은 Windows CI 39028371482를 통과했다. CodeRabbit은 db616d5의 16개 파일 실제 리뷰를 완료했고 문서 상태 표현 지적 1건을 63ad063에서 수정/해결했다. 역방향 브랜치에 해당 수정도 일반 merge했으며 문서 병합 전후 검증된 역방향 앱/테스트 소스 차이는 없다. 현재 PR #8은 OPEN이며 후속 PR은 이 브랜치를 기준으로 분리하고 병합 순서는 #8 다음으로 안내한다. PR 병합은 사용자가 한다.

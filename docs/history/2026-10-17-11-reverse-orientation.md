@@ -20,6 +20,10 @@ Context7 조회는 화면 방향의 간접 자료가 대부분이어서 [공식 
 
 ## 기기 실행·다음 행동
 
+## PR 등록
+
+구현 `5ae584b`와 부모 리뷰 문서 merge `faf24f0`, 최종 결과 기록 `02ed26f`를 일반 push했다. fetch 후 PR #8은 여전히 OPEN이고 기준 main은 `29d0763`여서 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)를 `codex/p1-reader-lifecycle` 대상으로 등록/대화에 연결했다. 병합 순서는 #8→#9이며 PR #8 병합 후 기준을 다시 확인한다. 앱/테스트는 실기기에서 검증한 소스 그대로이며 문서 링크·git diff --check를 통과했다. 등록 기록 push 후 현재 head에 수동 리뷰를 한 번 요청하고 원격 CI/실제 응답을 구분한다. PR 병합·강제 push/reset/clean 없음.
+
 최종 같은 앱/계측 APK에서 `adb shell am instrument -w dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation`의 **41개/실패 0**과 이후 `adb shell am start -W -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainActivity`의 **Status: ok**를 확인했다. 기본 suite에서 신규/기존 테스트를 제외하지 않았다. raw 로그 `local-artifacts/reverse-orientation-device-full.log`. debug APK SHA-256은 `deea6cbd6a209333406f8b775e375af5d73d88b49083cc33f1f0a72d19c12cb7`이다. 이전 사용자 “다 잘 돼”는 수명 보완 APK의 기존 기능 확인이며 새 역방향의 직접 사용자 수용으로 확대하지 않는다.
 
 구현을 `5ae584b`로 보존한 뒤 PR #8의 실제 리뷰를 읽었다. 16개 파일 검토에서 문서의 과거 리뷰 상태 표현 지적 1건만 있었고 타당해 원래 PR #8 브랜치의 `63ad063`에서 수정/해결했다. 최종 문서 head의 CI 39028371482도 성공했다. 이를 역방향 브랜치에 일반 merge하며 SESSION 첫 문단의 문서 충돌은 양쪽 사실을 보존해 해결했다(`faf24f0`). `git diff --exit-code 5ae584b HEAD -- app scripts gradle`가 차이 없이 통과해 실제 검증한 앱/기본 suite 소스는 그대로임을 확인했다. PR #8 코드 변경 지적은 없었고 Autofix/중복 요청/강제 push는 하지 않았다.
