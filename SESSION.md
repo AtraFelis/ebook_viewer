@@ -4,6 +4,8 @@
 
 ## 현재 상태
 
+페이지 크기·간격 구현 `8be274b`에 origin/main `1aece35`를 일반 merge한 `7cd490f`를 push하고 [PR #6](https://github.com/AtraFelis/ebook_viewer/pull/6)을 등록했다. merge 전후 검증한 앱/스크립트 차이는 없었다. 로컬/기기 결과는 아래와 같으며 [원격 checks](https://github.com/AtraFelis/ebook_viewer/pull/6/checks)는 게시 후 별도 확인한다. PR마다 수동 CodeRabbit 요청 규칙을 적용하고 접수/실제 리뷰를 구분한다. 병합은 사용자가 한다.
+
 PR #5는 CodeRabbit이 head `751dbc0`의 23개 파일 실제 검토를 완료해 지적이 없었고 CI도 통과했다. 사용자가 병합한 origin/main `1aece35`와 부모 head 포함을 확인했다. 다음 브랜치 `codex/p1-page-layout`에서 문서별 원본/너비 통일·간격 설정과 v1→v2 읽기 기록 호환을 구현했다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint 및 신규 API 33 계측 3개·최종 전체 30개·앱 실행을 통과했다. 첫 전체 2개 실패는 저장된 가로 고정과 테스트의 직접 회전/고정 스와이프 횟수 충돌을 보완한 뒤 재검증했다. 새 기능 PR/원격 CI는 다음에 등록·확인한다. [ADR 0006](docs/adr/0006-page-layout-and-reading-records-v2.md), [실패 수정·명령·결과](docs/history/2026-10-17-08-page-layout.md). 개인 PDF/실제 provider와 P1 전체 완료는 별도다.
 
 사용자 지시로 모든 PR 생성 시 CodeRabbit 수동 요청, 후속 리뷰의 타당성 판단·수정/검증 후 같은 브랜치 push를 AGENTS/[Git 규칙](docs/rule/git.md)에 저장했다. PR #5는 자동 리뷰 제외를 확인해 수동 명령을 한 번 등록했고 실제 검토 완료까지 확인했다. [절차/실제 대응 이력](docs/history/2026-10-17-07-pr-review-workflow.md).
