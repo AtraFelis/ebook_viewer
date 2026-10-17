@@ -31,4 +31,10 @@
 
 ## PR 등록
 
+PR #8 head `bc26364`의 [Windows CI 39012958849](https://github.com/AtraFelis/ebook_viewer/actions/runs/39012958849)는 **completed/success**다. 개인 수용/리뷰 한도 문서의 후속 Git 기록 시 자동 승인 검토가 사용량 제한으로 실행되지 않았다(안전하지 않다는 판정이 아니며 명령 미실행). 로컬 수정은 보존했고 승인 우회를 하지 않았다. 사용자 재개 요청 후 20:12 KST에 도구가 정상 동작함을 확인했다. 이 기록을 push한 뒤 역방향 설정을 별도 브랜치에서 진행한다. 앱/계측 소스는 구현 `8270cde`와 동일하다.
+
+사용자가 이후 새 앱의 개인 홈 복귀·확대/스크롤·중앙 탭 설정(방향/배경색/번호 표시)에 “다 잘 돼”라고 확인했다. 계측과 별도인 개인 기기 수용이며 파일명/내용은 받지 않았다. 기존 P1의 SAF/제스처/설정 수용 항목을 이 API 33 기능 회귀와 개인 확인 범위로 정리했다. 제조사/provider 전반·재부팅/실제 시스템 OOM은 후속 제한으로 남기고 필수 범위를 임의 확대하지 않는다. 사용자가 추가 요청한 가로 역방향/세로 역방향은 다음 작은 변경으로 분리한다.
+
+`bc26364`를 push한 뒤 [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/8#issuecomment-6231097690)을 한 번 등록했다. [봇 응답](https://github.com/AtraFelis/ebook_viewer/pull/8#issuecomment-6231101647)은 접수 후 **Review rate limited/Action not completed**로 바뀌었다. 봇은 16:16 KST 당시 9분 후 한도 복구를 안내했다. 실제 리뷰 미실행이며 성공 상태를 리뷰 완료로 취급하지 않는다. 현재 CI 39012958849는 진행 중이고 결과/후속 문서 head의 checks를 구분한다. 수정 지적은 아직 없으며 Autofix/중복 요청은 하지 않았다.
+
 실제 결과/결정을 `8270cde`로 커밋했다. fetch 후 origin/main이 여전히 `29d0763`이며 현재 head에 포함됨을 확인한 뒤 일반 push했다. [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)을 main 대상으로 등록하고 대화에 연결했다. 이 등록 기록을 push한 뒤 현재 head에 CodeRabbit 수동 리뷰를 한 번 요청한다. 원격 CI/실제 리뷰는 [PR checks](https://github.com/AtraFelis/ebook_viewer/pull/8/checks)와 본문에서 구분하며 로컬 통과로 대신하지 않는다. 개인 새 APK 수용은 응답 대기다. 사용자 변경 덮어쓰기/reset/clean/강제 push/PR 병합 없음.
