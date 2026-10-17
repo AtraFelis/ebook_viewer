@@ -4,11 +4,13 @@
 
 ## 현재 상태
 
-역방향 설정을 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)로 등록했다(구현 5ae584b, 검증 기록 head 02ed26f). PR #8이 OPEN이어서 기준은 `codex/p1-reader-lifecycle`이며 사용자 병합 순서는 #8→#9다. 앱/테스트는 검증한 소스 그대로다. 이 등록 기록 push 후 현재 head에 CodeRabbit 수동 리뷰를 한 번 요청하며 [원격 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)와 실제 응답을 확인한다.
+PR #9 head `8597c42`의 [Windows CI 39028736272](https://github.com/AtraFelis/ebook_viewer/actions/runs/39028736272)가 성공했다. PR #8 사용자 병합 후 origin/main `27c7c27`을 가져와 일반 merge하고, 검증된 역방향 앱/테스트 소스 불변을 확인해 PR #9 기준을 main으로 바꾼다. 후속 결과 문서/병합 head의 checks는 [최신 검사](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)와 구분한다. CodeRabbit 실제 리뷰는 포함 한도로 미실행이며 반복 요청하지 않는다.
+
+역방향 설정을 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)로 등록했다(구현 5ae584b, 검증 기록 head 02ed26f). PR #8 사용자 병합을 확인했고 PR #9 기준을 main으로 정리한다. 앱/테스트는 검증한 소스 그대로다. [수동 리뷰 요청](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233338631)은 접수 후 무료 한도로 실제 미실행이 됐다. 20:27 KST 당시 봇이 46분 후 복구를 안내했으며 성공 체크를 리뷰 완료로 취급하지 않는다. [원격 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)는 실제 리뷰와 구분한다.
 
 `codex/p1-reverse-orientation`에서 가로/세로 역방향 고정을 추가했다. 기존 이름 기반 방향 설정 v1을 읽고 다섯 선택을 저장한다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint, API 33 immersive 5개와 최종 전체 41개/실패 0·앱 실행을 통과했다. 두 축의 실제 display rotation 180도, 읽기 줌/앵커·전체 화면·재실행 선택을 확인했다. [최신 명령/결과](docs/history/2026-10-17-11-reverse-orientation.md). 새 런타임 의존성 없음. 개인 기기 기존 기능의 사용자 수용과 새 역방향 자동 계측을 구분한다.
 
-부모 [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)의 최종 head `63ad063`은 Windows CI 39028371482를 통과했다. CodeRabbit은 db616d5의 16개 파일 실제 리뷰를 완료했고 문서 상태 표현 지적 1건을 63ad063에서 수정/해결했다. 역방향 브랜치에 해당 수정도 일반 merge했으며 문서 병합 전후 검증된 역방향 앱/테스트 소스 차이는 없다. 현재 PR #8은 OPEN이며 후속 PR은 이 브랜치를 기준으로 분리하고 병합 순서는 #8 다음으로 안내한다. PR 병합은 사용자가 한다.
+부모 [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)의 최종 head `63ad063`은 Windows CI 39028371482를 통과했다. CodeRabbit은 db616d5의 16개 파일 실제 리뷰를 완료했고 문서 상태 표현 지적 1건을 63ad063에서 수정/해결했다. 역방향 브랜치에 해당 수정도 일반 merge했으며 문서 병합 전후 검증된 역방향 앱/테스트 소스 차이는 없다. PR #8이 사용자 병합되어 후속 PR #9를 main 기준으로 정리한다. PR 병합은 사용자가 한다.
 
 현재 개인 API 33 대상의 P1 핵심 기능 구현·로컬 회귀와 기존 기능의 사용자 수용을 마쳤다. 후속 역방향 PR 등록/원격 CI/실제 수동 리뷰 결과를 확인하고 병합을 구분한다. P2 선명도 복구 지연/자동 배경색은 진행하지 않았다. 다른 API/제조사 provider 전반·재부팅·실제 시스템 메모리 고갈/OOM은 후속 제한이며 현재 결과로 통과를 주장하지 않는다.
 
