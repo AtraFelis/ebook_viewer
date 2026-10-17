@@ -12,7 +12,9 @@
 
 사용자는 개인 PDF 열기·목록→이어 읽기가 “정상”, 수명 보완 앱의 홈 복귀·확대/스크롤·중앙 탭 설정이 “다 잘 돼”라고 확인했다. 새 역방향의 사용자 직접 확인과 자동 계측을 구분한다. 다른 API/기기·제조사 provider 전반·재부팅·실제 시스템 메모리 고갈/OOM은 후속 미검증이며 이번 개인용 P1 완료 범위를 확대하지 않는다.
 
-CodeRabbit은 PR #8의 실제 리뷰 지적 1건(문서 상태 표현)을 수정/해결했다. PR #9는 [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233338631) 후 [한도 응답](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233341731)으로 실제 리뷰 미실행이다. 리뷰 제출/인라인 지적이 없는 상태를 확인했으며 성공 체크를 리뷰 완료로 취급하지 않는다. PR #6도 당시 한도로 미실행이어서 모든 P1 PR의 외부 리뷰 완료를 주장하지 않는다. 새 마무리 PR의 CI·수동 리뷰 상태는 완료 이력/해당 PR에서 별도 기록한다. PR 병합은 사용자가 한다.
+CodeRabbit PR #8의 실제 리뷰 지적 1건(문서 상태 표현)을 수정/해결했다. PR #9는 [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233338631) 후 [한도 응답](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233341731)으로 실제 리뷰 미실행이다. 리뷰 제출/인라인 지적이 없는 상태를 확인했으며 성공 체크를 리뷰 완료로 취급하지 않는다. PR #6도 당시 한도로 미실행이어서 모든 P1 PR의 외부 리뷰 완료를 주장하지 않는다.
+
+완료 문서를 [PR #10](https://github.com/AtraFelis/ebook_viewer/pull/10)으로 등록했다. Markdown 7개만 변경했으며 Android checks는 paths-ignore로 새 실행이 없다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/10#issuecomment-6233510967)을 한 번 등록했고 [실제 응답](https://github.com/AtraFelis/ebook_viewer/pull/10#issuecomment-6233511959)은 Review rate limited였다. 20:47 KST 당시 26분 후 복구 안내이며 실제 리뷰는 미실행이다. 요청/응답 기록만 같은 PR에 후속 push하고 중복 요청하지 않는다. PR 병합은 사용자가 한다.
 
 다음 개발 범위는 P2다. 우선 후보는 [스크롤 선명도 복구 지연](docs/plan/p2-sharpness-recovery.md), 그다음 자동 배경색이며 둘 다 아직 구현하지 않았다. P1에 새 성능 목표나 다른 기기 수용 조건을 추가하지 않는다.
 
