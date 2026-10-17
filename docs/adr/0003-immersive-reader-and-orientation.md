@@ -10,9 +10,13 @@ API 30 이상은 플랫폼 WindowInsetsController로 시스템 바를 숨기고 
 
 Android 13 이상은 플랫폼 OnBackInvokedDispatcher, 이전 버전은 onBackPressed로 메뉴 닫기 → 목록 복귀 → Activity 종료를 처리한다. manifest의 API 33 opt-in은 구버전에서 무시되며 tools:targetApi는 이 의도적 호환 경로를 Lint에 명시한다. 검사를 전역 비활성화하지 않는다.
 
-설정은 자동(기기 정책), 세로 고정, 가로 고정이다. 별도 Application 소유 I/O 큐와 AtomicFile의 버전 1 파일 `reader-settings.bin`에 enum 이름을 저장한다. 쓰기가 성공한 뒤 방향을 적용한다. Activity 재생성은 기존 문서/페이지 내부 앵커/줌 Bundle을 사용한다. 자동 모드는 명시적으로 선택할 때 UNSPECIFIED로 돌아가고 재생성 중에는 현재 플랫폼 정책을 유지한다. 알 수 없는 설정 버전/손상은 자동 초기화로 덮어쓰지 않고 오류를 알린다.
+설정은 자동(기기 정책), 세로/가로 고정과 세로/가로 역방향 고정이다. 별도 Application 소유 I/O 큐와 AtomicFile의 버전 1 파일 `reader-settings.bin`에 enum 이름을 저장한다. 쓰기가 성공한 뒤 방향을 적용한다. Activity 재생성은 기존 문서/페이지 내부 앵커/줌 Bundle을 사용한다. 자동 모드는 명시적으로 선택할 때 UNSPECIFIED로 돌아가고 재생성 중에는 현재 플랫폼 정책을 유지한다. 알 수 없는 설정 버전/손상은 자동 초기화로 덮어쓰지 않고 오류를 알린다.
 
 ## 목적·대안·영향
+
+2026-10-17 사용자 추가 요청: 가로 역방향/세로 역방향 고정을 제공한다. 기존 AUTO/PORTRAIT/LANDSCAPE 뒤에 REVERSE_PORTRAIT/REVERSE_LANDSCAPE를 추가하고 플랫폼의 SCREEN_ORIENTATION_REVERSE_PORTRAIT/REVERSE_LANDSCAPE에 매핑한다. 직접 Canvas를 회전시키지 않는다. 이름 기반 버전 1 저장의 magic/버전은 그대로이며 기존 세 선택을 읽을 수 있다. 예전 앱 바이너리는 새 enum 이름을 읽지 못할 수 있고 기존 손상/미지원 설정 보호 경로로 오류를 알리며 덮어쓰지 않는다. 저장 성공 후 적용과 Activity Bundle의 앵커/줌 복원 정책은 유지한다.
+
+방향 항목이 다섯 개가 되어 가로 화면에서 목록 스크롤이 필요할 수 있다. 플랫폼 선택 목록을 유지하며 기기 테스트는 실제 목록을 스크롤해 역방향 항목을 선택한다. 검증은 요청 상수 외에 실제 display rotation의 180도 차이, 읽기 줌/앵커 유지·전체 화면, 재실행 선택 보존과 다섯 설정의 디스크 왕복을 확인한다. 현재 API 33 범위이며 실제 결과는 별도 이력을 따른다.
 
 플랫폼 Activity/Canvas의 동작을 유지하면서 개인용 읽기에서 UI 간섭을 없앤다. AndroidX WindowInsetsCompat, Compose 셸, DataStore는 이 범위에 필요하지 않아 도입하지 않았다. APK에 새 라이브러리/라이선스가 추가되지 않으며 런타임 lock/verification 파일도 바꾸지 않는다. 플랫폼 API 사용은 기존 Android SDK 약관/고지 범위다.
 

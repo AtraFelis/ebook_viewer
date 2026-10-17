@@ -40,6 +40,8 @@
     <string name="orientation_auto">자동 · 기기 회전 설정 따르기</string>
     <string name="orientation_portrait">세로 고정</string>
     <string name="orientation_landscape">가로 고정</string>
+    <string name="orientation_reverse_portrait">세로 역방향 고정</string>
+    <string name="orientation_reverse_landscape">가로 역방향 고정</string>
     <string name="settings_error">설정을 읽거나 저장하지 못했습니다. 기존 설정 파일은 유지합니다.</string>
     <string name="reader_settings_title">읽기 설정 · 화면 방향</string>
     <string name="background_settings">페이지 외부 배경색</string>

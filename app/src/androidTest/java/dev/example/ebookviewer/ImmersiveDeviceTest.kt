@@ -140,6 +140,84 @@ class ImmersiveDeviceTest {
     }
 
     @Test
+    fun reverseDirectionsRotateTheDisplayAndKeepAnchorAndSavedChoice() {
+        val application = instrumentation.targetContext.applicationContext as ReaderApplication
+        val repository = application.settings
+        val previousMode = setting { repository.load(it) }
+        setting { repository.save(OrientationMode.PORTRAIT, it) }
+        val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
+        var activity = ui.launch()
+        try {
+            activity = awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+            val portraitRotation = ui.onMain { rotation(activity) }
+            var view = ui.sample(activity)
+            repeat(2) { ui.pinch(view) }
+            repeat(2) { ui.drag(view, true) }
+            val before = ui.state(view)
+            ui.tap(view)
+            clickSettings(activity)
+            clickDialogText(activity.getString(R.string.orientation_reverse_portrait))
+            activity = awaitOrientation(
+                activity,
+                monitor,
+                ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+            )
+            ui.await("Reverse portrait did not rotate the display by 180 degrees") {
+                rotation(activity) == (portraitRotation + 2) % 4
+            }
+            view = ui.awaitReady(activity)
+            assertAnchor(before, ui.state(view))
+            assertImmersive(activity)
+            assertEquals(OrientationMode.REVERSE_PORTRAIT, setting { repository.load(it) })
+            ui.tap(view)
+            clickSettings(activity)
+            clickDialogText(activity.getString(R.string.orientation_landscape))
+            activity =
+                awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
+            view = ui.awaitReady(activity)
+            assertAnchor(before, ui.state(view))
+            val landscapeRotation = ui.onMain { rotation(activity) }
+            ui.tap(view)
+            clickSettings(activity)
+            clickDialogText(activity.getString(R.string.orientation_reverse_landscape))
+            activity = awaitOrientation(
+                activity,
+                monitor,
+                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+            )
+            ui.await("Reverse landscape did not rotate the display by 180 degrees") {
+                rotation(activity) == (landscapeRotation + 2) % 4
+            }
+            view = ui.awaitReady(activity)
+            assertAnchor(before, ui.state(view))
+            assertImmersive(activity)
+            assertEquals(OrientationMode.REVERSE_LANDSCAPE, setting { repository.load(it) })
+            instrumentation.runOnMainSync { activity.finish() }
+            instrumentation.waitForIdleSync()
+            activity = ui.launch()
+            activity = awaitOrientation(
+                activity,
+                monitor,
+                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+            )
+            ui.await("Saved reverse direction was not restored") {
+                rotation(activity) == (landscapeRotation + 2) % 4
+            }
+        } finally {
+            val latest = monitor.lastActivity ?: activity
+            instrumentation.runOnMainSync {
+                latest.finish()
+                activity.finish()
+            }
+            instrumentation.removeMonitor(monitor)
+            setting { repository.save(previousMode, it) }
+        }
+    }
+
+    @Suppress("DEPRECATION") // Public API retained for the minSdk 23 display rotation check.
+    private fun rotation(activity: Activity): Int = activity.windowManager.defaultDisplay.rotation
+
+    @Test
     fun settingsRoundTripFromDiskAndUnknownVersionIsPreserved() {
         val file = File.createTempFile(
             "settings-fixture-",
@@ -150,10 +228,14 @@ class ImmersiveDeviceTest {
         try {
             ReaderSettingsRepository { file }.use { first ->
                 assertEquals(OrientationMode.AUTO, setting { first.load(it) })
-                setting { first.save(OrientationMode.LANDSCAPE, it) }
             }
-            ReaderSettingsRepository { file }.use { reopened ->
-                assertEquals(OrientationMode.LANDSCAPE, setting { reopened.load(it) })
+            for (mode in OrientationMode.entries) {
+                ReaderSettingsRepository { file }.use { writer ->
+                    setting { writer.save(mode, it) }
+                }
+                ReaderSettingsRepository { file }.use { reopened ->
+                    assertEquals(mode, setting { reopened.load(it) })
+                }
             }
             file.outputStream().use {
                 DataOutputStream(it).apply {
@@ -189,6 +271,7 @@ class ImmersiveDeviceTest {
 
     private fun clickDialogText(text: String) {
         val deadline = SystemClock.uptimeMillis() + 10_000
+        var forward = true
         while (SystemClock.uptimeMillis() < deadline) {
             val root = instrumentation.uiAutomation.rootInActiveWindow
             val node = root?.findAccessibilityNodeInfosByText(text)?.firstOrNull {
@@ -196,9 +279,28 @@ class ImmersiveDeviceTest {
                     it.text?.toString() == text
             }
             if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true) return
+            // Five choices may need scrolling in landscape; exercise the same list a user sees.
+            if (root != null && !scrollDialogList(root, forward)) forward = !forward
             SystemClock.sleep(50)
         }
         throw AssertionError("Settings dialog item not found")
+    }
+
+    private fun scrollDialogList(node: AccessibilityNodeInfo, forward: Boolean): Boolean {
+        if (node.className == "android.widget.ListView") {
+            return node.performAction(
+                if (forward) {
+                    AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
+                } else {
+                    AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+                }
+            )
+        }
+        for (index in 0 until node.childCount) {
+            val child = node.getChild(index) ?: continue
+            if (scrollDialogList(child, forward)) return true
+        }
+        return false
     }
 
     private fun awaitOrientation(
@@ -208,8 +310,10 @@ class ImmersiveDeviceTest {
     ): Activity {
         var latest = initial
         val target = when (requested) {
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> Configuration.ORIENTATION_LANDSCAPE
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT -> Configuration.ORIENTATION_PORTRAIT
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
+            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE -> Configuration.ORIENTATION_LANDSCAPE
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT -> Configuration.ORIENTATION_PORTRAIT
             else -> null
         }
         val recreate = target != null && initial.resources.configuration.orientation != target

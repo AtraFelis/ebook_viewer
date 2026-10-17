@@ -44,7 +44,7 @@ try {
         $arguments += 'dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation'
         $result = Invoke-DeviceAdb $arguments
         $result | Write-Host
-        $expectedTests = if ($Probe) { 1 } else { 40 }
+        $expectedTests = if ($Probe) { 1 } else { 41 }
         if (($result -join "`n") -notmatch "P0 tests=$expectedTests, failures=0") {
             throw 'Device tests did not report the expected successes.'
         }

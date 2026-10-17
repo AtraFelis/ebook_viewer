@@ -819,7 +819,9 @@ class MainActivity : Activity() {
                     arrayOf(
                         getString(R.string.orientation_auto),
                         getString(R.string.orientation_portrait),
-                        getString(R.string.orientation_landscape)
+                        getString(R.string.orientation_landscape),
+                        getString(R.string.orientation_reverse_portrait),
+                        getString(R.string.orientation_reverse_landscape)
                     )
                 val dialog = AlertDialog.Builder(this)
                     .setTitle(R.string.reader_settings_title)
@@ -931,6 +933,8 @@ class MainActivity : Activity() {
             OrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             OrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             OrientationMode.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            OrientationMode.REVERSE_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+            OrientationMode.REVERSE_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
         }
         if (requestedOrientation != requested) requestedOrientation = requested
     }
