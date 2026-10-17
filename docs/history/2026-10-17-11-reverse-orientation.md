@@ -20,11 +20,11 @@ Context7 조회는 화면 방향의 간접 자료가 대부분이어서 [공식 
 
 ## 기기 실행·PR 등록
 
-### 실제 리뷰 응답
-
 ### 원격 CI와 기준 브랜치 정리
 
-head `8597c42`의 [Windows CI 39028736272](https://github.com/AtraFelis/ebook_viewer/actions/runs/39028736272)가 **completed/success**다. 사용자 병합으로 PR #8이 MERGED, origin/main이 `27c7c27`임을 확인했다. 후속 브랜치에 main을 일반 merge하고 `git diff --exit-code 5ae584b HEAD -- app scripts gradle`로 검증한 역방향 앱/계측 소스 불변을 확인해 PR #9의 기준을 main으로 정리한다. 이 결과 문서/병합 head의 CI는 [최신 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)로 구분한다. 로컬 기기 41개와 원격 빌드/단위/Lint/ktlint, 실제 리뷰 미실행을 서로 대체하지 않는다. 병합은 계속 사용자가 한다.
+head `8597c42`의 [Windows CI 39028736272](https://github.com/AtraFelis/ebook_viewer/actions/runs/39028736272)가 **completed/success**다. 사용자 병합으로 PR #8이 MERGED, origin/main이 `27c7c27`임을 확인했다. 후속 브랜치에 main을 일반 merge한 299bba3에서 `git diff --exit-code 5ae584b HEAD -- app scripts gradle`가 차이 없이 통과했고 PR #9 기준을 main으로 변경했다. 이 결과 문서/병합 head의 CI는 [최신 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)로 구분한다. 로컬 기기 41개와 원격 빌드/단위/Lint/ktlint, 실제 리뷰 미실행을 서로 대체하지 않는다. 병합은 계속 사용자가 한다.
+
+### 실제 리뷰 응답
 
 [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233338631)을 등록하고 [봇 응답](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233341731)을 확인했다. 처음 접수 응답 후 **Action not completed/Review rate limited**로 확정됐다. 20:27 KST 당시 46분 후 포함 리뷰 복구를 안내했다. 비기본 기준 브랜치의 자동 리뷰 제외도 안내했지만 수동 요청은 별도로 수행했다. 실제 리뷰/인라인 지적은 미실행이며 성공 체크를 완료 근거로 삼지 않는다. 중복 요청/Autofix/별도 CLI 설치는 하지 않았다. 원격 CI는 별도 확인한다.
 
