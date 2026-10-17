@@ -4,6 +4,8 @@
 
 ## 현재 상태
 
+PR #7 head `32bd52b`의 [Windows CI 39009827260](https://github.com/AtraFelis/ebook_viewer/actions/runs/39009827260)가 성공했다. CodeRabbit도 같은 head의 19개 파일 실제 리뷰를 완료했고 actionable 지적은 없었다([결과](https://github.com/AtraFelis/ebook_viewer/pull/7#issuecomment-6230655962)). 함수 설명문 80% 비율의 일반 권고는 계약의 이유/제약 중심 주석과 별개이며 구체적 누락 계약/오류를 지적하지 않아 기계적으로 추가하지 않았다. 결과 기록만 담는 후속 문서 head의 CI는 [최신 checks](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)로 구분한다. 앱/테스트 코드는 그대로이며 불필요한 재설치/중복 리뷰 요청은 하지 않는다. 다음 P1 범위는 백그라운드 복귀·메모리 압박·문서 교체 시 상태/자원 회귀와 남은 개인 기기 수용이다.
+
 파일 접근·오류 복구 구현 `c238fda`에 origin/main `b41b0c9`를 일반 merge한 `c206098`을 [PR #7](https://github.com/AtraFelis/ebook_viewer/pull/7)로 등록했다. 병합 전후 검증된 앱/스크립트 차이는 없다. 아래 로컬/기기 결과와 원격 검사를 구분하며 [최신 CI/리뷰](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)는 게시 후 확인한다. 이 문서 갱신을 push한 뒤 CodeRabbit 수동 리뷰를 한 번 요청한다. 병합은 사용자가 한다.
 
 사용자가 최종 접근 기능 APK에서 개인 PDF 열기·몇 페이지 이동·목록→이어 읽기가 “정상”이라고 확인했다. 내용/파일명은 받지 않았다. 자동 계측과 사용자 수용 자기보고를 구분하며 전체 설정/물리 회전/재부팅/다른 API 수용 완료로 확대하지 않는다.

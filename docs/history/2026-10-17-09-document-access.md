@@ -29,3 +29,11 @@
 ## PR 등록
 
 구현/검증/사용자 확인을 `c238fda`로 커밋했다. fetch 후 origin/main `b41b0c9`를 일반 merge한 `c206098`에서 `git diff --exit-code c238fda HEAD -- app scripts gradle`가 차이 없이 통과했다. 브랜치를 일반 push하고 [PR #7](https://github.com/AtraFelis/ebook_viewer/pull/7)을 main 대상으로 등록/대화에 연결했다. 사용자 변경 덮어쓰기/reset/clean/강제 push 없음. 게시 직후 원격 CI는 진행 중이며, 이 문서 갱신을 push한 뒤 최종 head에 CodeRabbit 수동 요청을 한 번 등록하고 실제 응답을 확인한다. 동적 결과는 [PR checks](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)와 본문에서 확인하며 로컬 통과를 원격 통과/실제 리뷰로 대체하지 않는다.
+
+## 원격 CI·실제 리뷰 결과
+
+등록 기록을 `32bd52b`로 push한 뒤 [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/7#issuecomment-6230658371)을 한 번 등록했다. 봇의 [접수/완료 응답](https://github.com/AtraFelis/ebook_viewer/pull/7#issuecomment-6230662455)을 확인했다. 이전 PR #6 한도와 달리 이번에는 실제 실행되어 [19개 파일 검토 결과](https://github.com/AtraFelis/ebook_viewer/pull/7#issuecomment-6230655962)가 **No actionable comments**로 완료됐다. covered/source commit은 `32bd52b47340511c5d86663b116d5999157b5d51`이며 인라인 수정 지적/리뷰 스레드는 없다. `skipped` 상태를 완료 근거로 쓰지 않았다.
+
+Docstring Coverage 0%/80% 경고는 봇의 일반 설명문 비율 기준이다. 48개 함수/8개 파일에 일괄 설명을 추가하라는 권고에는 구체적 잘못된 동작이나 빠진 소유권 계약이 없고, 저장소는 이유·제약을 설명하는 주석을 요구한다. 실제 FD 소유권·익명 복사·provider 취소의 제약은 소스/ADR에 기술되어 있어 비율만 맞추는 주석은 추가하지 않았다. Autofix/문서 생성 체크박스는 활성화하지 않았다. 타당한 코드 수정 지적이 없어 코드 변경/재설치는 없다. 리뷰 사용량은 이번 실행 후 0회로 표시됐으며 결과 기록만 바뀌는 head에 중복 요청하지 않는다.
+
+같은 head의 [Windows CI 39009827260](https://github.com/AtraFelis/ebook_viewer/actions/runs/39009827260)는 **completed/success**다. 도구 설치, Wrapper/strict 앱·계측 빌드·단위·Lint·ktlint를 원격에서 통과했다. 원격 기기 테스트를 실행한 것은 아니며 위 API 33 로컬 계측과 구분한다. 조회 당시 PR은 OPEN/MERGEABLE/CLEAN이고 병합은 하지 않았다. 이 결과 기록을 담는 후속 문서 head의 CI는 최신 checks와 구분한다. 다음은 P1 백그라운드 복귀·메모리 압박·문서 교체 관련 상태/자원 회귀와 남은 개인 기기 수용이다. P2 선명도 복구/자동 배경색은 계속 보류한다.

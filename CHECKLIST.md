@@ -74,6 +74,7 @@
 - [ ] 현재 기기·개인 PDF의 기능 수용 확인 및 변경 관련 회귀 검증(성능 악화 의심 시 필요한 계측만 추가).
 - 사용자 확인(2026-10-17): 최종 접근 기능 APK에서 개인 PDF 열기·이동 후 목록→이어 읽기 정상. 모든 설정/물리 제스처·재부팅 수용과 자동 계측을 구분한다.
 - [x] 파일 접근·오류 복구를 [PR #7](https://github.com/AtraFelis/ebook_viewer/pull/7)로 등록. 구현 c238fda/일반 main merge c206098, 앱·스크립트 불변. 단위 22개·기기 36개 통과와 원격 CI/실제 CodeRabbit 리뷰는 별도 확인한다.
+- [x] PR #7 head 32bd52b의 원격 Windows CI 39009827260 성공 및 CodeRabbit 19개 파일 실제 리뷰 완료/수정 지적 없음 확인. 함수 설명문 비율 권고의 미적용 판단은 history에 기록. 결과만 기록한 후속 문서 head checks는 별도 확인한다.
 
 2026-10-17 P1 첫 범위: strict debug 앱/계측 APK 빌드, 단위 9개, Lint 오류/경고 0, ktlintCheck, API 33 계측 15개와 별도 프로세스 복원 seed/verify 각 1개 통과. [결과·실패 수정·다음 행동](docs/history/2026-10-17-01-p1-reading-library.md). SAF 영구 권한 처리/재선택 안내는 구현했지만 실제 provider별 권한 소실·재부팅·비탐색 임시 복사는 아직 수용 완료가 아니므로 첫 항목은 미완료다. P1 전체 완료와 구분한다.
 
