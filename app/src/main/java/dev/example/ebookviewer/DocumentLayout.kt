@@ -107,6 +107,25 @@ object ZoomLimits {
 }
 
 class Viewport(var zoom: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0) {
+    fun moveToPage(layout: DocumentLayout, page: Int, fractionY: Double?, width: Int, height: Int) {
+        require(page in layout.pages.indices)
+        require(fractionY == null || (fractionY.isFinite() && fractionY in 0.0..1.0))
+        val size = layout.pages[page]
+        val left = layout.left(page) * zoom
+        val pageWidth = size.width * zoom
+        x = if (pageWidth < width) {
+            (width - pageWidth) / 2.0 - left
+        } else {
+            x.coerceIn(width - left - pageWidth, -left)
+        }
+        y = if (fractionY == null) {
+            -layout.tops[page] * zoom
+        } else {
+            height / 2.0 - (layout.tops[page] + fractionY * size.height) * zoom
+        }
+        constrain(layout, width, height)
+    }
+
     fun zoomAt(
         factor: Double,
         focusX: Double,

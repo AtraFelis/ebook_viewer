@@ -16,6 +16,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -33,12 +34,20 @@ class MainActivity : Activity() {
     private lateinit var readingWindow: ReadingWindow
     private lateinit var root: FrameLayout
     private var settingsDialog: AlertDialog? = null
+    private var navigationDialog: AlertDialog? = null
+    private lateinit var pageIndicator: TextView
+    private lateinit var pageJumpButton: Button
+    private lateinit var bookmarksButton: Button
+    private var pageNumbersVisible = false
+    private data class PageTarget(val page: Int, val y: Double? = null)
+    private var pendingNavigation: PageTarget? = null
     private var reading = false
     private lateinit var libraryView: LinearLayout
     private lateinit var libraryScroll: ScrollView
     private lateinit var homeButton: Button
     private val library get() = (application as ReaderApplication).library
     private val settings get() = (application as ReaderApplication).settings
+    private val bookmarks get() = (application as ReaderApplication).bookmarks
     private val main = Handler(Looper.getMainLooper())
     private var sourceUri: String? = null
     private var synthetic = false
@@ -67,6 +76,8 @@ class MainActivity : Activity() {
                 loaded = true
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
+                applyPendingNavigation()
+                updatePageIndicator()
                 setStatus(
                     if (durableAccess) {
                         getString(R.string.document_ready, it.size)
@@ -74,12 +85,16 @@ class MainActivity : Activity() {
                         getString(R.string.temporary_access, it.size)
                     }
                 )
-                if (first) saveReading() else scheduleSave()
+                if (pendingNavigation == null) {
+                    if (first) saveReading() else scheduleSave()
+                }
             },
             onTile = viewer::putTile,
             onError = {
                 // Restoring an existing record scans all page sizes before publishing a new position.
                 loaded = false
+                pendingNavigation = null
+                updatePageIndicator()
                 cancelSave()
                 setStatus(R.string.load_error)
                 if (!isFinishing) {
@@ -95,7 +110,11 @@ class MainActivity : Activity() {
             },
             onPageCount = { expectedPages = it }
         )
-        viewer.onPositionChanged = ::scheduleSave
+        viewer.onPositionChanged = {
+            updatePageIndicator()
+            scheduleSave()
+        }
+        viewer.onUserInteraction = { pendingNavigation = null }
         viewer.setOnClickListener {
             if (reading) {
                 readerTools.visibility =
@@ -164,10 +183,35 @@ class MainActivity : Activity() {
                 }
             )
         }
+        pageJumpButton = Button(this).apply {
+            setText(R.string.go_to_page)
+            setOnClickListener { showPageJump() }
+        }
+        bookmarksButton = Button(this).apply {
+            setText(R.string.bookmarks)
+            setOnClickListener { showBookmarks() }
+        }
+        readerTools.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                addView(pageJumpButton, LinearLayout.LayoutParams(0, -2, 1f))
+                addView(bookmarksButton, LinearLayout.LayoutParams(0, -2, 1f))
+            }
+        )
+        pageIndicator = TextView(this).apply {
+            id = R.id.page_indicator
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.argb(170, 0, 0, 0))
+            val padding = (6 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+            visibility = View.GONE
+            textSize = 12f
+        }
         root = FrameLayout(this).apply {
             setBackgroundColor(Color.DKGRAY)
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
             addView(homeScreen, FrameLayout.LayoutParams(-1, -1))
+            addView(pageIndicator, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END))
             addView(readerTools, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
             setOnApplyWindowInsetsListener { _, insets ->
                 // Only physical cutouts reserve PDF space; transient system bars never resize it.
@@ -202,6 +246,9 @@ class MainActivity : Activity() {
                     )
                     homeScreen.setPadding(safe.left, safe.top, safe.right, safe.bottom)
                     readerTools.setPadding(safe.left, safe.top, safe.right, 0)
+                    val numberLayout = pageIndicator.layoutParams as FrameLayout.LayoutParams
+                    numberLayout.setMargins(safe.left, 0, safe.right, safe.bottom)
+                    pageIndicator.layoutParams = numberLayout
                 } else {
                     @Suppress("DEPRECATION")
                     homeScreen.setPadding(
@@ -237,6 +284,13 @@ class MainActivity : Activity() {
             result.onSuccess(viewer::setBackgroundSettings)
                 .onFailure { reportError(R.string.settings_error) }
         }
+        settings.loadPageNumbers { result ->
+            if (isDestroyed) return@loadPageNumbers
+            result.onSuccess {
+                pageNumbersVisible = it
+                updatePageIndicator()
+            }.onFailure { reportError(R.string.settings_error) }
+        }
         reselectRecord = savedInstanceState?.getString("reselectUri")?.let { uri ->
             ReadingRecord(uri, getString(R.string.untitled_pdf), 0)
         }
@@ -247,8 +301,22 @@ class MainActivity : Activity() {
             if (uri == null) {
                 refreshLibrary()
             } else {
-                openDocument(Uri.parse(uri), savedInstanceState.getBundle("viewport"))
+                openDocument(
+                    Uri.parse(uri),
+                    savedInstanceState.getBundle("viewport"),
+                    relink = savedInstanceState.getString("replacedUri")
+                )
             }
+        }
+        if (savedInstanceState?.containsKey("pendingPage") == true) {
+            pendingNavigation = PageTarget(
+                savedInstanceState.getInt("pendingPage"),
+                if (savedInstanceState.containsKey("pendingPageY")) {
+                    savedInstanceState.getDouble("pendingPageY")
+                } else {
+                    null
+                }
+            )
         }
     }
 
@@ -286,6 +354,7 @@ class MainActivity : Activity() {
         relink: String? = null
     ) {
         saveReading()
+        pendingNavigation = null
         cancelSave()
         worker.closeDocument()
         loaded = false
@@ -367,6 +436,7 @@ class MainActivity : Activity() {
 
     private fun openSample(viewport: Bundle? = null) {
         saveReading()
+        pendingNavigation = null
         cancelSave()
         opening++
         sourceUri = null
@@ -390,10 +460,12 @@ class MainActivity : Activity() {
         viewer.visibility = View.VISIBLE
         homeButton.visibility = View.VISIBLE
         hideTools()
+        updatePageIndicator()
     }
 
     private fun showLibrary() {
         saveReading()
+        pendingNavigation = null
         cancelSave()
         opening++
         loaded = false
@@ -411,6 +483,7 @@ class MainActivity : Activity() {
         readerTools.visibility = View.GONE
         readingWindow.apply(false)
         setStatus(R.string.ready)
+        updatePageIndicator()
         refreshLibrary()
     }
 
@@ -469,7 +542,7 @@ class MainActivity : Activity() {
     }
 
     private fun scheduleSave() {
-        if (!loaded || activeRecord == null || savePending) return
+        if (!loaded || activeRecord == null || savePending || pendingNavigation != null) return
         savePending = true
         main.postDelayed(saveTask, 1_000)
     }
@@ -486,6 +559,18 @@ class MainActivity : Activity() {
         val updated = record.copy(position = position)
         activeRecord = updated
         val replacement = replacedUri
+        if (replacement != null && replacement != updated.uri) {
+            // Migrate only after a PDF was opened successfully. Keep the old record until it succeeds.
+            bookmarks.execute({ it.relink(replacement, updated.uri) }) { migrated ->
+                migrated.onSuccess { persistReadingRecord(updated, replacement) }
+                    .onFailure { if (!isDestroyed) reportError(R.string.bookmarks_error) }
+            }
+        } else {
+            persistReadingRecord(updated, replacement)
+        }
+    }
+
+    private fun persistReadingRecord(updated: ReadingRecord, replacement: String?) {
         library.execute({ it.put(updated, replacement) }) { result ->
             if (isDestroyed) return@execute
             result.onSuccess {
@@ -515,6 +600,124 @@ class MainActivity : Activity() {
         readingWindow.apply(reading)
     }
 
+    private fun updatePageIndicator() {
+        if (!::pageIndicator.isInitialized) return
+        val position = viewer.readingPosition()
+        val show = reading && loaded && pageNumbersVisible && position != null
+        pageIndicator.visibility = if (show) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        if (position != null) {
+            val text = getString(R.string.current_page, position.page + 1, expectedPages)
+            if (pageIndicator.text != text) pageIndicator.text = text
+        }
+        pageJumpButton.isEnabled = loaded && position != null
+        bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
+    }
+
+    private fun showPageJump() {
+        if (!loaded || navigationDialog != null) return
+        val current = viewer.readingPosition() ?: return
+        trackNavigationDialog(pageJumpDialog(current.page, expectedPages) { requestPage(it) })
+    }
+
+    private fun requestPage(page: Int, y: Double? = null) {
+        if (page !in 0 until expectedPages) {
+            reportError(R.string.page_unavailable)
+            return
+        }
+        pendingNavigation = PageTarget(page, y)
+        hideTools()
+        applyPendingNavigation()
+        if (pendingNavigation != null) {
+            setStatus(R.string.page_preparing)
+            Toast.makeText(this, R.string.page_preparing, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun applyPendingNavigation() {
+        val target = pendingNavigation ?: return
+        if (expectedPages > 0 && target.page !in 0 until expectedPages) {
+            pendingNavigation = null
+            reportError(R.string.page_unavailable)
+        } else if (viewer.goToPage(target.page, target.y)) {
+            pendingNavigation = null
+            cancelSave()
+            saveReading()
+        }
+    }
+
+    private fun trackNavigationDialog(dialog: AlertDialog) {
+        navigationDialog?.dismiss()
+        navigationDialog = dialog
+        dialog.setOnDismissListener {
+            if (navigationDialog === dialog) navigationDialog = null
+            hideTools()
+        }
+        dialog.show()
+    }
+
+    private fun showBookmarks() {
+        if (navigationDialog != null) return
+        val record = activeRecord ?: return
+        val position = viewer.readingPosition() ?: return
+        val generation = opening
+        bookmarks.execute({ it.list(record.uri) }) { result ->
+            if (isDestroyed || generation != opening || navigationDialog != null) return@execute
+            result.onSuccess { entries ->
+                val labels = entries.map { getString(R.string.bookmark_page, it.page + 1) }
+                val builder = AlertDialog.Builder(this)
+                    .setTitle(R.string.bookmarks)
+                    .setPositiveButton(R.string.add_bookmark) { _, _ ->
+                        bookmarks.execute({
+                            it.put(Bookmark(record.uri, position.page, position.y))
+                        }) { saved ->
+                            if (!isDestroyed) {
+                                saved.onSuccess {
+                                    Toast.makeText(
+                                        this,
+                                        R.string.bookmark_saved,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }.onFailure { reportError(R.string.bookmarks_error) }
+                            }
+                        }
+                    }
+                    .setNegativeButton(R.string.close_settings, null)
+                if (entries.isEmpty()) {
+                    builder.setMessage(R.string.no_bookmarks)
+                } else {
+                    builder.setItems(labels.toTypedArray()) { _, index ->
+                        val entry = entries[index]
+                        requestPage(entry.page, entry.y)
+                    }
+                    builder.setView(TextView(this).apply { setText(R.string.bookmark_delete_hint) })
+                }
+                val dialog = builder.create()
+                trackNavigationDialog(dialog)
+                dialog.listView?.setOnItemLongClickListener { _, _, index, _ ->
+                    val entry = entries[index]
+                    dialog.dismiss()
+                    val confirmation = AlertDialog.Builder(this)
+                        .setMessage(getString(R.string.delete_bookmark_message, entry.page + 1))
+                        .setPositiveButton(R.string.delete_bookmark) { _, _ ->
+                            bookmarks.execute({ it.remove(record.uri, entry.page) }) { removed ->
+                                if (!isDestroyed) {
+                                    removed.onFailure { reportError(R.string.bookmarks_error) }
+                                }
+                            }
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .create()
+                    trackNavigationDialog(confirmation)
+                    true
+                }
+            }.onFailure { reportError(R.string.bookmarks_error) }
+        }
+    }
+
     private fun showSettings() {
         if (settingsDialog != null) return
         settings.load { result ->
@@ -528,15 +731,7 @@ class MainActivity : Activity() {
                     )
                 val dialog = AlertDialog.Builder(this)
                     .setTitle(R.string.reader_settings_title)
-                    .setView(
-                        Button(this).apply {
-                            setText(R.string.background_settings)
-                            setOnClickListener {
-                                settingsDialog?.dismiss()
-                                showBackgroundSettings()
-                            }
-                        }
-                    )
+                    .setView(settingsControls())
                     .setSingleChoiceItems(labels, mode.ordinal) { selectedDialog, index ->
                         selectedDialog.dismiss()
                         val selected = OrientationMode.entries[index]
@@ -579,6 +774,44 @@ class MainActivity : Activity() {
                 }
                 dialog.show()
             }.onFailure { reportError(R.string.settings_error) }
+        }
+    }
+
+    private fun settingsControls(): LinearLayout {
+        val backgroundButton = Button(this).apply {
+            setText(R.string.background_settings)
+            setOnClickListener {
+                settingsDialog?.dismiss()
+                showBackgroundSettings()
+            }
+        }
+        var binding = false
+        val checkbox = CheckBox(this).apply {
+            setText(R.string.show_page_numbers)
+            isChecked = pageNumbersVisible
+            setOnCheckedChangeListener { _, checked ->
+                if (!binding) {
+                    isEnabled = false
+                    settings.savePageNumbers(checked) { saved ->
+                        if (isDestroyed) return@savePageNumbers
+                        isEnabled = true
+                        saved.onSuccess {
+                            pageNumbersVisible = it
+                            updatePageIndicator()
+                        }.onFailure {
+                            binding = true
+                            isChecked = pageNumbersVisible
+                            binding = false
+                            reportError(R.string.settings_error)
+                        }
+                    }
+                }
+            }
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(backgroundButton)
+            addView(checkbox)
         }
     }
 
@@ -633,6 +866,8 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        navigationDialog?.dismiss()
+        navigationDialog = null
         settingsDialog?.setOnDismissListener(null)
         settingsDialog?.dismiss()
         settingsDialog = null
@@ -644,9 +879,14 @@ class MainActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         saveReading()
+        pendingNavigation?.let {
+            outState.putInt("pendingPage", it.page)
+            it.y?.let { fraction -> outState.putDouble("pendingPageY", fraction) }
+        }
         outState.putString("sourceUri", sourceUri)
         outState.putBoolean("synthetic", synthetic)
         outState.putString("reselectUri", reselectRecord?.uri)
+        outState.putString("replacedUri", replacedUri)
         outState.putBundle("viewport", viewer.saveViewport())
         super.onSaveInstanceState(outState)
     }

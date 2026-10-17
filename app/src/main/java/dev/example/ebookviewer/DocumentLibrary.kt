@@ -64,6 +64,9 @@ class LibraryRepository(private val file: () -> File) {
 }
 
 class ReaderApplication : Application() {
+    val bookmarks: BookmarkRepository by lazy {
+        BookmarkRepository { File(filesDir, "bookmarks.bin") }
+    }
     val settings: ReaderSettingsRepository by lazy {
         ReaderSettingsRepository { File(filesDir, "reader-settings.bin") }
     }

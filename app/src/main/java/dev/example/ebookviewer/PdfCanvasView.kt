@@ -37,6 +37,7 @@ class PdfCanvasView @JvmOverloads constructor(
     private var restored: Bundle? = null
     private var pendingPages: List<PageSize>? = null
     var onPositionChanged: (() -> Unit)? = null
+    var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
     private var outsideColor = DEFAULT_BACKGROUND_COLOR
 
@@ -48,6 +49,15 @@ class PdfCanvasView @JvmOverloads constructor(
     }
 
     fun outsideBackgroundColor(): Int = outsideColor
+
+    fun goToPage(page: Int, fractionY: Double? = null): Boolean {
+        val document = layout ?: return false
+        if (page !in document.pages.indices) return false
+        scroller.forceFinished(true)
+        viewport.moveToPage(document, page, fractionY, width, height)
+        constrain()
+        return true
+    }
 
     private val cache = object : LruCache<Tile, Bitmap>(64 * 1024 * 1024) {
         override fun sizeOf(key: Tile, value: Bitmap): Int = value.allocationByteCount
@@ -287,6 +297,7 @@ class PdfCanvasView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                onUserInteraction?.invoke()
                 tapAllowed = scroller.isFinished
                 hadMultiplePointers = false
             }

@@ -17,6 +17,47 @@ class ReaderSettingsRepository(private val file: () -> File) : java.io.Closeable
     private val main = Handler(Looper.getMainLooper())
     private var stored: OrientationMode? = null
     private var storedBackground: BackgroundSettings? = null
+    private var storedPageNumbers: Boolean? = null
+
+    private fun pageNumbersFile(): File = file().let { File(it.parentFile, "${it.name}.pages") }
+
+    fun loadPageNumbers(complete: (Result<Boolean>) -> Unit) =
+        submit(complete) { readPageNumbers() }
+
+    private fun readPageNumbers(): Boolean = storedPageNumbers ?: run {
+        val path = pageNumbersFile()
+        try {
+            AtomicFile(path).openRead().use { input ->
+                val data = DataInputStream(input)
+                require(data.readInt() == 0x45564e31 && data.readInt() == 1)
+                val value = data.readUnsignedByte()
+                require(value in 0..1 && data.read() == -1)
+                value == 1
+            }
+        } catch (error: FileNotFoundException) {
+            if (path.exists()) throw error
+            false
+        }
+    }.also { storedPageNumbers = it }
+
+    fun savePageNumbers(value: Boolean, complete: (Result<Boolean>) -> Unit) = submit(complete) {
+        readPageNumbers()
+        val atomic = AtomicFile(pageNumbersFile())
+        val stream = atomic.startWrite()
+        try {
+            val data = DataOutputStream(stream)
+            data.writeInt(0x45564e31)
+            data.writeInt(1)
+            data.writeBoolean(value)
+            data.flush()
+            atomic.finishWrite(stream)
+            storedPageNumbers = value
+            value
+        } catch (error: Exception) {
+            atomic.failWrite(stream)
+            throw error
+        }
+    }
 
     private fun backgroundFile(): File = file().let { File(it.parentFile, "${it.name}.background") }
 
