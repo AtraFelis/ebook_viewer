@@ -10,9 +10,9 @@ PR을 넣을 때마다 CodeRabbit 수동 리뷰를 요청한다. 이후 리뷰�
 
 - 이전 CodeRabbit 댓글은 별 10개 미만으로 자동 리뷰를 건너뛰었다고 안내했다. 성공 체크는 리뷰 완료가 아니었으며 실제 reviews/인라인 지적은 없었다.
 - 공식 명령 `@coderabbitai review`를 [댓글](https://github.com/AtraFelis/ebook_viewer/pull/5#issuecomment-6230080100)로 한 번 등록했다. 봇의 접수 응답과 base `24ef93b`~head `751dbc0`의 23개 파일 검토 진행을 확인했다. Autofix/자동 코드 변경은 활성화하지 않았다.
-- head `751dbc0`의 [Windows CI 39005653250](https://github.com/AtraFelis/ebook_viewer/actions/runs/39005653250)는 성공했다. CodeRabbit 실제 리뷰 결과는 별도로 대기 중이다. `gh pr checks --watch --interval 20`으로 기다리며 중복 실행 요청은 보내지 않는다.
+- head `751dbc0`의 [Windows CI 39005653250](https://github.com/AtraFelis/ebook_viewer/actions/runs/39005653250)는 성공했다. CodeRabbit은 05:26 UTC에 실제 리뷰를 완료했고 결과는 “No actionable comments were generated”였다. 건너뜀 성공과 구분해 접수 응답의 “Review finished”, 실제 검토 커밋/23개 파일, 최종 SUCCESS를 확인했다. `gh pr checks --watch --interval 20`은 CI/CodeRabbit 모두 통과로 종료됐다.
 - `git fetch origin` 후 현재 브랜치와 원격 head 차이는 0/0, PR은 MERGEABLE이었다. 사용자 변경/외부 커밋을 덮어쓰지 않았다.
 
 ## 검증과 다음 행동
 
-현재 변경은 규칙 문서뿐이므로 앱 테스트를 불필요하게 반복하지 않는다. 실제 리뷰가 도착하면 미해결 지적의 타당성·위치를 확인하고, 채택/보류 근거와 수정 커밋·해당 변경의 검사 결과를 이 문서에 기록한다. 검증하지 않은 내용이나 진행 중 리뷰를 통과로 표현하지 않는다.
+PR #5의 인라인 지적과 reviews는 비어 있었고 실제 봇 검토 결과도 수정 대상 없음이었다. 따라서 리뷰 대응 앱 변경/재검증/push는 불필요하다. 최종 head `751dbc0`의 CI/CodeRabbit SUCCESS, MERGEABLE/CLEAN을 확인했다. 병합은 사용자가 한다. 절차 문서는 로컬 `cc02b75`로 보존했고 다음 P1 브랜치에도 포함했다. 새 기능의 기기 검증 상태와 이 결과를 혼동하지 않는다.

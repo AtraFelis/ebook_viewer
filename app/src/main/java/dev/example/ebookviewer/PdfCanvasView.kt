@@ -36,6 +36,20 @@ class PdfCanvasView @JvmOverloads constructor(
     private var fallback = emptyList<Tile>()
     private var restored: Bundle? = null
     private var pendingPages: List<PageSize>? = null
+    private var pageLayout = PageLayoutSettings()
+
+    fun pageLayoutSettings(): PageLayoutSettings = pageLayout
+
+    fun setPageLayoutSettings(settings: PageLayoutSettings) {
+        if (pageLayout == settings) return
+        val saved = saveViewport()
+        pageLayout = settings
+        val pages = layout?.pages ?: return
+        scroller.forceFinished(true)
+        layout = null
+        restored = saved
+        setPages(pages)
+    }
     var onPositionChanged: (() -> Unit)? = null
     var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
@@ -159,11 +173,21 @@ class PdfCanvasView @JvmOverloads constructor(
             return
         }
         val previous = layout
-        layout = DocumentLayout(pages)
+        layout = DocumentLayout(pages, pageLayout)
         if (previous != null) {
-            // Existing prefix coordinates stay exact while more pages are appended.
-            val page = previous.pageAt((height / 2.0 - viewport.y) / viewport.zoom)
-            viewport.x += (previous.left(page) - requireNotNull(layout).left(page)) * viewport.zoom
+            // Uniform widths may change when a wider page is discovered. Reproject the anchor.
+            val centerX = (width / 2.0 - viewport.x) / viewport.zoom
+            val centerY = (height / 2.0 - viewport.y) / viewport.zoom
+            val page = previous.pageAt(centerY)
+            val fractionX = (centerX - previous.left(page)) / previous.pageWidth(page)
+            val offsetY = centerY - previous.tops[page]
+            val fractionY = (offsetY / previous.pageHeight(page)).coerceIn(0.0, 1.0)
+            val gapOffset = (offsetY - previous.pageHeight(page)).coerceAtLeast(0.0)
+            val document = requireNotNull(layout)
+            viewport.x = width / 2.0 -
+                (document.left(page) + fractionX * document.pageWidth(page)) * viewport.zoom
+            val projectedY = document.tops[page] + fractionY * document.pageHeight(page) + gapOffset
+            viewport.y = height / 2.0 - projectedY * viewport.zoom
             constrain()
             return
         }
@@ -180,12 +204,12 @@ class PdfCanvasView @JvmOverloads constructor(
             val document = requireNotNull(layout)
             val page = saved.getInt("page").coerceIn(document.pages.indices)
             val centerX = if (saved.containsKey("fractionX")) {
-                document.left(page) + saved.getDouble("fractionX") * document.pages[page].width
+                document.left(page) + saved.getDouble("fractionX") * document.pageWidth(page)
             } else {
                 saved.getDouble("centerX")
             }
             val centerY = if (saved.containsKey("fractionY")) {
-                document.tops[page] + saved.getDouble("fractionY") * document.pages[page].height
+                document.tops[page] + saved.getDouble("fractionY") * document.pageHeight(page)
             } else {
                 saved.getDouble("centerY")
             }
@@ -200,6 +224,8 @@ class PdfCanvasView @JvmOverloads constructor(
         restored
     } else {
         Bundle().apply {
+            putString("pageSizeMode", pageLayout.mode.name)
+            putInt("pageGap", pageLayout.gap)
             putDouble("zoom", viewport.zoom)
             putDouble("centerX", (width / 2.0 - viewport.x) / viewport.zoom)
             putDouble("centerY", (height / 2.0 - viewport.y) / viewport.zoom)
@@ -221,8 +247,8 @@ class PdfCanvasView @JvmOverloads constructor(
         val page = document.pageAt(centerY)
         return ReadingPosition(
             page,
-            (centerX - document.left(page)) / document.pages[page].width,
-            ((centerY - document.tops[page]) / document.pages[page].height).coerceIn(0.0, 1.0),
+            (centerX - document.left(page)) / document.pageWidth(page),
+            ((centerY - document.tops[page]) / document.pageHeight(page)).coerceIn(0.0, 1.0),
             viewport.zoom
         )
     }
@@ -242,6 +268,14 @@ class PdfCanvasView @JvmOverloads constructor(
 
     fun restoreViewport(saved: Bundle?) {
         restored = saved
+        pageLayout = if (saved?.containsKey("pageSizeMode") == true) {
+            PageLayoutSettings(
+                PageSizeMode.valueOf(requireNotNull(saved.getString("pageSizeMode"))),
+                saved.getInt("pageGap")
+            )
+        } else {
+            pageLayout
+        }
     }
 
     fun hasRestoredViewport(): Boolean = restored != null
@@ -331,14 +365,17 @@ class PdfCanvasView @JvmOverloads constructor(
         val scale = rasterScale(viewport.zoom)
         val visible = document.visibleTiles(viewport, width, height, scale)
         if (visible != requested) {
-            if (requested.firstOrNull()?.scale != scale) {
+            if (requested.firstOrNull()?.scale != visible.firstOrNull()?.scale) {
                 val available = requested.filter { cache.get(it) != null }
                 if (available.isNotEmpty()) fallback = available
             }
             requested = visible
             previews = visible.map { it.page }.distinct().map { index ->
                 val page = document.pages[index]
-                val previewScale = min(scale, 512.0 / max(page.width, page.height))
+                val previewScale = min(
+                    scale * document.scale(index),
+                    512.0 / max(page.width, page.height)
+                )
                 Tile(
                     index,
                     previewScale,
@@ -366,10 +403,9 @@ class PdfCanvasView @JvmOverloads constructor(
 
     private fun drawTile(canvas: Canvas, tile: Tile, bitmap: Bitmap?) {
         val document = layout ?: return
-        val page = document.pages[tile.page]
         val left = viewport.x + document.left(tile.page) * viewport.zoom
         val top = viewport.y + document.tops[tile.page] * viewport.zoom
-        val ratio = viewport.zoom / tile.scale
+        val ratio = viewport.zoom * document.scale(tile.page) / tile.scale
         destination.set(
             (left + tile.x * ratio).toFloat(),
             (top + tile.y * ratio).toFloat(),
@@ -380,10 +416,10 @@ class PdfCanvasView @JvmOverloads constructor(
         canvas.clipRect(
             left.toFloat(),
             top.toFloat(),
-            (left + page.width * viewport.zoom).toFloat(),
+            (left + document.pageWidth(tile.page) * viewport.zoom).toFloat(),
             (
                 top +
-                    page.height * viewport.zoom
+                    document.pageHeight(tile.page) * viewport.zoom
                 ).toFloat()
         )
         paint.color = Color.WHITE

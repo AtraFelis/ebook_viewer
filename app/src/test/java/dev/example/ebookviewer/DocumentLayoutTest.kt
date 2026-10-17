@@ -6,6 +6,44 @@ import org.junit.Test
 
 class DocumentLayoutTest {
     @Test
+    fun uniformWidthsScalePageGeometryAndPdfTileResolutionSeparately() {
+        val document = DocumentLayout(
+            listOf(PageSize(400, 600), PageSize(800, 400)),
+            PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 16)
+        )
+        assertEquals(800.0, document.pageWidth(0), 0.0)
+        assertEquals(1200.0, document.pageHeight(0), 0.0)
+        assertEquals(1216.0, document.tops[1], 0.0)
+        assertEquals(1616.0, document.height, 0.0)
+        val tiles = document.visibleTiles(Viewport(), 512, 512)
+        assertEquals(listOf(Tile(0, 2.0, 0, 0, 512, 512)), tiles)
+        assertEquals(0, document.pageAt(1208.0))
+        assertEquals(1, document.pageAt(1216.0))
+        assertTrue(document.visibleTiles(Viewport(1.0, 0.0, -1200.0), 512, 16).isEmpty())
+        val viewport = Viewport(3.0, -100.0, 0.0)
+        viewport.moveToPage(document, 1, 0.5, 400, 600)
+        assertEquals(3.0, viewport.zoom, 0.0)
+        assertEquals(300.0 - (1216.0 + 200.0) * 3.0, viewport.y, 0.0)
+    }
+
+    @Test
+    fun originalSizesRetainCenteringAndGapHasNoTrailingSpace() {
+        val document = DocumentLayout(
+            listOf(PageSize(400, 600), PageSize(800, 400)),
+            PageLayoutSettings(gap = 72)
+        )
+        assertEquals(200.0, document.left(0), 0.0)
+        assertEquals(672.0, document.tops[1], 0.0)
+        assertEquals(1072.0, document.height, 0.0)
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            PageLayoutSettings(gap = -1)
+        }
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            PageLayoutSettings(gap = 73)
+        }
+    }
+
+    @Test
     fun resolutionBucketsKeepUserZoomContinuousAndMapVisibleArea() {
         assertEquals(rasterScale(1.1), rasterScale(1.3), 0.0)
         assertTrue(rasterScale(1.3) >= 1.3)

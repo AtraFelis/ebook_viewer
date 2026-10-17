@@ -14,6 +14,8 @@ P0 타일 렌더링 프로토타입과 검증된 Gradle Wrapper가 있습니다.
 
 ## 시작하기
 
+후속 브랜치에는 문서별 원본/너비 통일과 페이지 간격 설정을 구현했습니다. 로컬 단위 22개·빌드·Lint·ktlint는 통과했고 신규 API 33 기기 3개와 최종 전체 30개 회귀·앱 실행도 통과했습니다. [현재 결과와 제약](docs/history/2026-10-17-08-page-layout.md).
+
 1. [AGENTS.md](AGENTS.md): 기술·개발 계약
 2. [SESSION.md](SESSION.md): 현재 상태와 다음 작업
 3. [CHECKLIST.md](CHECKLIST.md): 완료 기준

@@ -1,11 +1,45 @@
 package dev.example.ebookviewer
 
 import android.content.pm.ActivityInfo
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.math.ceil
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class GestureDeviceTest {
+    private val instrumentation get() = PdfRendererDeviceTest.instrumentation
+    private val application
+        get() = instrumentation.targetContext.applicationContext as ReaderApplication
+    private val settings get() = application.settings
+    private var previousOrientation: OrientationMode? = null
+
+    @Before
+    fun allowTestControlledRotation() {
+        previousOrientation = setting(settings::load)
+        // A persisted fixed mode otherwise overrides requestedOrientation after recreation.
+        setting { settings.save(OrientationMode.AUTO, it) }
+    }
+
+    @After
+    fun restoreUserOrientation() {
+        previousOrientation?.let { previous -> setting { settings.save(previous, it) } }
+    }
+
+    private fun setting(action: ((Result<OrientationMode>) -> Unit) -> Unit): OrientationMode {
+        val done = CountDownLatch(1)
+        var result: Result<OrientationMode>? = null
+        action {
+            result = it
+            done.countDown()
+        }
+        assertTrue(done.await(10, TimeUnit.SECONDS))
+        return requireNotNull(result).getOrThrow()
+    }
+
     @Test
     fun repeatedPinchesReachLargerZoomAndStopExcessiveReduction() {
         val instrumentation = PdfRendererDeviceTest.instrumentation
@@ -35,6 +69,7 @@ class GestureDeviceTest {
     fun pinchAndTwentyPageRoundTripPreserveZoom() {
         val instrumentation = PdfRendererDeviceTest.instrumentation
         val ui = DeviceGestures(instrumentation)
+        setting { settings.save(OrientationMode.LANDSCAPE, it) }
         val activity = ui.launch()
         try {
             val view = ui.sample(activity)
@@ -43,8 +78,10 @@ class GestureDeviceTest {
             val zoom = ui.state(view).getDouble("zoom")
             assertTrue("Pinch did not zoom in", zoom > initial * 1.5)
             val startY = ui.state(view).getDouble("centerY")
+            // A landscape viewport traverses fewer document points per swipe at the same zoom.
+            val maximumDrags = ceil(14_000 * zoom / (view.height * 0.5)).toInt() + 20
             var drags = 0
-            while (ui.state(view).getDouble("centerY") < startY + 14_000 && drags < 80) {
+            while (ui.state(view).getDouble("centerY") < startY + 14_000 && drags < maximumDrags) {
                 ui.drag(view, true)
                 drags++
                 assertEquals(zoom, ui.state(view).getDouble("zoom"), 0.000001)

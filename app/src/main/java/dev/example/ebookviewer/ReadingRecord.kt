@@ -18,7 +18,8 @@ data class ReadingRecord(
     val title: String,
     val openedAt: Long,
     val pageCount: Int = 0,
-    val position: ReadingPosition? = null
+    val position: ReadingPosition? = null,
+    val pageLayout: PageLayoutSettings = PageLayoutSettings()
 ) {
     init {
         require(uri.isNotBlank() && title.isNotBlank() && openedAt >= 0 && pageCount >= 0)
@@ -29,7 +30,9 @@ data class ReadingRecord(
 object ReadingRecordsCodec {
     fun read(input: InputStream): List<ReadingRecord> {
         val data = DataInputStream(input)
-        require(data.readInt() == MAGIC && data.readInt() == 1) { "Unsupported reading records" }
+        require(data.readInt() == MAGIC) { "Unsupported reading records" }
+        val version = data.readInt()
+        require(version in 1..2) { "Unsupported reading records" }
         val count = data.readInt()
         require(count in 0..10_000)
         val records = List(count) {
@@ -47,6 +50,11 @@ object ReadingRecordsCodec {
                     )
                 } else {
                     null
+                },
+                if (version >= 2) {
+                    PageLayoutSettings(PageSizeMode.valueOf(data.readUTF()), data.readInt())
+                } else {
+                    PageLayoutSettings()
                 }
             )
         }
@@ -58,7 +66,7 @@ object ReadingRecordsCodec {
         require(records.size <= 10_000 && records.map { it.uri }.distinct().size == records.size)
         val data = DataOutputStream(output)
         data.writeInt(MAGIC)
-        data.writeInt(1)
+        data.writeInt(2)
         data.writeInt(records.size)
         for (record in records) {
             data.writeUTF(record.uri)
@@ -72,6 +80,8 @@ object ReadingRecordsCodec {
                 data.writeDouble(it.y)
                 data.writeDouble(it.zoom)
             }
+            data.writeUTF(record.pageLayout.mode.name)
+            data.writeInt(record.pageLayout.gap)
         }
         data.flush()
     }
