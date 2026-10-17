@@ -132,7 +132,7 @@ class LibraryDeviceTest {
             open(activity, file)
             ui.await("Missing document error was not displayed") {
                 ui.views(activity.window.decorView).filterIsInstance<android.widget.TextView>()
-                    .any { it.text == activity.getString(R.string.load_error) }
+                    .any { it.text == activity.getString(R.string.pdf_unavailable_error) }
             }
             assertEquals(previous, records(activity).single { it.uri == previous.uri })
         } finally {

@@ -14,6 +14,8 @@ P0 타일 렌더링 프로토타입과 검증된 Gradle Wrapper가 있습니다.
 
 ## 시작하기
 
+파일을 열지 못하면 원인별 안내와 다시 시도/파일 다시 선택을 제공합니다. 읽기 기록은 유지하며 스트리밍 provider는 취소 가능한 제한 임시 복사로 처리합니다. API 33 합성·test provider 기준 최종 36개 계측과 단위 22개·strict 빌드/Lint/ktlint를 통과했습니다([결과와 실제 선택 UI 미검증 범위](docs/history/2026-10-17-09-document-access.md)).
+
 후속 브랜치에는 문서별 원본/너비 통일과 페이지 간격 설정을 구현했습니다. 로컬 단위 22개·빌드·Lint·ktlint는 통과했고 신규 API 33 기기 3개와 최종 전체 30개 회귀·앱 실행도 통과했습니다. [현재 결과와 제약](docs/history/2026-10-17-08-page-layout.md).
 
 1. [AGENTS.md](AGENTS.md): 기술·개발 계약

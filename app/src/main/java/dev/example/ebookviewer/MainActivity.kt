@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.OperationCanceledException
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.view.Gravity
@@ -29,6 +30,16 @@ class MainActivity : Activity() {
     private lateinit var viewer: PdfCanvasView
     private lateinit var status: TextView
     private lateinit var homeStatus: TextView
+    private lateinit var retryButton: Button
+    private lateinit var reselectButton: Button
+    private data class FailedOpen(
+        val uri: String?,
+        val viewport: Bundle?,
+        val record: ReadingRecord?,
+        val relink: String?,
+        val synthetic: Boolean
+    )
+    private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
     private lateinit var readerTools: LinearLayout
     private lateinit var readingWindow: ReadingWindow
@@ -76,6 +87,7 @@ class MainActivity : Activity() {
                 loaded = true
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
+                if (first) hideTools()
                 applyPendingNavigation()
                 updatePageIndicator()
                 setStatus(
@@ -90,24 +102,7 @@ class MainActivity : Activity() {
                 }
             },
             onTile = viewer::putTile,
-            onError = {
-                // Restoring an existing record scans all page sizes before publishing a new position.
-                loaded = false
-                pendingNavigation = null
-                updatePageIndicator()
-                cancelSave()
-                setStatus(R.string.load_error)
-                if (!isFinishing) {
-                    AlertDialog.Builder(this)
-                        .setMessage(R.string.load_error)
-                        .setPositiveButton(R.string.select_again) { _, _ ->
-                            reselectRecord = activeRecord
-                            pickDocument()
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
-            },
+            onError = ::documentFailed,
             onPageCount = { expectedPages = it }
         )
         viewer.onPositionChanged = {
@@ -127,6 +122,31 @@ class MainActivity : Activity() {
             setText(R.string.document_list)
             setOnClickListener { showLibrary() }
             visibility = View.GONE
+        }
+        retryButton = Button(this).apply {
+            setText(R.string.retry_document)
+            visibility = View.GONE
+            setOnClickListener {
+                val failed = failedOpen ?: return@setOnClickListener
+                if (failed.synthetic) {
+                    openSample(failed.viewport)
+                } else {
+                    failed.uri?.let {
+                        openDocument(Uri.parse(it), failed.viewport, relink = failed.relink)
+                    }
+                }
+            }
+        }
+        reselectButton = Button(this).apply {
+            setText(R.string.select_again)
+            visibility = View.GONE
+            setOnClickListener {
+                val failed = failedOpen ?: return@setOnClickListener
+                reselectRecord = failed.record?.let {
+                    it.copy(uri = failed.relink ?: it.uri)
+                }
+                pickDocument()
+            }
         }
         homeScreen = LinearLayout(this).apply {
             id = R.id.home_screen
@@ -154,6 +174,12 @@ class MainActivity : Activity() {
             )
             addView(TextView(this@MainActivity).apply { setText(R.string.reader_gesture_hint) })
             addView(homeStatus)
+            addView(
+                LinearLayout(this@MainActivity).apply {
+                    addView(retryButton, LinearLayout.LayoutParams(0, -2, 1f))
+                    addView(reselectButton, LinearLayout.LayoutParams(0, -2, 1f))
+                }
+            )
             addView(libraryScroll, LinearLayout.LayoutParams(-1, 0, 1f))
         }
         readerTools = LinearLayout(this).apply {
@@ -338,6 +364,7 @@ class MainActivity : Activity() {
     @Deprecated("Platform Activity result API avoids a new runtime dependency")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == OPEN_PDF && resultCode != RESULT_OK) reselectRecord = null
         if (requestCode == OPEN_PDF && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
             openDocument(uri, grantFlags = data.flags, relink = reselectRecord?.uri)
@@ -354,6 +381,7 @@ class MainActivity : Activity() {
         relink: String? = null
     ) {
         saveReading()
+        clearFailedOpen()
         pendingNavigation = null
         cancelSave()
         worker.closeDocument()
@@ -374,53 +402,18 @@ class MainActivity : Activity() {
             val records = store.list()
             val previous = records.find { it.uri == uri.toString() }
                 ?: records.find { it.uri == relink }
-            if (uri.scheme == "content" &&
-                grantFlags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION != 0
-            ) {
-                try {
-                    resolver.takePersistableUriPermission(
-                        uri,
-                        grantFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                } catch (_: SecurityException) {
-                    // Some providers offer only temporary access; display that limitation below.
-                }
-            }
-            val durable = uri.scheme == "file" ||
-                resolver.persistedUriPermissions.any {
-                    it.uri == uri && it.isReadPermission
-                }
-            val title = try {
-                if (uri.scheme == "content") {
-                    resolver.query(
-                        uri,
-                        arrayOf(OpenableColumns.DISPLAY_NAME),
-                        null,
-                        null,
-                        null
-                    )?.use {
-                        if (it.moveToFirst()) it.getString(0)?.takeIf(String::isNotBlank) else null
-                    }
-                } else {
-                    uri.lastPathSegment
-                }
-            } catch (_: Exception) {
-                // Display-name metadata is optional; opening the descriptor still decides readability.
-                null
-            }
             ReadingRecord(
                 uri.toString(),
-                title ?: previous?.title ?: fallbackTitle,
+                previous?.title ?: fallbackTitle,
                 System.currentTimeMillis(),
                 previous?.pageCount ?: 0,
                 previous?.position,
                 previous?.pageLayout ?: PageLayoutSettings()
-            ) to durable
+            )
         }) { result ->
             if (isDestroyed || generation != opening) return@execute
-            result.onSuccess { (record, durable) ->
+            result.onSuccess { record ->
                 activeRecord = record
-                durableAccess = durable
                 viewer.setPageLayoutSettings(record.pageLayout)
                 if (viewport !=
                     null
@@ -429,15 +422,70 @@ class MainActivity : Activity() {
                 } else {
                     viewer.restorePosition(record.position)
                 }
-                worker.openForRestore(viewer.hasRestoredViewport()) {
-                    requireNotNull(resolver.openFileDescriptor(uri, "r"))
+                worker.openCancelable(viewer.hasRestoredViewport()) { request ->
+                    request.throwIfCanceled()
+                    if (uri.scheme == "content" &&
+                        grantFlags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION != 0
+                    ) {
+                        try {
+                            resolver.takePersistableUriPermission(
+                                uri,
+                                grantFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        } catch (_: SecurityException) {
+                            // Some providers offer temporary access; report that after opening.
+                        }
+                    }
+                    val durable = uri.scheme == "file" ||
+                        resolver.persistedUriPermissions.any {
+                            it.uri == uri && it.isReadPermission
+                        }
+                    val title = try {
+                        if (uri.scheme == "content") {
+                            resolver.query(
+                                uri,
+                                arrayOf(OpenableColumns.DISPLAY_NAME),
+                                null,
+                                null,
+                                null,
+                                request.signal
+                            )?.use {
+                                if (it.moveToFirst()) {
+                                    it.getString(0)?.takeIf(String::isNotBlank)
+                                } else {
+                                    null
+                                }
+                            }
+                        } else {
+                            uri.lastPathSegment
+                        }
+                    } catch (error: OperationCanceledException) {
+                        throw error
+                    } catch (_: Exception) {
+                        // Optional metadata never determines whether the PDF itself is readable.
+                        null
+                    }
+                    request.throwIfCanceled()
+                    main.post {
+                        if (!isDestroyed && generation == opening) {
+                            durableAccess = durable
+                            if (title != null) activeRecord = activeRecord?.copy(title = title)
+                        }
+                    }
+                    val descriptor = resolver.openFileDescriptor(uri, "r", request.signal)
+                        ?: throw PdfSourceException(PdfFailure.UNAVAILABLE)
+                    PdfDocumentSource(cacheDir).prepare(descriptor, request)
                 }
-            }.onFailure { reportError(R.string.library_error) }
+            }.onFailure {
+                showLibrary()
+                reportError(R.string.library_error)
+            }
         }
     }
 
     private fun openSample(viewport: Bundle? = null) {
         saveReading()
+        clearFailedOpen()
         pendingNavigation = null
         cancelSave()
         opening++
@@ -463,11 +511,13 @@ class MainActivity : Activity() {
         viewer.visibility = View.VISIBLE
         homeButton.visibility = View.VISIBLE
         hideTools()
+        readerTools.visibility = View.VISIBLE
         updatePageIndicator()
     }
 
     private fun showLibrary() {
         saveReading()
+        clearFailedOpen()
         pendingNavigation = null
         cancelSave()
         opening++
@@ -488,6 +538,44 @@ class MainActivity : Activity() {
         setStatus(R.string.ready)
         updatePageIndicator()
         refreshLibrary()
+    }
+
+    private fun clearFailedOpen() {
+        failedOpen = null
+        retryButton.visibility = View.GONE
+        reselectButton.visibility = View.GONE
+    }
+
+    private fun documentFailed(failure: PdfFailure) {
+        val failed = FailedOpen(
+            sourceUri,
+            viewer.saveViewport(),
+            activeRecord,
+            replacedUri,
+            synthetic
+        )
+        loaded = false
+        pendingNavigation = null
+        navigationDialog?.dismiss()
+        settingsDialog?.dismiss()
+        showLibrary()
+        failedOpen = failed
+        setStatus(
+            when (failure) {
+                PdfFailure.ACCESS -> R.string.pdf_access_error
+                PdfFailure.UNAVAILABLE -> R.string.pdf_unavailable_error
+                PdfFailure.EMPTY -> R.string.pdf_empty_error
+                PdfFailure.INVALID -> R.string.pdf_invalid_error
+                PdfFailure.PASSWORD -> R.string.pdf_password_error
+                PdfFailure.COPY_LIMIT -> R.string.pdf_copy_limit_error
+                PdfFailure.STORAGE -> R.string.pdf_storage_error
+                PdfFailure.TIMEOUT -> R.string.pdf_timeout_error
+                PdfFailure.READ -> R.string.pdf_read_error
+                PdfFailure.RENDER -> R.string.pdf_render_error
+            }
+        )
+        retryButton.visibility = View.VISIBLE
+        reselectButton.visibility = if (failed.uri != null) View.VISIBLE else View.GONE
     }
 
     private fun refreshLibrary() {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="dev.example.ebookviewer.p0" />
+    </queries>
+    <permission
+        android:name="dev.example.ebookviewer.p0.test.FIXTURES"
+        android:protectionLevel="signature" />
+    <application>
+        <!-- Only in the test APK; this provider never reads target-app/user files. -->
+        <provider
+            android:name="dev.example.ebookviewer.DocumentFixtureProvider"
+            android:authorities="dev.example.ebookviewer.p0.test.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:readPermission="dev.example.ebookviewer.p0.test.FIXTURES" />
+    </application>
+</manifest>

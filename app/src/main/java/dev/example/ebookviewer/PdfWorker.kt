@@ -8,6 +8,7 @@ import android.graphics.pdf.PdfRenderer
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import java.io.FileNotFoundException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -18,12 +19,14 @@ import java.util.concurrent.atomic.AtomicReference
 class PdfWorker(
     private val onLoaded: (List<PageSize>) -> Unit,
     private val onTile: (Tile, Bitmap) -> Unit,
-    private val onError: () -> Unit,
+    private val onError: (PdfFailure) -> Unit,
     private val onPageCount: (Int) -> Unit = {}
 ) {
     private data class Request(val document: Long, val generation: Long, val tiles: List<Tile>)
 
     private val executor = Executors.newSingleThreadScheduledExecutor()
+    private val cancellation = Executors.newSingleThreadExecutor()
+    private val opening = AtomicReference<PdfOpenRequest?>()
     private val main = Handler(Looper.getMainLooper())
     private val document = AtomicLong()
     private val generation = AtomicLong()
@@ -38,8 +41,14 @@ class PdfWorker(
     }
 
     fun openForRestore(restore: Boolean, source: () -> ParcelFileDescriptor) {
+        openCancelable(restore) { source() }
+    }
+
+    fun openCancelable(restore: Boolean, source: (PdfOpenRequest) -> ParcelFileDescriptor) {
         check(!closed)
         val id = document.incrementAndGet()
+        val openRequest = PdfOpenRequest()
+        opening.getAndSet(openRequest)?.cancel(cancellation)
         generation.incrementAndGet()
         pending.set(null)
         desired.set(null)
@@ -48,19 +57,24 @@ class PdfWorker(
             renderer?.close()
             renderer = null
             try {
-                val descriptor = source()
+                openRequest.throwIfCanceled()
+                val descriptor = source(openRequest)
                 if (document.get() != id) {
                     descriptor.close()
                     return@execute
                 }
                 val opened = try {
                     PdfRenderer(descriptor)
+                } catch (_: SecurityException) {
+                    descriptor.close()
+                    throw PdfSourceException(PdfFailure.PASSWORD)
                 } catch (error: Exception) {
                     descriptor.close()
-                    throw error
+                    throw PdfSourceException(PdfFailure.INVALID)
                 }
                 renderer = opened
-                require(opened.pageCount > 0)
+                openRequest.throwIfCanceled()
+                if (opened.pageCount == 0) throw PdfSourceException(PdfFailure.EMPTY)
                 val pageCount = opened.pageCount
                 main.post { if (document.get() == id) onPageCount(pageCount) }
                 val pages = ArrayList<PageSize>()
@@ -68,14 +82,23 @@ class PdfWorker(
                 val initialCount = if (restore) opened.pageCount else minOf(4, opened.pageCount)
                 for (index in 0 until initialCount) {
                     if (document.get() != id) return@execute
+                    openRequest.throwIfCanceled()
                     opened.openPage(index).use { pages.add(PageSize(it.width, it.height)) }
                 }
                 main.post { if (document.get() == id) onLoaded(pages) }
                 scanMore(id, opened, pages)
-            } catch (_: Exception) {
+            } catch (error: Exception) {
                 renderer?.close()
                 renderer = null
-                main.post { if (document.get() == id) onError() }
+                val failure = when (error) {
+                    is PdfSourceException -> error.failure
+                    is SecurityException -> PdfFailure.ACCESS
+                    is FileNotFoundException -> PdfFailure.UNAVAILABLE
+                    else -> PdfFailure.READ
+                }
+                main.post { if (document.get() == id) onError(failure) }
+            } finally {
+                opening.compareAndSet(openRequest, null)
             }
         }
     }
@@ -95,7 +118,7 @@ class PdfWorker(
                 main.post { if (document.get() == id) onLoaded(pages) }
                 scanMore(id, opened, pages)
             } catch (_: Exception) {
-                main.post { if (document.get() == id) onError() }
+                main.post { if (document.get() == id) onError(PdfFailure.RENDER) }
             }
         }, 25, TimeUnit.MILLISECONDS)
     }
@@ -152,7 +175,7 @@ class PdfWorker(
                         }
                     } catch (_: Exception) {
                         bitmap.recycle()
-                        main.post { if (isCurrent(request)) onError() }
+                        main.post { if (isCurrent(request)) onError(PdfFailure.RENDER) }
                         break
                     }
                 }
@@ -179,6 +202,7 @@ class PdfWorker(
     fun closeDocument() {
         if (closed) return
         document.incrementAndGet()
+        opening.getAndSet(null)?.cancel(cancellation)
         generation.incrementAndGet()
         pending.set(null)
         desired.set(null)
@@ -194,5 +218,6 @@ class PdfWorker(
         closeDocument()
         closed = true
         executor.shutdown()
+        cancellation.shutdown()
     }
 }
