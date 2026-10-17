@@ -4,6 +4,8 @@
 
 ## 현재 상태
 
+파일 접근·오류 복구 구현 `c238fda`에 origin/main `b41b0c9`를 일반 merge한 `c206098`을 [PR #7](https://github.com/AtraFelis/ebook_viewer/pull/7)로 등록했다. 병합 전후 검증된 앱/스크립트 차이는 없다. 아래 로컬/기기 결과와 원격 검사를 구분하며 [최신 CI/리뷰](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)는 게시 후 확인한다. 이 문서 갱신을 push한 뒤 CodeRabbit 수동 리뷰를 한 번 요청한다. 병합은 사용자가 한다.
+
 사용자가 최종 접근 기능 APK에서 개인 PDF 열기·몇 페이지 이동·목록→이어 읽기가 “정상”이라고 확인했다. 내용/파일명은 받지 않았다. 자동 계측과 사용자 수용 자기보고를 구분하며 전체 설정/물리 회전/재부팅/다른 API 수용 완료로 확대하지 않는다.
 
 `codex/p1-document-access`에서 원인별 오류·목록 복귀·재시도/재선택과 취소 가능한 provider 접근을 구현했다. 비탐색 파일은 256MiB 상한/30초 무응답 기준으로 익명 임시 inode에 복사하고, 탐색 가능한 파일은 그대로 연다. provider 조회/열기는 PDF worker에 두고 기록 큐를 막지 않는다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint 통과. 첫 신규 6개 중 1개 실패는 테스트 monitor의 Intent category/MIME 누락으로 진단했고 수정 후 provider 단독 1개는 통과했다. 최종 전체 API 33 계측 36개/실패 0·앱 설치/실행을 통과했다. [ADR 0007](docs/adr/0007-document-access-and-failure-recovery.md), [명령·실패 수정·결과](docs/history/2026-10-17-09-document-access.md). 새 런타임 의존성 없음. 실제 DocumentsUI/제조사 provider 전반·재부팅·암호화 파일은 별도 미검증이며, 개인 PDF 기본 열기/이어 읽기는 위 사용자 확인 범위다.

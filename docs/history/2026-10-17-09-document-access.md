@@ -25,3 +25,7 @@
 실제 디스크를 가득 채우거나 256MiB 전송 성능을 측정하지 않았다. storage fixture는 임시 파일 생성 실패, idle fixture는 짧은 시간 제한을 검증했다. 실제 파일 선택 UI/제조사 provider·개인 PDF/재부팅/다른 API·암호화 PDF는 별도 미검증이며 P1 전체 완료는 아직 아니다. 계측 종료 후 사용자에게 개인 PDF 열기·목록에서 이어 읽기의 정상 여부만 요청했고 내용/파일명은 요청하지 않았다. 다음은 main 반영/별도 PR·수동 CodeRabbit/원격 CI 확인, 실제 기능 수용과 수명/메모리 압박 회귀다.
 
 사용자는 이후 최종 APK의 개인 PDF 열기·몇 페이지 이동·목록→이어 읽기에 “정상이에요”라고 확인했다. 이는 사용자 수용 자기보고이며 문서 내용/파일명을 받거나 측정하지 않았다. 실제 개인 파일의 기본 선택/이어 읽기 확인으로 위 미검증 범위를 일부 보완하지만, 모든 설정·물리 제스처/센서·재부팅·다른 provider/API 수용은 아직 아니다.
+
+## PR 등록
+
+구현/검증/사용자 확인을 `c238fda`로 커밋했다. fetch 후 origin/main `b41b0c9`를 일반 merge한 `c206098`에서 `git diff --exit-code c238fda HEAD -- app scripts gradle`가 차이 없이 통과했다. 브랜치를 일반 push하고 [PR #7](https://github.com/AtraFelis/ebook_viewer/pull/7)을 main 대상으로 등록/대화에 연결했다. 사용자 변경 덮어쓰기/reset/clean/강제 push 없음. 게시 직후 원격 CI는 진행 중이며, 이 문서 갱신을 push한 뒤 최종 head에 CodeRabbit 수동 요청을 한 번 등록하고 실제 응답을 확인한다. 동적 결과는 [PR checks](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)와 본문에서 확인하며 로컬 통과를 원격 통과/실제 리뷰로 대체하지 않는다.
