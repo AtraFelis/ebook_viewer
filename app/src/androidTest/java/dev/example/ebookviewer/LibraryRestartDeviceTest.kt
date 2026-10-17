@@ -35,20 +35,26 @@ class LibraryRestartDeviceTest {
                 }
                 val view = ui.awaitReady(activity)
                 ui.pinch(view)
+                instrumentation.runOnMainSync {
+                    view.setPageLayoutSettings(PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24))
+                }
                 repeat(8) { ui.drag(view, true) }
                 instrumentation.runOnMainSync { activity.finish() }
                 instrumentation.waitForIdleSync()
                 val stored = io(repository) { it.list().single { record -> record.uri == uri } }
                 assertTrue(requireNotNull(stored.position).page > 0)
+                assertEquals(
+                    PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24),
+                    stored.pageLayout
+                )
                 expectedFile.outputStream().use { ReadingRecordsCodec.write(it, listOf(stored)) }
                 pidFile.writeText(Process.myPid().toString())
             } else {
                 assertEquals("verify", phase)
                 assertNotEquals(pidFile.readText().toInt(), Process.myPid())
-                val expected =
-                    requireNotNull(
-                        expectedFile.inputStream().use(ReadingRecordsCodec::read).single().position
-                    )
+                val expectedRecord =
+                    expectedFile.inputStream().use(ReadingRecordsCodec::read).single()
+                val expected = requireNotNull(expectedRecord.position)
                 ui.await("Restarted library entry missing") {
                     ui.views(activity.window.decorView).filterIsInstance<Button>().any {
                         it.text.startsWith(pdf.name)
@@ -59,9 +65,10 @@ class LibraryRestartDeviceTest {
                         .first { it.text.startsWith(pdf.name) }.performClick()
                 }
                 val view = ui.awaitReady(activity)
-                var actual: ReadingPosition? = null
-                instrumentation.runOnMainSync { actual = view.readingPosition() }
-                val restored = requireNotNull(actual)
+                val restored = ui.onMain {
+                    assertEquals(expectedRecord.pageLayout, view.pageLayoutSettings())
+                    requireNotNull(view.readingPosition())
+                }
                 assertEquals(expected.page, restored.page)
                 assertEquals(expected.x, restored.x, 0.003)
                 assertEquals(expected.y, restored.y, 0.003)

@@ -1,5 +1,7 @@
 # 문서 목차
 
+현재 백그라운드·캐시 취소 보완은 [ADR 0008](adr/0008-reader-lifecycle-and-cache-cancellation.md), [실행 이력](history/2026-10-17-10-reader-lifecycle.md)을 확인합니다. 알림 주입과 실제 시스템 메모리 고갈 검증은 구분합니다.
+
 현재 후속 파일 접근·오류 복구는 [ADR 0007](adr/0007-document-access-and-failure-recovery.md), [API 33 실행 이력](history/2026-10-17-09-document-access.md)을 확인합니다. 제조사 파일 선택 UI/개인 PDF 수용과 합성 provider 계측은 구분합니다.
 
 | 문서 | 역할 |

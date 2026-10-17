@@ -105,6 +105,7 @@ class MainActivity : Activity() {
             onError = ::documentFailed,
             onPageCount = { expectedPages = it }
         )
+        viewer.setRenderingEnabled(false)
         viewer.onPositionChanged = {
             updatePageIndicator()
             scheduleSave()
@@ -964,10 +965,22 @@ class MainActivity : Activity() {
         if (hasFocus && ::readingWindow.isInitialized) readingWindow.apply(reading)
     }
 
+    override fun onStart() {
+        super.onStart()
+        viewer.setRenderingEnabled(true)
+    }
+
     override fun onPause() {
         saveReading()
         cancelSave()
         super.onPause()
+    }
+
+    override fun onStop() {
+        viewer.setRenderingEnabled(false)
+        saveReading()
+        cancelSave()
+        super.onStop()
     }
 
     override fun onTrimMemory(level: Int) {
@@ -983,6 +996,8 @@ class MainActivity : Activity() {
         settingsDialog = null
         cancelSave()
         opening++
+        viewer.setRenderingEnabled(false)
+        viewer.reset()
         worker.close()
         super.onDestroy()
     }

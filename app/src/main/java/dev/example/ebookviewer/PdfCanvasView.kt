@@ -37,6 +37,7 @@ class PdfCanvasView @JvmOverloads constructor(
     private var restored: Bundle? = null
     private var pendingPages: List<PageSize>? = null
     private var pageLayout = PageLayoutSettings()
+    private var renderingEnabled = true
 
     fun pageLayoutSettings(): PageLayoutSettings = pageLayout
 
@@ -158,6 +159,7 @@ class PdfCanvasView @JvmOverloads constructor(
 
     fun reset() {
         scroller.forceFinished(true)
+        request(emptyList())
         layout = null
         pendingPages = null
         cache.evictAll()
@@ -299,12 +301,26 @@ class PdfCanvasView @JvmOverloads constructor(
     )
 
     fun trimCache() {
+        request(emptyList())
         cache.evictAll()
         requested = emptyList()
         previews = emptyList()
         fallback = emptyList()
         updateTiles()
         invalidate()
+    }
+
+    /** Keep the document/viewport while releasing pixels and stopping work for an invisible window. */
+    fun setRenderingEnabled(enabled: Boolean) {
+        if (renderingEnabled == enabled) return
+        renderingEnabled = enabled
+        if (enabled) {
+            updateTiles()
+            invalidate()
+        } else {
+            scroller.forceFinished(true)
+            trimCache()
+        }
     }
 
     private fun constrain() {
@@ -361,6 +377,7 @@ class PdfCanvasView @JvmOverloads constructor(
     }
 
     private fun updateTiles() {
+        if (!renderingEnabled) return
         val document = layout ?: return
         val scale = rasterScale(viewport.zoom)
         val visible = document.visibleTiles(viewport, width, height, scale)
