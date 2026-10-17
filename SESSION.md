@@ -4,9 +4,9 @@
 
 ## 현재 상태
 
-`codex/p1-reverse-orientation`에서 요청한 가로/세로 역방향 고정을 기존 이름 기반 설정 v1에 추가했다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint와 기존 포함 immersive 계측 5개를 통과했다. 실제 display rotation 180도·앵커/줌/전체 화면·재실행 보존 및 다섯 모드 디스크 왕복을 확인했다. 전체 41개는 같은 APK에서 진행 중이며 [역방향 이력](docs/history/2026-10-17-11-reverse-orientation.md)에 실제 결과를 구분한다. PR #8 head db616d5의 Windows CI 39027868781는 성공했고 한도 복구 후 실제 리뷰가 진행 중이다. 현재 브랜치는 해당 head부터 분리됐으며 후속 PR 기준은 PR #8 병합 상태를 확인한다.
+`codex/p1-reverse-orientation`에서 요청한 가로/세로 역방향 고정을 기존 이름 기반 설정 v1에 추가했다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint와 기존 포함 immersive 계측 5개를 통과했다. 실제 display rotation 180도·앵커/줌/전체 화면·재실행 보존 및 다섯 모드 디스크 왕복을 확인했다. 전체 41개는 같은 APK에서 진행 중이며 [역방향 이력](docs/history/2026-10-17-11-reverse-orientation.md)에 실제 결과를 구분한다. PR #8 head db616d5의 Windows CI 39027868781는 성공했고 한도 복구 후 실제 리뷰를 완료했고 상태 문서 지적 1건을 수정했다. 현재 브랜치는 해당 head부터 분리됐으며 후속 PR 기준은 PR #8 병합 상태를 확인한다.
 
-PR #8 head `bc26364`의 [Windows CI 39012958849](https://github.com/AtraFelis/ebook_viewer/actions/runs/39012958849)는 성공했다. 이후 자동 승인 검토 사용량 한도로 Git 기록/브랜치 생성이 실행되지 않았지만 로컬 문서는 보존됐다. 20:12 KST 재개 시 승인 도구가 다시 동작함을 확인했다. 개인 수용/한도 기록을 PR #8에 push한 뒤 별도 역방향 설정 브랜치를 만든다. 실제 리뷰는 한도 복구 후 새 head로 한 번 재요청해 확인한다.
+PR #8 head `bc26364`의 [Windows CI 39012958849](https://github.com/AtraFelis/ebook_viewer/actions/runs/39012958849)는 성공했다. 이후 자동 승인 검토 사용량 한도로 Git 기록/브랜치 생성이 실행되지 않았지만 로컬 문서는 보존됐다. 20:12 KST 재개 시 승인 도구가 다시 동작함을 확인했다. 개인 수용/한도 기록을 PR #8에 push한 뒤 별도 역방향 설정 브랜치를 만든다. 두 번째 수동 요청으로 head db616d5의 16개 파일 실제 리뷰를 완료했다. 코드 동작 지적은 없고 이 문서의 과거 리뷰 상태 표현 1건이 지적되어 현재 사실로 수정했다. 원격 CI 39027868781도 성공했다. 이 결과만 기록한 후속 문서 head checks는 별도 확인한다.
 
 사용자가 수명 보완 APK에서 개인 PDF의 홈 복귀·확대/스크롤·중앙 탭 설정(방향/배경색/번호 표시)이 “다 잘 돼”라고 확인했다. 기존 P1 개인 사용 수용을 기록하며 자동 계측과 구분한다. 추가 요청한 가로 역방향/세로 역방향 고정은 다음 작은 변경으로 구현/검증한다. PR #8 수동 리뷰는 [요청](https://github.com/AtraFelis/ebook_viewer/pull/8#issuecomment-6231097690) 후 한도 제한으로 실제 미실행이다. 봇이 16:16 KST 당시 9분 후 복구를 안내했으며 성공 체크를 실제 리뷰로 보고하지 않는다. 최신 CI는 PR checks로 구분한다.
 
