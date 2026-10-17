@@ -28,3 +28,7 @@
 ## 다음 행동
 
 검증이 끝나면 SESSION/CHECKLIST를 실제 결과로 갱신하고 기능별 PR·수동 CodeRabbit 요청·원격 CI를 진행한다. 병합은 사용자가 한다. 남은 현재 기기 수용과 API/제조사 provider 전반·재부팅/실제 시스템 메모리 압박 검증은 구분한다.
+
+## PR 등록
+
+실제 결과/결정을 `8270cde`로 커밋했다. fetch 후 origin/main이 여전히 `29d0763`이며 현재 head에 포함됨을 확인한 뒤 일반 push했다. [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)을 main 대상으로 등록하고 대화에 연결했다. 이 등록 기록을 push한 뒤 현재 head에 CodeRabbit 수동 리뷰를 한 번 요청한다. 원격 CI/실제 리뷰는 [PR checks](https://github.com/AtraFelis/ebook_viewer/pull/8/checks)와 본문에서 구분하며 로컬 통과로 대신하지 않는다. 개인 새 APK 수용은 응답 대기다. 사용자 변경 덮어쓰기/reset/clean/강제 push/PR 병합 없음.
