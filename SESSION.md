@@ -4,6 +4,8 @@
 
 ## 현재 상태
 
+사용자 지시로 모든 PR 생성 시 CodeRabbit 수동 요청, 후속 리뷰의 타당성 판단·수정/검증 후 같은 브랜치 push를 AGENTS/[Git 규칙](docs/rule/git.md)에 저장했다. PR #5는 자동 리뷰 제외를 확인해 수동 명령을 한 번 등록했고 실제 23개 파일 검토가 진행 중이다. 현재 head `751dbc0`의 CI 39005653250 성공과 CodeRabbit 리뷰 결과를 구분한다. [절차/실제 대응 이력](docs/history/2026-10-17-07-pr-review-workflow.md).
+
 `codex/p1-navigation-bookmarks`에서 페이지 이동·북마크 및 사용자 지정 번호 표시/숨김을 구현/검증했다. 번호는 기본 숨김이며 설정을 켜도 Canvas 크기/배율은 유지한다. 페이지/북마크 이동은 현재 줌·유효 가로 위치를 보존한다. strict 빌드·단위 19개·Lint·ktlint 및 신규 API 33 계측 4개 통과, 저장 경로 보완 후 최종 전체 27개 회귀·앱 설치/실행까지 통과했다. 구현 `8861ae7`의 [Windows CI 38935046856](https://github.com/AtraFelis/ebook_viewer/actions/runs/38935046856)는 성공했다. 중단돼 있던 PR 등록을 마무리해 [PR #5](https://github.com/AtraFelis/ebook_viewer/pull/5)를 만들었다. [최종 head checks](https://github.com/AtraFelis/ebook_viewer/pull/5/checks)는 별도 확인하며 병합은 사용자 몫이다. [ADR 0005](docs/adr/0005-navigation-bookmarks-and-page-numbers.md), [명령·결과](docs/history/2026-10-17-06-navigation-bookmarks.md). 새 런타임 의존성 없음.
 
 `codex/p1-background-color`에서 P1 수동 외부 배경색을 구현/검증했다. 기본/임의 RGB 색상, 미리보기·입력 검증·취소, 별도 AtomicFile 설정 저장을 추가했다([ADR 0004](docs/adr/0004-custom-reader-background.md)). strict 빌드·단위 15개·Lint·ktlint 통과, API 33 전체 23개 회귀·앱 설치/실행까지 통과했다. 구현 `e6753bf`를 main 대상 [PR #4](https://github.com/AtraFelis/ebook_viewer/pull/4)로 등록했다. 최종 head `be0de9d`의 [CI 38932215957](https://github.com/AtraFelis/ebook_viewer/actions/runs/38932215957)가 통과했고 사용자가 병합했다. fetch/조상 검사로 origin/main `24ef93b`를 확인했다. 자동 색 추출과 스크롤 선명도 복구 지연은 사용자 범위 조정으로 P2에 남긴다. [이번 결과](docs/history/2026-10-17-05-custom-background.md), [선명도 P2 계획](docs/plan/p2-sharpness-recovery.md).

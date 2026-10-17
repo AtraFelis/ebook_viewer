@@ -32,3 +32,5 @@ PR #1 병합 이후 [몰입형 읽기/방향 ADR](adr/0003-immersive-reader-and-
 [외부 배경색 ADR](adr/0004-custom-reader-background.md)과 [P1 수동 색상 검증](history/2026-10-17-05-custom-background.md)을 확인합니다. 자동 색 추출은 P2로 이관했고, [스크롤 선명도 복구 지연의 P2 계획](plan/p2-sharpness-recovery.md)을 별도로 관리합니다.
 
 [페이지 이동·북마크·번호 표시 ADR](adr/0005-navigation-bookmarks-and-page-numbers.md)과 [API 33 검증 이력](history/2026-10-17-06-navigation-bookmarks.md)을 이어서 확인합니다. 페이지 번호는 사용자가 표시/숨김을 선택하고 보존합니다.
+
+사용자 지정 [PR 수동 리뷰·수정 절차](rule/git.md)와 [PR #5 실제 대응 이력](history/2026-10-17-07-pr-review-workflow.md)을 확인합니다. 봇의 리뷰 건너뜀 성공과 실제 리뷰 완료를 구분합니다.
