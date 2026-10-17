@@ -29,7 +29,7 @@
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
 | 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록 코덱 테스트 22개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 40개·앱 실행 통과. 프로세스 복원 2단계는 별도 이력, 실제 OOM 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 41개·앱 실행 통과. 프로세스 복원 2단계는 별도 이력, 실제 OOM 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 

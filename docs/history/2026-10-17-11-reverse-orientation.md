@@ -20,6 +20,10 @@ Context7 조회는 화면 방향의 간접 자료가 대부분이어서 [공식 
 
 ## 기기 실행·다음 행동
 
+최종 같은 앱/계측 APK에서 `adb shell am instrument -w dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation`의 **41개/실패 0**과 이후 `adb shell am start -W -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainActivity`의 **Status: ok**를 확인했다. 기본 suite에서 신규/기존 테스트를 제외하지 않았다. raw 로그 `local-artifacts/reverse-orientation-device-full.log`. debug APK SHA-256은 `deea6cbd6a209333406f8b775e375af5d73d88b49083cc33f1f0a72d19c12cb7`이다. 이전 사용자 “다 잘 돼”는 수명 보완 APK의 기존 기능 확인이며 새 역방향의 직접 사용자 수용으로 확대하지 않는다.
+
+구현을 `5ae584b`로 보존한 뒤 PR #8의 실제 리뷰를 읽었다. 16개 파일 검토에서 문서의 과거 리뷰 상태 표현 지적 1건만 있었고 타당해 원래 PR #8 브랜치의 `63ad063`에서 수정/해결했다. 최종 문서 head의 CI 39028371482도 성공했다. 이를 역방향 브랜치에 일반 merge하며 SESSION 첫 문단의 문서 충돌은 양쪽 사실을 보존해 해결했다(`faf24f0`). `git diff --exit-code 5ae584b HEAD -- app scripts gradle`가 차이 없이 통과해 실제 검증한 앱/기본 suite 소스는 그대로임을 확인했다. PR #8 코드 변경 지적은 없었고 Autofix/중복 요청/강제 push는 하지 않았다.
+
 전용 immersive suite는 기존 4개와 신규 1개를 포함해 **5개/실패 0** 통과했다. 실제 display rotation의 180도 차이를 두 축에서 확인했고 읽기 줌/앵커·전체 화면·재실행 선택, 기존 세 모드와 새 두 모드의 디스크 왕복을 검증했다. 로그 `local-artifacts/reverse-orientation-focused.log`. 이어 같은 APK에서 기본 전체 41개를 실행하며 최종 결과는 별도 기록한다.
 
 승인된 API 33 한 대/잠금 해제를 식별자 출력 없이 확인하고 `adb install --no-streaming -r`로 앱/계측 APK를 설치했다. `adb shell am instrument -w -e suite immersive dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation`의 최종 결과와 이어지는 전체 회귀는 완료 후 기록한다. 합성 PDF만 사용하며 개인 파일명/내용/URI를 기록하지 않는다. PR #8 병합은 사용자가 하고, 후속 PR의 기준 브랜치는 실제 병합 여부를 확인해 정한다.
