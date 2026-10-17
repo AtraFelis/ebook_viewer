@@ -22,7 +22,12 @@ class PdfWorker(
     private val onError: (PdfFailure) -> Unit,
     private val onPageCount: (Int) -> Unit = {}
 ) {
-    private data class Request(val document: Long, val generation: Long, val tiles: List<Tile>)
+    private data class Request(
+        val document: Long,
+        val generation: Long,
+        val epoch: Long,
+        val tiles: List<Tile>
+    )
 
     private val executor = Executors.newSingleThreadScheduledExecutor()
     private val cancellation = Executors.newSingleThreadExecutor()
@@ -30,6 +35,7 @@ class PdfWorker(
     private val main = Handler(Looper.getMainLooper())
     private val document = AtomicLong()
     private val generation = AtomicLong()
+    private val tileEpoch = AtomicLong()
     private val pending = AtomicReference<Request?>()
     private val desired = AtomicReference<Request?>()
     private val scheduled = AtomicBoolean()
@@ -49,9 +55,7 @@ class PdfWorker(
         val id = document.incrementAndGet()
         val openRequest = PdfOpenRequest()
         opening.getAndSet(openRequest)?.cancel(cancellation)
-        generation.incrementAndGet()
-        pending.set(null)
-        desired.set(null)
+        cancelTiles()
         executor.execute {
             if (document.get() != id) return@execute
             renderer?.close()
@@ -125,10 +129,22 @@ class PdfWorker(
 
     fun request(tiles: List<Tile>) {
         if (closed) return
-        val request = Request(document.get(), generation.incrementAndGet(), tiles)
+        if (tiles.isEmpty()) {
+            cancelTiles()
+            return
+        }
+        val request = Request(document.get(), generation.incrementAndGet(), tileEpoch.get(), tiles)
         desired.set(request)
         pending.set(request)
         schedule()
+    }
+
+    /** Invalidate queued deliveries too, even if the same tile is requested again after a trim. */
+    fun cancelTiles() {
+        tileEpoch.incrementAndGet()
+        generation.incrementAndGet()
+        pending.set(null)
+        desired.set(null)
     }
 
     private fun schedule() {
@@ -195,6 +211,7 @@ class PdfWorker(
     private fun isRelevant(request: Request, tile: Tile): Boolean {
         val latest = desired.get() ?: return false
         return request.document == document.get() &&
+            request.epoch == tileEpoch.get() &&
             latest.document == request.document &&
             tile in latest.tiles
     }
@@ -203,9 +220,7 @@ class PdfWorker(
         if (closed) return
         document.incrementAndGet()
         opening.getAndSet(null)?.cancel(cancellation)
-        generation.incrementAndGet()
-        pending.set(null)
-        desired.set(null)
+        cancelTiles()
         // Close after the active native call, never concurrently with render.
         executor.execute {
             renderer?.close()

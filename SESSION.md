@@ -4,6 +4,14 @@
 
 ## 현재 상태
 
+PR #8 head `bc26364`의 [Windows CI 39012958849](https://github.com/AtraFelis/ebook_viewer/actions/runs/39012958849)는 성공했다. 이후 자동 승인 검토 사용량 한도로 Git 기록/브랜치 생성이 실행되지 않았지만 로컬 문서는 보존됐다. 20:12 KST 재개 시 승인 도구가 다시 동작함을 확인했다. 개인 수용/한도 기록을 PR #8에 push한 뒤 별도 역방향 설정 브랜치를 만든다. 두 번째 수동 요청으로 head db616d5의 16개 파일 실제 리뷰를 완료했다. 코드 동작 지적은 없고 이 문서의 과거 리뷰 상태 표현 1건이 지적되어 현재 사실로 수정했다. 원격 CI 39027868781도 성공했다. 이 결과만 기록한 후속 문서 head checks는 별도 확인한다.
+
+사용자가 수명 보완 APK에서 개인 PDF의 홈 복귀·확대/스크롤·중앙 탭 설정(방향/배경색/번호 표시)이 “다 잘 돼”라고 확인했다. 기존 P1 개인 사용 수용을 기록하며 자동 계측과 구분한다. 추가 요청한 가로 역방향/세로 역방향 고정은 다음 작은 변경으로 구현/검증한다. PR #8 수동 리뷰는 [요청](https://github.com/AtraFelis/ebook_viewer/pull/8#issuecomment-6231097690) 후 한도 제한으로 실제 미실행이다. 봇이 16:16 KST 당시 9분 후 복구를 안내했으며 성공 체크를 실제 리뷰로 보고하지 않는다. 최신 CI는 PR checks로 구분한다.
+
+수명/캐시 보완 구현 `8270cde`를 main 대상 [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)로 등록했다. 새 head의 원격 CI/CodeRabbit은 [최신 checks](https://github.com/AtraFelis/ebook_viewer/pull/8/checks)와 실제 봇 응답으로 확인한다. 이 등록 기록 push 후 수동 리뷰를 한 번 요청한다. 앱 설치/계측 검증은 아래와 같으며 병합은 사용자가 한다.
+
+사용자 병합된 PR #7 최종 head a282718의 Windows CI 39010146312 성공과 origin/main `29d0763`를 확인했다. 깨끗한 현재 체크아웃의 `codex/p1-reader-lifecycle`에서 정지 중 타일 렌더/캐시 재충전 차단, 같은 앵커의 복귀, 취소 전 동일 키 타일 배제, 파괴 시 캐시 해제를 구현했다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint 및 신규 API 33 계측 4개/최종 전체 40개·앱 실행 통과. 기록 v2 크기/간격을 포함하는 별도 seed→force-stop→다른 PID verify도 각 1개/실패 0, 이후 앱 실행을 통과했다. [ADR 0008](docs/adr/0008-reader-lifecycle-and-cache-cancellation.md), [명령·범위·결과](docs/history/2026-10-17-10-reader-lifecycle.md). 새 런타임 의존성 없음. 실제 메모리 고갈/OOM·다른 API·새 APK의 개인 수용을 자동 계측으로 대체하지 않는다. 새 APK의 개인 홈 복귀/확대·스크롤/중앙 탭 설정 수용을 요청했다.
+
 PR #7 head `32bd52b`의 [Windows CI 39009827260](https://github.com/AtraFelis/ebook_viewer/actions/runs/39009827260)가 성공했다. CodeRabbit도 같은 head의 19개 파일 실제 리뷰를 완료했고 actionable 지적은 없었다([결과](https://github.com/AtraFelis/ebook_viewer/pull/7#issuecomment-6230655962)). 함수 설명문 80% 비율의 일반 권고는 계약의 이유/제약 중심 주석과 별개이며 구체적 누락 계약/오류를 지적하지 않아 기계적으로 추가하지 않았다. 결과 기록만 담는 후속 문서 head의 CI는 [최신 checks](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)로 구분한다. 앱/테스트 코드는 그대로이며 불필요한 재설치/중복 리뷰 요청은 하지 않는다. 다음 P1 범위는 백그라운드 복귀·메모리 압박·문서 교체 시 상태/자원 회귀와 남은 개인 기기 수용이다.
 
 파일 접근·오류 복구 구현 `c238fda`에 origin/main `b41b0c9`를 일반 merge한 `c206098`을 [PR #7](https://github.com/AtraFelis/ebook_viewer/pull/7)로 등록했다. 병합 전후 검증된 앱/스크립트 차이는 없다. 아래 로컬/기기 결과와 원격 검사를 구분하며 [최신 CI/리뷰](https://github.com/AtraFelis/ebook_viewer/pull/7/checks)는 게시 후 확인한다. 이 문서 갱신을 push한 뒤 CodeRabbit 수동 리뷰를 한 번 요청한다. 병합은 사용자가 한다.

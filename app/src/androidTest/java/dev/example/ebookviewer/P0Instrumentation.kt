@@ -17,6 +17,7 @@ class P0Instrumentation : Instrumentation() {
     private var navigationOnly = false
     private var layoutOnly = false
     private var accessOnly = false
+    private var lifecycleOnly = false
     private var accessMethod: String? = null
     var restartPhase: String? = null
         private set
@@ -30,13 +31,21 @@ class P0Instrumentation : Instrumentation() {
         val suite = arguments?.getString("suite")
         require(
             suite == null ||
-                suite in listOf("immersive", "background", "navigation", "layout", "access")
+                suite in listOf(
+                    "immersive",
+                    "background",
+                    "navigation",
+                    "layout",
+                    "access",
+                    "lifecycle"
+                )
         )
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
         navigationOnly = suite == "navigation"
         layoutOnly = suite == "layout"
         accessOnly = suite == "access"
+        lifecycleOnly = suite == "lifecycle"
         accessMethod = arguments?.getString("method")
         require(accessMethod == null || accessOnly)
         val validMethod = DocumentAccessDeviceTest::class.java.declaredMethods.any {
@@ -51,6 +60,7 @@ class P0Instrumentation : Instrumentation() {
         require(!navigationOnly || (!probe && restartPhase == null))
         require(!layoutOnly || (!probe && restartPhase == null))
         require(!accessOnly || (!probe && restartPhase == null))
+        require(!lifecycleOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -99,7 +109,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (accessOnly) {
+        val result = if (lifecycleOnly) {
+            core.run(ReaderLifecycleDeviceTest::class.java)
+        } else if (accessOnly) {
             val method = accessMethod
             if (method == null) {
                 core.run(DocumentAccessDeviceTest::class.java)
@@ -129,7 +141,8 @@ class P0Instrumentation : Instrumentation() {
                 BackgroundDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
                 PageLayoutDeviceTest::class.java,
-                DocumentAccessDeviceTest::class.java
+                DocumentAccessDeviceTest::class.java,
+                ReaderLifecycleDeviceTest::class.java
             )
         }
         finish(
