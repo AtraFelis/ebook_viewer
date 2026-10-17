@@ -9,7 +9,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.util.concurrent.Executors
 
-enum class OrientationMode { AUTO, PORTRAIT, LANDSCAPE }
+enum class OrientationMode { AUTO, PORTRAIT, LANDSCAPE, REVERSE_PORTRAIT, REVERSE_LANDSCAPE }
 
 /** Application-owned queue: settings remain ordered across overlapping Activity lifetimes. */
 class ReaderSettingsRepository(private val file: () -> File) : java.io.Closeable {
