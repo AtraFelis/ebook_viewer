@@ -1,5 +1,7 @@
 # 문서 목차
 
+현재 개인 API 33 범위의 P1은 완료했습니다. [완료 판정·최종 CI·사용자 수용·미결 리뷰](history/2026-10-17-12-p1-completion.md), [다음 단계 로드맵](plan/roadmap.md)을 확인합니다.
+
 가로/세로 역방향 고정 추가는 [방향 설정 ADR](adr/0003-immersive-reader-and-orientation.md), [검증 이력](history/2026-10-17-11-reverse-orientation.md)을 확인합니다.
 
 현재 백그라운드·캐시 취소 보완은 [ADR 0008](adr/0008-reader-lifecycle-and-cache-cancellation.md), [실행 이력](history/2026-10-17-10-reader-lifecycle.md)을 확인합니다. 알림 주입과 실제 시스템 메모리 고갈 검증은 구분합니다.
