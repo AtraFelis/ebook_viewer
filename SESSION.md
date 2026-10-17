@@ -4,15 +4,19 @@
 
 ## 현재 상태
 
-PR #9 head `8597c42`의 [Windows CI 39028736272](https://github.com/AtraFelis/ebook_viewer/actions/runs/39028736272)가 성공했다. PR #8 사용자 병합 후 origin/main `27c7c27`을 일반 merge한 299bba3에서 검증된 역방향 앱/테스트 소스 불변을 확인했고 PR #9 기준을 main으로 변경했다. 후속 결과 문서/병합 head의 checks는 [최신 검사](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)와 구분한다. CodeRabbit 실제 리뷰는 포함 한도로 미실행이며 반복 요청하지 않는다.
+2026-10-17, 개인용 SM-N981N(API 33) 대상의 **P1 핵심 MVP를 완료**했다. 사용자 병합한 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)의 최종 head `cefc265`와 origin/main 병합 `6400b85`를 확인했다. 최종 head의 [Windows CI 39029124087](https://github.com/AtraFelis/ebook_viewer/actions/runs/39029124087)는 성공했다. 현재 체크아웃의 깨끗한 상태에서 main 기반 `codex/p1-completion`을 만들고 완료 판정·후속 범위만 정리한다. [완료 근거·명령·제한](docs/history/2026-10-17-12-p1-completion.md).
 
-역방향 설정을 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)로 등록했다(구현 5ae584b, 검증 기록 head 02ed26f). PR #8 사용자 병합 후 PR #9 기준은 main으로 변경했다. 앱/테스트는 검증한 소스 그대로다. [수동 리뷰 요청](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233338631)은 접수 후 무료 한도로 실제 미실행이 됐다. 20:27 KST 당시 봇이 46분 후 복구를 안내했으며 성공 체크를 리뷰 완료로 취급하지 않는다. [원격 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)는 실제 리뷰와 구분한다.
+완료 기능은 SAF 열기/오류 복구, 최근·읽던 PDF 목록과 내부 앵커/줌 이어 읽기, 전체 화면/중앙 탭 설정, 자동 및 가로·세로·두 역방향 고정, 수동 외부 배경색, 번호 표시 선택/페이지 이동/북마크, 문서별 크기/간격, 수명·캐시·자원 회귀 보완이다. 새 런타임 의존성 없음.
 
-`codex/p1-reverse-orientation`에서 가로/세로 역방향 고정을 추가했다. 기존 이름 기반 방향 설정 v1을 읽고 다섯 선택을 저장한다. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint, API 33 immersive 5개와 최종 전체 41개/실패 0·앱 실행을 통과했다. 두 축의 실제 display rotation 180도, 읽기 줌/앵커·전체 화면·재실행 선택을 확인했다. [최신 명령/결과](docs/history/2026-10-17-11-reverse-orientation.md). 새 런타임 의존성 없음. 개인 기기 기존 기능의 사용자 수용과 새 역방향 자동 계측을 구분한다.
+최종 앱의 strict 빌드·단위 22개·Lint 오류/경고 0·ktlint, API 33 기본 계측 41개/실패 0·앱 실행을 통과했다. 두 역방향은 실제 display rotation 180도·줌/앵커·재실행 보존을 자동 계측했다. 별도 v2 프로세스 복원은 수명 보완 앱의 seed 1개 → force-stop → 다른 PID verify 1개 통과이며 기본 suite와 별도 집계한다. 이번 문서 마무리에서 앱/기기 검사를 재실행한 것으로 보고하지 않는다.
 
-부모 [PR #8](https://github.com/AtraFelis/ebook_viewer/pull/8)의 최종 head `63ad063`은 Windows CI 39028371482를 통과했다. CodeRabbit은 db616d5의 16개 파일 실제 리뷰를 완료했고 문서 상태 표현 지적 1건을 63ad063에서 수정/해결했다. 역방향 브랜치에 해당 수정도 일반 merge했으며 문서 병합 전후 검증된 역방향 앱/테스트 소스 차이는 없다. PR #8 사용자 병합 후 후속 PR #9 기준을 main으로 변경했다. PR 병합은 사용자가 한다.
+사용자는 개인 PDF 열기·목록→이어 읽기가 “정상”, 수명 보완 앱의 홈 복귀·확대/스크롤·중앙 탭 설정이 “다 잘 돼”라고 확인했다. 새 역방향의 사용자 직접 확인과 자동 계측을 구분한다. 다른 API/기기·제조사 provider 전반·재부팅·실제 시스템 메모리 고갈/OOM은 후속 미검증이며 이번 개인용 P1 완료 범위를 확대하지 않는다.
 
-현재 개인 API 33 대상의 P1 핵심 기능 구현·로컬 회귀와 기존 기능의 사용자 수용을 마쳤다. 후속 역방향 PR 등록/원격 CI/실제 수동 리뷰 결과를 확인하고 병합을 구분한다. P2 선명도 복구 지연/자동 배경색은 진행하지 않았다. 다른 API/제조사 provider 전반·재부팅·실제 시스템 메모리 고갈/OOM은 후속 제한이며 현재 결과로 통과를 주장하지 않는다.
+CodeRabbit PR #8의 실제 리뷰 지적 1건(문서 상태 표현)을 수정/해결했다. PR #9는 [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233338631) 후 [한도 응답](https://github.com/AtraFelis/ebook_viewer/pull/9#issuecomment-6233341731)으로 실제 리뷰 미실행이다. 리뷰 제출/인라인 지적이 없는 상태를 확인했으며 성공 체크를 리뷰 완료로 취급하지 않는다. PR #6도 당시 한도로 미실행이어서 모든 P1 PR의 외부 리뷰 완료를 주장하지 않는다.
+
+완료 문서를 [PR #10](https://github.com/AtraFelis/ebook_viewer/pull/10)으로 등록했다. Markdown 7개만 변경했으며 Android checks는 paths-ignore로 새 실행이 없다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/10#issuecomment-6233510967)을 한 번 등록했고 [실제 응답](https://github.com/AtraFelis/ebook_viewer/pull/10#issuecomment-6233511959)은 Review rate limited였다. 20:47 KST 당시 26분 후 복구 안내이며 실제 리뷰는 미실행이다. 요청/응답 기록만 같은 PR에 후속 push하고 중복 요청하지 않는다. PR 병합은 사용자가 한다.
+
+다음 개발 범위는 P2다. 우선 후보는 [스크롤 선명도 복구 지연](docs/plan/p2-sharpness-recovery.md), 그다음 자동 배경색이며 둘 다 아직 구현하지 않았다. P1에 새 성능 목표나 다른 기기 수용 조건을 추가하지 않는다.
 
 ## 이전 작업 기록
 

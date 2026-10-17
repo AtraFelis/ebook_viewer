@@ -20,6 +20,10 @@ Context7 조회는 화면 방향의 간접 자료가 대부분이어서 [공식 
 
 ## 기기 실행·PR 등록
 
+### 최종 CI·사용자 병합 확인
+
+P1 마무리 시 PR #9 최종 head `cefc265d0c9689647733e574218b3db0ec94b001`의 [Windows CI 39029124087](https://github.com/AtraFelis/ebook_viewer/actions/runs/39029124087)가 completed/success임을 확인했다. 사용자가 병합한 origin/main은 `6400b85d3223f376dd414580353cb1f91f22bd33`이며 해당 head를 포함한다. 실제 CodeRabbit 리뷰는 한도 때문에 미실행 상태다. 아래는 작업 당시 기록이며 최종 개인용 P1 완료 판정은 [마무리 이력](2026-10-17-12-p1-completion.md)을 따른다.
+
 ### 원격 CI와 기준 브랜치 정리
 
 head `8597c42`의 [Windows CI 39028736272](https://github.com/AtraFelis/ebook_viewer/actions/runs/39028736272)가 **completed/success**다. 사용자 병합으로 PR #8이 MERGED, origin/main이 `27c7c27`임을 확인했다. 후속 브랜치에 main을 일반 merge한 299bba3에서 `git diff --exit-code 5ae584b HEAD -- app scripts gradle`가 차이 없이 통과했고 PR #9 기준을 main으로 변경했다. 이 결과 문서/병합 head의 CI는 [최신 checks](https://github.com/AtraFelis/ebook_viewer/pull/9/checks)로 구분한다. 로컬 기기 41개와 원격 빌드/단위/Lint/ktlint, 실제 리뷰 미실행을 서로 대체하지 않는다. 병합은 계속 사용자가 한다.
