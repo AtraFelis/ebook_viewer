@@ -29,6 +29,19 @@ runner는 승인된 기기 1대·잠금 해제와 설치 전/후 2GiB MemAvailab
 
 ## 해석
 
+계측 종료 실패 경로의 PC 검사는 strict `:app:assembleDebugAndroidTest` 뒤 다음을 실행한다. 컴파일된 실제 `finishProbe`를 호출하며 PDF/Android 기기가 필요 없다. 원래 오류와 복원/저장 실패가 겹쳐도 상태 전송을 시도하는 4개 경로를 확인하며 실제 기기 IO/timeout 재현과 구분한다.
+
+```powershell
+. ./scripts/android-env.ps1
+$probeStdlib = (Get-ChildItem "$env:USERPROFILE/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.1.20" -Recurse -Filter 'kotlin-stdlib-2.1.20.jar' | Select-Object -First 1).FullName
+$probeClasspath = "app/build/tmp/kotlin-classes/debugAndroidTest;$probeStdlib"
+New-Item -ItemType Directory -Force local-artifacts/probe-checks | Out-Null
+& "$env:JAVA_HOME/bin/javac.exe" -cp $probeClasspath -d local-artifacts/probe-checks scripts/probes/ProbeCompletionCheck.java
+if ($LASTEXITCODE -ne 0) { throw 'Probe completion checks did not compile' }
+& "$env:JAVA_HOME/bin/java.exe" -cp "local-artifacts/probe-checks;$probeClasspath" ProbeCompletionCheck
+if ($LASTEXITCODE -ne 0) { throw 'Probe completion checks failed' }
+```
+
 벡터 100페이지는 자체 `SyntheticDocument`이며 동일 생성 bytes를 앱 cache에 유지해 APK 업데이트 전후 SHA를 맞춘다. 그레이/RGB는 같은 1440×2240 패턴·JPEG q85·페이지 347×537pt이며 동일 이미지 XObject를 48페이지가 공유한다. 고유 고해상도 스캔 430페이지/원래 사용자 PDF의 재현이 아니다. 각 run은 새 View의 빈 bitmap cache/새 renderer로 시작하지만 OS/font/image cache까지 cold로 만드는 검사는 아니다. 역방향 재방문도 64MiB 퇴출 후에는 일부 cache miss를 포함한다.
 
 onDraw 제출 시점은 물리 디스플레이 표시 완료가 아니다. 일반 스크롤은 화면 높이 70% 이동·6단계·16ms 간격·플링 억제 후 정지이며, 마지막 viewport 변경부터 현재 배율 가시 면적 95%를 그린 시간을 기록한다. 미리보기/다른 배율 fallback은 제외한다. 타일 시간의 queue는 해당 요청의 앞선 타일 처리도 포함하며 native 구간은 open/render/close를 합친 값이다. 취소/폐기 native 비용의 완전한 trace가 아니다.

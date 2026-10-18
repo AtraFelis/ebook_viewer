@@ -55,3 +55,13 @@ debug app SHA-256 `c945bfe123e631548c61e4a1eefb2b93f65bea792420a3c6a492d8ca6edf1
 검사 후 개선 debug 앱의 목록 화면만 실행했다. 개인 PDF는 자동으로 열지 않았고 사용자에게 직접 스크롤 체감/확대 화질을 확인하도록 요청했다. 사용자는 **“더 빨라졌고 화질도 정상”**이라고 확인했다. 파일/본문은 받지 않았으며 자기보고와 합성 자동 검증을 구분한다. 별도 프로세스 복원 seed/verify·10분 최종 통합·다른 기기·빠른 이동/고배율 선명도 분포와 완전 cold/warm·고유/복잡한 이미지 자료의 native 작업 집합 검증은 아직 미실행이다.
 
 ignored 증거: `sharpness-build.log`, `sharpness-profile-build.log`, `sharpness-page-reuse-build.log`, `sharpness-final-checks.log`, `sharpness-device-smoke.log`, `sharpness-pixels-device.log`, `sharpness/{baseline,page-reuse}-{profile,frames}.json`과 해당 합성 계측 결과/APK 보관본. 링크/공백·사용자 문서 보존·검색 모듈/의존성/도구 버전/CI 불변을 확인한다. PR은 최신 main 기준의 별도 변경으로 등록하고 사용자만 병합한다.
+
+## PR·원격 확인
+
+`git commit`의 구현 head는 892c44b이며 일반 `git push -u origin codex/p2-sharpness-recovery` 후 [PR #13](https://github.com/AtraFelis/ebook_viewer/pull/13)을 생성/이 채팅에 연결했다. `gh pr view 13`에서 [push CI 39136769982](https://github.com/AtraFelis/ebook_viewer/actions/runs/39136769982)와 [PR CI 39136773066](https://github.com/AtraFelis/ebook_viewer/actions/runs/39136773066)의 성공을 확인했다. 초기 CodeRabbit 성공 표시는 별 수 조건에 의한 자동 리뷰 건너뜀이었고 실제 리뷰가 아니었다.
+
+`gh pr comment 13 --body '@coderabbitai review'`를 한 번 실행해 [수동 요청 6251196279](https://github.com/AtraFelis/ebook_viewer/pull/13#issuecomment-6251196279)을 등록했고 [접수 응답 6251197303](https://github.com/AtraFelis/ebook_viewer/pull/13#issuecomment-6251197303)의 `Review triggered`와 PENDING을 확인했다. 중복 요청/Autofix/자동 병합은 하지 않았다. 실제 리뷰 결과/지적은 완료 후 코드·계약에 대조하며 기록을 갱신한다. 사용자 Figma 두 이력의 SHA-256과 SESSION/CHECKLIST 블록은 그대로 보존하며 PR에서 제외했다.
+
+후속 실제 리뷰 PRR_kwDOVLKYJM8AAAABS5wJ5A는 29개 파일을 검토하고 2건을 제출했다. [계측 복원 assertion이 원래 오류와 보고를 가리는 문제](https://github.com/AtraFelis/ebook_viewer/pull/13#discussion_r4307465386)는 현재 finally 흐름에서 재현 가능한 위험이라 채택했다. 계측 전용 `finishProbe`가 복원/파일 기록/상태 보고를 각각 시도하고 원래 오류에는 secondary 오류를 suppressed로 보존한다. 원래 오류가 없으면 모든 단계를 시도한 뒤 첫 실패를 그대로 던진다. [완료된 기준선을 다음 작업으로 표시한 문제](https://github.com/AtraFelis/ebook_viewer/pull/13#discussion_r4307465391)도 타당해 roadmap/문서 목차/SESSION을 갱신했다. 첫 보통 스크롤 개선과 남은 빠른 플링·고배율·복잡한 자료/최종 통합을 구분한다. 미채택 지적은 없다.
+
+후속 검증 명령은 `./gradlew.bat :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck --dependency-verification strict --console=plain`이다. 첫 수동 코드의 줄바꿈 스타일 실패를 직접 고친 뒤 재실행 통과했으며 ktlintFormat은 사용하지 않았다. `scripts/probes/ProbeCompletionCheck.java`를 JDK 17 javac/java로 실제 컴파일된 계측 helper/Kotlin stdlib 2.1.20에 연결해 성공 순서, 복원 실패 뒤 보고, 원래 오류+복원/저장 오류 동시 보존, 저장 실패 뒤 상태 전송의 **PC 4건 통과**를 확인했다. [재현](../testing/sharpness-probe.md). 후속 수정은 계측/문서뿐이며 앱 runtime/기존 실측 APK는 불변이다. 기기 재측정/실제 복원 timeout을 주입한 결과로 보고하지 않는다.

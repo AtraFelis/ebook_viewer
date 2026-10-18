@@ -75,6 +75,7 @@ class DebugFrameProbe {
             .put("isolatedMetadataScanAndCloseMs", SystemClock.elapsedRealtime() - nativeOpened)
         val output = File(context.filesDir, "p0-debug-probe.json")
         output.writeText(report.toString(2))
+        var primaryFailure: Throwable? = null
         try {
             repeat(instrumentation.probeRuns) { run ->
                 val activity = ui.launch()
@@ -194,28 +195,43 @@ class DebugFrameProbe {
                     ui.await("Probe Activity did not finish") { activity.isDestroyed }
                 }
             }
+        } catch (error: Throwable) {
+            primaryFailure = error
+            throw error
         } finally {
-            val restoreDone = CountDownLatch(1)
-            application.library.execute({ store ->
-                val previous = savedRecord
-                if (previous == null) store.remove(fixtureUri) else store.put(previous)
-            }) {
-                librarySucceeded = it.isSuccess
-                restoreDone.countDown()
-            }
-            assertTrue("Synthetic record restore timeout", restoreDone.await(5, TimeUnit.SECONDS))
-            assertTrue("Synthetic record restore failed", librarySucceeded)
-            // Keep this generated fixture so before/after runs use identical bytes and SHA.
-            output.writeText(report.toString(2))
-            val compact = JSONObject(report.toString())
-            val compactRuns = compact.getJSONArray("runs")
-            for (index in 0 until compactRuns.length()) {
-                compactRuns.getJSONObject(index).remove("frameDurationNsSorted")
-            }
-            instrumentation.sendStatus(
-                2,
-                Bundle().apply {
-                    putString("p0Report", compact.toString())
+            finishProbe(
+                primaryFailure,
+                {
+                    val restoreDone = CountDownLatch(1)
+                    application.library.execute({ store ->
+                        val previous = savedRecord
+                        if (previous == null) store.remove(fixtureUri) else store.put(previous)
+                    }) {
+                        librarySucceeded = it.isSuccess
+                        restoreDone.countDown()
+                    }
+                    assertTrue(
+                        "Synthetic record restore timeout",
+                        restoreDone.await(5, TimeUnit.SECONDS)
+                    )
+                    assertTrue("Synthetic record restore failed", librarySucceeded)
+                },
+                {
+                    // Keep this generated fixture so before/after runs use identical bytes and SHA.
+                    output.writeText(report.toString(2))
+                },
+                {
+                    val compact = JSONObject(report.toString())
+                    val compactRuns = compact.getJSONArray("runs")
+                    for (index in 0 until compactRuns.length()) {
+                        compactRuns.getJSONObject(index).remove("frameDurationNsSorted")
+                    }
+                    instrumentation.sendStatus(
+                        2,
+                        Bundle().apply {
+                            putString("p0Report", compact.toString())
+                        }
+                    )
                 }
             )
         }
@@ -227,4 +243,22 @@ class DebugFrameProbe {
         return JSONObject().put("totalPssKb", info.totalPss).put("dalvikPssKb", info.dalvikPss)
             .put("nativePssKb", info.nativePss).put("otherPssKb", info.otherPss)
     }
+}
+
+/** Attempt every cleanup/report step without replacing an in-flight measurement failure. */
+internal fun finishProbe(primaryFailure: Throwable?, vararg steps: () -> Unit) {
+    var failure = primaryFailure
+    for (step in steps) {
+        try {
+            step()
+        } catch (error: Throwable) {
+            val previous = failure
+            if (previous == null) {
+                failure = error
+            } else if (previous !== error) {
+                previous.addSuppressed(error)
+            }
+        }
+    }
+    if (primaryFailure == null) failure?.let { throw it }
 }

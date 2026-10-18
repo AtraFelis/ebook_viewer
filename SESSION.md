@@ -10,9 +10,11 @@ View의 실제 onDraw 가시 면적 95% 선명화와 전달된 타일의 큐/페
 
 기존 PR #12의 실제 CodeRabbit 3건은 기존 브랜치에서 최소 수정/호스트 19개 검사 후 f94ffc4로 push했다. 후속 수동 요청 6250577597은 한도로 실제 미실행(6250580688)이며 자동 재요청하지 않는다. 검색 보류를 새 검색 구현으로 바꾸지 않는다. 아래 ‘P2 전체 포함/목차 미결’은 이전 범위 기록이며 최신 계획이 우선한다.
 
-동일 profile/합성 자료 SHA·가로 2400×1080/60Hz에서 전후 각 540표본(조건별 30×3회)을 수집했다. 첫 방향 선명화 p95는 벡터 1714→649ms, 그레이 132→64ms, RGB 464→166ms로 보통 스크롤 목표를 충족했고 timeout 0/64MiB cache를 유지했다. 같은 계측의 프레임 30초×3회도 전후 p95 약 6.0~6.7ms/p99 최대 8.4ms로 기존 목표 이내였다. 메모리는 일부 조건에서 증가했고 실제 peak/다른 자료의 안전성 보장으로 보고하지 않는다. 고배율/빠른 플링의 선명도 분포·복잡한 원본 대조·최종 통합/개인 수용은 아직 남아 있다.
+동일 profile/합성 자료 SHA·가로 2400×1080/60Hz에서 전후 각 540표본(조건별 30×3회)을 수집했다. 첫 방향 선명화 p95는 벡터 1714→649ms, 그레이 132→64ms, RGB 464→166ms로 보통 스크롤 목표를 충족했고 timeout 0/64MiB cache를 유지했다. 같은 계측의 프레임 30초×3회도 전후 p95 약 6.0~6.7ms/p99 최대 8.4ms로 기존 목표 이내였다. 메모리는 일부 조건에서 증가했고 실제 peak/다른 자료의 안전성 보장으로 보고하지 않는다. 고배율/빠른 플링의 선명도 분포·복잡한 원본 대조·P2 최종 통합 수용은 아직 남아 있다.
 
 최종 debug app c945bfe1에서 기존 API 33 기본 41개/실패 0·앱 실행과 별도 화질 대조 1개/실패 0을 확인했다. 미리보기 이후 3/8/32 배율의 벡터/그레이/RGB 타일을 매번 새 페이지를 여는 기준과 비교해 픽셀이 일치했다. 기본 41개와 추가 대조는 같은 app/다른 계측 APK이며 하나의 42개 실행으로 보고하지 않는다. 사용자는 개인 PDF에서 **“더 빨라졌고 화질도 정상”**이라고 확인했다. 합성 자동 검증과 이 자기보고를 구분하며 이번 첫 개선으로 P2 전체/선명도 전체를 완료 처리하지 않는다.
+
+첫 개선을 [PR #13](https://github.com/AtraFelis/ebook_viewer/pull/13)에 등록했다. 구현 head 892c44b의 [push CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39136769982)와 [PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39136773066)는 모두 성공했다. CodeRabbit [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/13#issuecomment-6251196279)은 [실제 접수](https://github.com/AtraFelis/ebook_viewer/pull/13#issuecomment-6251197303) 후 29개 파일 리뷰를 완료했다. 타당한 2건(계측 복원 실패 시 원래 오류/보고 유실, 완료된 선명도 기준선의 오래된 다음 단계 문구)을 수정했다. 후속 strict 계측 빌드/Lint/ktlint와 PC 실패 경로 4건은 통과했으며 기기 측정을 재실행한 것은 아니다. 초기 자동 건너뜀 성공은 리뷰 완료로 세지 않는다. 새 head CI/재검토는 별도 확인하며 PR 병합은 사용자가 한다.
 
 ## P2 착수 실행 — 플랫폼 검증
 
@@ -50,7 +52,7 @@ CodeRabbit PR #8의 실제 리뷰 지적 1건(문서 상태 표현)을 수정/�
 
 완료 문서를 [PR #10](https://github.com/AtraFelis/ebook_viewer/pull/10)으로 등록했다. Markdown 7개만 변경했으며 Android checks는 paths-ignore로 새 실행이 없다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/10#issuecomment-6233510967)을 한 번 등록했고 [실제 응답](https://github.com/AtraFelis/ebook_viewer/pull/10#issuecomment-6233511959)은 Review rate limited였다. 20:47 KST 당시 26분 후 복구 안내이며 실제 리뷰는 미실행이다. 요청/응답 기록만 같은 PR에 후속 push하고 중복 요청하지 않는다. PR 병합은 사용자가 한다.
 
-다음 개발 범위는 P2다. 우선 후보는 [스크롤 선명도 복구 지연](docs/plan/p2-sharpness-recovery.md), 그다음 자동 배경색이며 둘 다 아직 구현하지 않았다. P1에 새 성능 목표나 다른 기기 수용 조건을 추가하지 않는다.
+P1 완료 당시 다음 범위는 P2 선명도 복구·자동 배경색이었다. 이후 [선명도 1차 개선](docs/plan/p2-sharpness-recovery.md)의 보통 스크롤 기준선·목표/개선 검증·개인 PDF 수용을 완료했으며 현재 상태는 맨 위 기록을 따른다. 빠른 플링·고배율·복잡한 자료와 최종 통합 검증, 자동 배경색과 다른 P2 필수 기능은 남아 있다. P1에 새 성능 목표나 다른 기기 수용 조건을 추가하지 않는다.
 
 ## 이전 작업 기록
 
