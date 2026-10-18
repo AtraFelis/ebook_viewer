@@ -1,6 +1,8 @@
 # 문서 목차
 
-P2는 기존 기능 확장 전체를 포함하고 Figma 전면 적용은 별도 단계로 분리합니다. [착수 전 준비·기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 먼저 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md)과 [probe 재현 절차](testing/p2-platform-probes.md)를 추가했으며 앱 통합·목차 지원·실제 선명화 기준선은 미완료입니다.
+현재 [플랫폼 문서 검색 앱 통합](adr/0010-on-demand-platform-pdf-search.md)을 진행했습니다. strict 로컬 검사·전체 기기 회귀 47개와 강조 보완 후 검색 6개를 통과했습니다. 개인 파일 수용·최종 선명화 성능은 별도입니다. [각 APK·검색 실행 이력](history/2026-10-18-07-p2-document-search.md)을 확인합니다.
+
+P2는 기존 기능 확장에서 목차·비밀번호 PDF 읽기를 사용자 후속 결정으로 제외하고 Figma 전면 적용도 별도 단계로 분리합니다. [착수 전 준비·기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 먼저 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md)과 [probe 재현 절차](testing/p2-platform-probes.md)를 추가했으며 앱 통합·실제 선명화 기준선은 미완료입니다.
 
 현재 개인 API 33 범위의 P1은 완료했습니다. [완료 판정·최종 CI·사용자 수용·미결 리뷰](history/2026-10-17-12-p1-completion.md), [다음 단계 로드맵](plan/roadmap.md)을 확인합니다.
 

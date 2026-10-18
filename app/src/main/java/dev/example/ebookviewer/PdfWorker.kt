@@ -40,6 +40,21 @@ class PdfWorker(
     private val desired = AtomicReference<Request?>()
     private val scheduled = AtomicBoolean()
     private var renderer: PdfRenderer? = null
+
+    // Borrowed while renderer is open. Only the renderer closes this descriptor.
+    private var activeDescriptor: ParcelFileDescriptor? = null
+    private val searchGeneration = AtomicLong()
+    private class SearchRun(
+        val document: Long,
+        val generation: Long,
+        val query: String,
+        val pageCount: Int,
+        val reader: PdfTextAccess,
+        val callback: (PdfSearchUpdate) -> Unit,
+        val hits: MutableList<PdfSearchHit> = mutableListOf(),
+        var page: Int = 0
+    )
+    private var activeSearch: SearchRun? = null
     private var closed = false
 
     fun open(source: () -> ParcelFileDescriptor) {
@@ -56,10 +71,12 @@ class PdfWorker(
         val openRequest = PdfOpenRequest()
         opening.getAndSet(openRequest)?.cancel(cancellation)
         cancelTiles()
+        cancelSearch()
         executor.execute {
             if (document.get() != id) return@execute
             renderer?.close()
             renderer = null
+            activeDescriptor = null
             try {
                 openRequest.throwIfCanceled()
                 val descriptor = source(openRequest)
@@ -77,6 +94,7 @@ class PdfWorker(
                     throw PdfSourceException(PdfFailure.INVALID)
                 }
                 renderer = opened
+                activeDescriptor = descriptor
                 openRequest.throwIfCanceled()
                 if (opened.pageCount == 0) throw PdfSourceException(PdfFailure.EMPTY)
                 val pageCount = opened.pageCount
@@ -94,6 +112,7 @@ class PdfWorker(
             } catch (error: Exception) {
                 renderer?.close()
                 renderer = null
+                activeDescriptor = null
                 val failure = when (error) {
                     is PdfSourceException -> error.failure
                     is SecurityException -> PdfFailure.ACCESS
@@ -137,6 +156,96 @@ class PdfWorker(
         desired.set(request)
         pending.set(request)
         schedule()
+    }
+
+    fun search(query: String, callback: (PdfSearchUpdate) -> Unit) {
+        check(!closed)
+        require(query.length <= PdfTextAccess.MAX_QUERY)
+        val id = document.get()
+        val generation = searchGeneration.incrementAndGet()
+        executor.execute {
+            if (document.get() != id || searchGeneration.get() != generation) return@execute
+            releaseSearch()
+            fun post(status: PdfSearchStatus) {
+                main.post {
+                    if (document.get() == id && searchGeneration.get() == generation) {
+                        callback(PdfSearchUpdate(emptyList(), 0, 0, status))
+                    }
+                }
+            }
+            if (document.get() != id || searchGeneration.get() != generation) return@execute
+            if (query.isBlank()) {
+                post(PdfSearchStatus.COMPLETE)
+                return@execute
+            }
+            if (!PdfTextAccess.isSupported()) {
+                post(PdfSearchStatus.UNAVAILABLE)
+                return@execute
+            }
+            try {
+                val source = requireNotNull(activeDescriptor)
+                val current = requireNotNull(renderer)
+                val reader = PdfTextAccess.open(ParcelFileDescriptor.dup(source.fileDescriptor))
+                val run = SearchRun(id, generation, query, current.pageCount, reader, callback)
+                activeSearch = run
+                searchPage(run)
+            } catch (_: LinkageError) {
+                releaseSearch()
+                post(PdfSearchStatus.UNAVAILABLE)
+            } catch (_: Exception) {
+                releaseSearch()
+                post(PdfSearchStatus.ERROR)
+            }
+        }
+    }
+
+    private fun searchPage(run: SearchRun) {
+        if (document.get() != run.document || searchGeneration.get() != run.generation) return
+        try {
+            run.hits.addAll(
+                run.reader.searchPage(run.page, run.query, PdfTextAccess.MAX_HITS - run.hits.size)
+            )
+            run.page++
+            val status = when {
+                run.hits.size >= PdfTextAccess.MAX_HITS -> PdfSearchStatus.LIMITED
+                run.page == run.pageCount -> PdfSearchStatus.COMPLETE
+                else -> PdfSearchStatus.SEARCHING
+            }
+            postSearch(run, status)
+            if (status == PdfSearchStatus.SEARCHING) {
+                // One page per turn yields the worker to visible tiles and metadata scanning.
+                executor.schedule({ searchPage(run) }, 25, TimeUnit.MILLISECONDS)
+            } else {
+                releaseSearch()
+            }
+        } catch (_: LinkageError) {
+            releaseSearch()
+            postSearch(run, PdfSearchStatus.UNAVAILABLE)
+        } catch (_: Exception) {
+            releaseSearch()
+            postSearch(run, PdfSearchStatus.ERROR)
+        }
+    }
+
+    private fun postSearch(run: SearchRun, status: PdfSearchStatus) {
+        val update = PdfSearchUpdate(run.hits.toList(), run.page, run.pageCount, status)
+        main.post {
+            if (document.get() == run.document && searchGeneration.get() == run.generation) {
+                run.callback(update)
+            }
+        }
+    }
+
+    fun cancelSearch() {
+        if (closed) return
+        val generation = searchGeneration.incrementAndGet()
+        executor.execute { if (searchGeneration.get() == generation) releaseSearch() }
+    }
+
+    private fun releaseSearch() {
+        val previous = activeSearch
+        activeSearch = null
+        previous?.reader?.close()
     }
 
     /** Invalidate queued deliveries too, even if the same tile is requested again after a trim. */
@@ -221,10 +330,12 @@ class PdfWorker(
         document.incrementAndGet()
         opening.getAndSet(null)?.cancel(cancellation)
         cancelTiles()
+        cancelSearch()
         // Close after the active native call, never concurrently with render.
         executor.execute {
             renderer?.close()
             renderer = null
+            activeDescriptor = null
         }
     }
 

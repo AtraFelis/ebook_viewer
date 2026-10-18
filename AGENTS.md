@@ -13,7 +13,7 @@
 | 플랫폼·언어 | Android 네이티브 / Kotlin |
 | 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
 | 앱 UI | 플랫폼 Activity + View/Canvas, P1 전체 화면/중앙 탭 도구/방향 설정. Compose 셸 최종 선택은 후속 비교 |
-| PDF | P0 PdfRenderer 승인. API 33 합성 문서·test provider 계측 완료, 다른 기기 미검증. 범위·제한은 ADR 0001/0007. 비탐색 파일은 취소/256MiB 상한의 익명 임시 복사 |
+| PDF | PdfRenderer 픽셀 읽기 유지, 검색 요청 중 플랫폼 PreV 텍스트 어댑터(S 확장 13 이상; 현재 API 33/확장 23 검증). 다른 기기 미검증. ADR 0001/0007/0010. 비탐색 파일은 취소/256MiB 상한의 익명 임시 복사 |
 | 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v2는 문서별 크기/간격을 추가하고 v1을 읽음(ADR 0006). 북마크/방향/배경색/번호 표시는 별도 v1(ADR 0002~0005). 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
@@ -29,7 +29,7 @@
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
 | 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록 코덱 테스트 22개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 41개·앱 실행 통과. 프로세스 복원 2단계는 별도 이력, 실제 OOM 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 전체 계측 47개 통과, 검색 강조 보완 후 관련 6개 재통과. 프로세스 복원 2단계는 별도 이력, 실제 OOM 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 

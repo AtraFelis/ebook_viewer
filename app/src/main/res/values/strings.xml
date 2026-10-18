@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pdf_search">검색</string>
+    <string name="pdf_search_hint">검색어를 입력하세요(최대 256자).</string>
+    <string name="pdf_search_idle">텍스트가 있는 PDF에서 문서 전체를 검색합니다.</string>
+    <string name="pdf_search_started">검색을 시작합니다.</string>
+    <string name="pdf_search_start">검색 실행</string>
+    <string name="pdf_search_previous">이전 결과</string>
+    <string name="pdf_search_next">다음 결과</string>
+    <string name="pdf_search_position">결과 %1$d / %2$d</string>
+    <string name="pdf_search_progress">검색 중: %1$d / %2$d쪽 · 현재 발견 %3$d건</string>
+    <string name="pdf_search_complete">검색 완료: %1$d건</string>
+    <string name="pdf_search_empty">일치하는 텍스트가 없습니다. 스캔 문서에는 검색할 텍스트가 없을 수 있습니다.</string>
+    <string name="pdf_search_limited">처음 %1$d건을 표시합니다. 검색어를 구체적으로 입력해 주세요.</string>
+    <string name="pdf_search_unavailable">이 기기의 PDF 검색 기능을 사용할 수 없습니다. 읽기는 계속할 수 있습니다.</string>
+    <string name="pdf_search_error">검색을 완료하지 못했습니다. 읽기는 계속할 수 있습니다.</string>
     <string name="app_name">PDF Viewer</string>
     <string name="open_pdf">PDF 열기</string>
     <string name="sample_pdf">합성 100페이지</string>

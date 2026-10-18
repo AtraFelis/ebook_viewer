@@ -2,6 +2,8 @@
 
 2026-10-18 (Asia/Seoul). 경로 `C:\Users\cotjs\workspace\ebook_viewer`.
 
+후속 범위 변경: 사용자가 목차·비밀번호 PDF 읽기를 P2 필수에서 제외했다. 아래는 실행/검토 당시의 결과를 보존한 이력이며 최신 착수/완료 조건은 [범위 조정](2026-10-18-06-p2-scope-reduction.md)을 따른다. 기존 목차 미결을 현재 P2의 차단 조건으로 삼지 않는다.
+
 ## 기준·보존
 
 사용자가 P2 진행을 요청했다. AGENTS→SESSION→CHECKLIST→P2 계획을 읽었다. main `0aea06e`에서 `git fetch origin`/좌우 차이 `0 0`을 확인하고 현재 체크아웃에서 `codex/p2-readiness`를 만들었다. 기존 디자인 SESSION/CHECKLIST·history 01/02와 앞선 P2 계획/관찰 문서는 보존했다. reset/clean/강제 push/worktree/의존성 추가 없음. 새 코드는 자체 점검 도구이며 앱 소스/기록/설정은 바꾸지 않았다.
