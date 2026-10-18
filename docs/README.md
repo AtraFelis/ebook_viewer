@@ -1,5 +1,7 @@
 # 문서 목차
 
+P2는 기존 기능 확장 전체를 포함하고 Figma 전면 적용은 별도 단계로 분리합니다. [착수 전 준비·기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 먼저 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md)과 [probe 재현 절차](testing/p2-platform-probes.md)를 추가했으며 앱 통합·목차 지원·실제 선명화 기준선은 미완료입니다.
+
 현재 개인 API 33 범위의 P1은 완료했습니다. [완료 판정·최종 CI·사용자 수용·미결 리뷰](history/2026-10-17-12-p1-completion.md), [다음 단계 로드맵](plan/roadmap.md)을 확인합니다.
 
 가로/세로 역방향 고정 추가는 [방향 설정 ADR](adr/0003-immersive-reader-and-orientation.md), [검증 이력](history/2026-10-17-11-reverse-orientation.md)을 확인합니다.
