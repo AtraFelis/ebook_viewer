@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.LruCache
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -38,6 +39,18 @@ class PdfCanvasView @JvmOverloads constructor(
     private var pendingPages: List<PageSize>? = null
     private var pageLayout = PageLayoutSettings()
     private var renderingEnabled = true
+
+    // Opt-in aggregate instrumentation. Normal reading does not calculate coverage or retain traces.
+    var onSharpnessDraw: ((SharpnessDraw) -> Unit)? = null
+    private var observedLayout: DocumentLayout? = null
+    private var observedZoom = Double.NaN
+    private var observedX = Double.NaN
+    private var observedY = Double.NaN
+    private var observedWidth = 0
+    private var observedHeight = 0
+    private val drawSnapshot = SharpnessDraw()
+    private var viewportChangedNanos = 0L
+    private var viewportRevision = 0L
 
     fun pageLayoutSettings(): PageLayoutSettings = pageLayout
 
@@ -379,6 +392,7 @@ class PdfCanvasView @JvmOverloads constructor(
     private fun updateTiles() {
         if (!renderingEnabled) return
         val document = layout ?: return
+        observeViewport(document)
         val scale = rasterScale(viewport.zoom)
         val visible = document.visibleTiles(viewport, width, height, scale)
         if (visible != requested) {
@@ -416,6 +430,44 @@ class PdfCanvasView @JvmOverloads constructor(
         for (tile in previews) cache.get(tile)?.let { drawTile(canvas, tile, it) }
         for (tile in fallback) cache.get(tile)?.let { drawTile(canvas, tile, it) }
         for (tile in requested) cache.get(tile)?.let { drawTile(canvas, tile, it) }
+        onSharpnessDraw?.let { observer ->
+            val document = requireNotNull(layout)
+            observeViewport(document)
+            var total = 0.0
+            var sharp = 0.0
+            for (tile in requested) {
+                val area = tile.visibleArea(document, viewport, width, height)
+                total += area
+                if (cache.get(tile) != null) sharp += area
+            }
+            drawSnapshot.revision = viewportRevision
+            drawSnapshot.changedNanos = viewportChangedNanos
+            drawSnapshot.drawnNanos = SystemClock.elapsedRealtimeNanos()
+            drawSnapshot.visibleArea = total
+            drawSnapshot.sharpArea = sharp
+            drawSnapshot.cachedBytes = cache.size()
+            observer(drawSnapshot)
+        }
+    }
+
+    private fun observeViewport(document: DocumentLayout) {
+        if (onSharpnessDraw == null) return
+        if (document !== observedLayout ||
+            viewport.zoom != observedZoom ||
+            viewport.x != observedX ||
+            viewport.y != observedY ||
+            width != observedWidth ||
+            height != observedHeight
+        ) {
+            observedLayout = document
+            observedZoom = viewport.zoom
+            observedX = viewport.x
+            observedY = viewport.y
+            observedWidth = width
+            observedHeight = height
+            viewportChangedNanos = SystemClock.elapsedRealtimeNanos()
+            viewportRevision++
+        }
     }
 
     private fun drawTile(canvas: Canvas, tile: Tile, bitmap: Bitmap?) {
@@ -458,3 +510,15 @@ data class RenderState(
     val visiblePages: Int,
     val coveredPages: Int
 )
+
+/** Borrowed callback snapshot: copy fields before retaining. onDraw, not GPU presentation. */
+class SharpnessDraw(
+    var revision: Long = 0,
+    var changedNanos: Long = 0,
+    var drawnNanos: Long = 0,
+    var visibleArea: Double = 0.0,
+    var sharpArea: Double = 0.0,
+    var cachedBytes: Int = 0
+) {
+    val sharpFraction: Double get() = if (visibleArea > 0.0) sharpArea / visibleArea else 0.0
+}

@@ -8,6 +8,7 @@ import android.graphics.pdf.PdfRenderer
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import java.io.FileNotFoundException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -20,13 +21,15 @@ class PdfWorker(
     private val onLoaded: (List<PageSize>) -> Unit,
     private val onTile: (Tile, Bitmap) -> Unit,
     private val onError: (PdfFailure) -> Unit,
-    private val onPageCount: (Int) -> Unit = {}
+    private val onPageCount: (Int) -> Unit = {},
+    private val onTiming: ((TileTiming) -> Unit)? = null
 ) {
     private data class Request(
         val document: Long,
         val generation: Long,
         val epoch: Long,
-        val tiles: List<Tile>
+        val tiles: List<Tile>,
+        val enqueuedNanos: Long
     )
 
     private val executor = Executors.newSingleThreadScheduledExecutor()
@@ -133,7 +136,13 @@ class PdfWorker(
             cancelTiles()
             return
         }
-        val request = Request(document.get(), generation.incrementAndGet(), tileEpoch.get(), tiles)
+        val request = Request(
+            document.get(),
+            generation.incrementAndGet(),
+            tileEpoch.get(),
+            tiles,
+            if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
+        )
         desired.set(request)
         pending.set(request)
         schedule()
@@ -155,6 +164,7 @@ class PdfWorker(
                 val current = renderer ?: return@execute
                 for (tile in request.tiles.take(4)) {
                     if (!isCurrent(request)) break
+                    val started = if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
                     val bitmap = Bitmap.createBitmap(
                         tile.width,
                         tile.height,
@@ -162,6 +172,8 @@ class PdfWorker(
                     )
                     try {
                         bitmap.eraseColor(Color.WHITE)
+                        val nativeStarted =
+                            if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
                         current.openPage(tile.page).use { page ->
                             val matrix = Matrix().apply {
                                 setScale(tile.scale.toFloat(), tile.scale.toFloat())
@@ -174,6 +186,8 @@ class PdfWorker(
                                 PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
                             )
                         }
+                        val rendered =
+                            if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
                         if (!isRelevant(request, tile)) {
                             bitmap.recycle()
                             break
@@ -185,6 +199,13 @@ class PdfWorker(
                                 )
                             ) {
                                 onTile(tile, bitmap)
+                                onTiming?.invoke(
+                                    TileTiming(
+                                        started - request.enqueuedNanos,
+                                        rendered - nativeStarted,
+                                        SystemClock.elapsedRealtimeNanos() - rendered
+                                    )
+                                )
                             } else {
                                 bitmap.recycle()
                             }
@@ -236,3 +257,6 @@ class PdfWorker(
         cancellation.shutdown()
     }
 }
+
+/** Delivered tiles only. Native interval includes page open/render/close; no text or URI. */
+data class TileTiming(val queueNanos: Long, val nativeNanos: Long, val deliveryNanos: Long)

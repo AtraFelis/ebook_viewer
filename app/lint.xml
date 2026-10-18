@@ -3,4 +3,5 @@
     <!-- ADR 0001 deliberately pins the approved compatibility set. Keep upgrade advice
          visible without treating 'not latest' as a correctness failure. -->
     <issue id="AndroidGradlePluginVersion" severity="informational" />
+    <issue id="GradleDependency" severity="informational" />
 </lint>

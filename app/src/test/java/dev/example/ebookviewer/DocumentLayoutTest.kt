@@ -6,6 +6,41 @@ import org.junit.Test
 
 class DocumentLayoutTest {
     @Test
+    fun sharpCoverageWeightsScreenAreaInsteadOfTileCount() {
+        val document = DocumentLayout(listOf(PageSize(600, 800)))
+        val viewport = Viewport()
+        val tiles = document.visibleTiles(viewport, 520, 500)
+        assertEquals(2, tiles.size)
+        val total = tiles.sumOf { it.visibleArea(document, viewport, 520, 500) }
+        assertEquals(260000.0, total, 0.001)
+        assertTrue(tiles.first().visibleArea(document, viewport, 520, 500) / total > 0.98)
+    }
+
+    @Test
+    fun sharpCoverageExcludesMarginsGapsAndRoundedPageEdges() {
+        val document = DocumentLayout(
+            listOf(PageSize(100, 101), PageSize(200, 200)),
+            PageLayoutSettings(gap = 20)
+        )
+        val viewport = Viewport(1.3)
+        val tiles = document.visibleTiles(viewport, 300, 170, rasterScale(viewport.zoom))
+        val total = tiles.sumOf { it.visibleArea(document, viewport, 300, 170) }
+        assertEquals(130.0 * 131.3 + 260.0 * 12.7, total, 0.001)
+        assertEquals(0.0, tiles.first().visibleArea(document, Viewport(1.3, 1000.0), 300, 170), 0.0)
+    }
+
+    @Test
+    fun sharpCoverageRespectsUniformPageScaleAndPannedHighZoom() {
+        val document = DocumentLayout(
+            listOf(PageSize(100, 200), PageSize(200, 100)),
+            PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH)
+        )
+        val viewport = Viewport(4.0, -35.0, -610.0)
+        val tiles = document.visibleTiles(viewport, 300, 400, rasterScale(viewport.zoom))
+        assertEquals(120000.0, tiles.sumOf { it.visibleArea(document, viewport, 300, 400) }, 0.001)
+    }
+
+    @Test
     fun uniformWidthsScalePageGeometryAndPdfTileResolutionSeparately() {
         val document = DocumentLayout(
             listOf(PageSize(400, 600), PageSize(800, 400)),

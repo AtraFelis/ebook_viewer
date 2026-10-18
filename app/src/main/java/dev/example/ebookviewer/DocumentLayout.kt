@@ -80,6 +80,29 @@ fun DocumentLayout.visibleTiles(
 
 private const val TILE_SIZE = 512
 
+/** Screen area after both viewport and page clipping; previews never count as sharp tiles. */
+fun Tile.visibleArea(
+    document: DocumentLayout,
+    viewport: Viewport,
+    width: Int,
+    height: Int
+): Double {
+    val left = viewport.x + document.left(page) * viewport.zoom
+    val top = viewport.y + document.tops[page] * viewport.zoom
+    val ratio = viewport.zoom * document.scale(page) / scale
+    val x0 = max(0.0, max(left, left + x * ratio))
+    val y0 = max(0.0, max(top, top + y * ratio))
+    val x1 = min(
+        width.toDouble(),
+        min(left + document.pageWidth(page) * viewport.zoom, left + (x + this.width) * ratio)
+    )
+    val y1 = min(
+        height.toDouble(),
+        min(top + document.pageHeight(page) * viewport.zoom, top + (y + this.height) * ratio)
+    )
+    return (x1 - x0).coerceAtLeast(0.0) * (y1 - y0).coerceAtLeast(0.0)
+}
+
 /** PDF points and document coordinates are independent of screen pixels. */
 data class PageSize(val width: Int, val height: Int) {
     init {
