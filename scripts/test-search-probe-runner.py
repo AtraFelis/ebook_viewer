@@ -32,6 +32,41 @@ class ProbeRunnerTest(unittest.TestCase):
         adb.instrument.assert_not_called()
         adb.stop.assert_called_once()
 
+    def test_cleanup_failures_preserve_report_and_attempt_both_checks(self):
+        for stop_fails, reader_fails in ((True, False), (False, True), (True, True)):
+            with self.subTest(stop=stop_fails, reader=reader_fails):
+                adb = self.fake()
+                report = {"failureClass": "SyntheticFailure"}
+                adb.instrument.side_effect = runner.ProbeError("Original failure", report)
+                if stop_fails:
+                    adb.stop.side_effect = runner.ProbeError("Synthetic stop failure")
+                if reader_fails:
+                    adb.reader_process.side_effect = ["unchanged-process", runner.ProbeError("Synthetic transport failure")]
+                with self.assertRaises(runner.ProbeError) as failure:
+                    runner.execute(adb, "guards", "text-1000.pdf", "single-keep")
+                self.assertIs(report, failure.exception.report)
+                self.assertIn("Original failure", str(failure.exception))
+                self.assertEqual(2, adb.reader_process.call_count)
+                adb.stop.assert_called_once()
+
+    def test_reader_change_during_cleanup_preserves_original_report(self):
+        adb = self.fake()
+        report = {"failureClass": "SyntheticFailure"}
+        adb.instrument.side_effect = runner.ProbeError("Original failure", report)
+        adb.reader_process.side_effect = ["unchanged-process", "changed-process"]
+        with self.assertRaises(runner.ProbeError) as failure:
+            runner.execute(adb, "guards", "text-1000.pdf", "single-keep")
+        self.assertIs(report, failure.exception.report)
+        self.assertIn("Reader process state changed", str(failure.exception))
+
+    def test_interruption_still_cleans_up_and_preserves_interrupt(self):
+        adb = self.fake()
+        adb.instrument.side_effect = KeyboardInterrupt()
+        with self.assertRaises(KeyboardInterrupt):
+            runner.execute(adb, "guards", "text-1000.pdf", "single-keep")
+        adb.stop.assert_called_once()
+        self.assertEqual(2, adb.reader_process.call_count)
+
     def test_reader_not_running_is_not_reported_as_live_survival(self):
         adb = self.fake()
         adb.reader_process.return_value = ""

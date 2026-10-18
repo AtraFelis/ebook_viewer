@@ -98,6 +98,7 @@ class Adb:
 
 def execute(adb: Adb, suite: str, fixture: str, mode: str) -> dict:
     before = adb.reader_process()
+    failure = None
     try:
         if adb.available() < MIN_AVAILABLE_KB:
             raise ProbeError("Not enough available system memory; probe not started")
@@ -123,10 +124,24 @@ def execute(adb: Adb, suite: str, fixture: str, mode: str) -> dict:
                 raise ProbeError("Memory reserve fell; no PDF probe permitted")
             result["search"] = adb.instrument("search", fixture, mode)
         return result
+    except BaseException as error:
+        failure = error
+        raise
     finally:
-        adb.stop()
-        if before != adb.reader_process():
-            raise ProbeError("Reader process state changed; stop further diagnostics")
+        errors = []
+        try:
+            adb.stop()
+        except ProbeError:
+            errors.append("Diagnostic cleanup unconfirmed")
+        try:
+            if before != adb.reader_process():
+                errors.append("Reader process state changed; stop further diagnostics")
+        except ProbeError:
+            errors.append("Reader process state unconfirmed")
+        if errors:
+            report = failure.report if isinstance(failure, ProbeError) else None
+            reason = str(failure) + "; " if isinstance(failure, ProbeError) else ""
+            raise ProbeError(reason + "; ".join(errors), report) from None
 
 
 def main() -> None:

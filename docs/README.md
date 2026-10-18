@@ -1,6 +1,6 @@
 # 문서 목차
 
-검색 재개 전 [별도 진단 APK/격리 UID와 예산 설계](adr/0011-isolated-search-diagnostics.md), [재현 절차](testing/search-isolation-probe.md), [실행·보호 중단·미실행](history/2026-10-18-09-search-isolation-probe.md)을 추가했습니다. 읽기 앱 검색은 계속 비활성화돼 있으며 이 진단이 원래 장애 해결/제품 수용을 뜻하지 않습니다.
+검색 진단의 [별도 APK/격리 UID와 예산 설계](adr/0011-isolated-search-diagnostics.md), [재현 절차](testing/search-isolation-probe.md), [초기 실행·보호 중단·미실행](history/2026-10-18-09-search-isolation-probe.md), [종료 경로 수정과 최신 기기 결과](history/2026-10-18-10-search-probe-termination.md)를 보존합니다. 사용자 결정으로 [검색은 후속 보류/P2 필수 제외](history/2026-10-18-11-search-deferral.md)이며 원래 장애 해결/제품 수용을 뜻하지 않습니다.
 
 현재 P2 검색 실험은 많은 페이지의 개인 PDF에서 수용 실패해 철회했습니다. 기존 main 읽기 앱을 데이터 보존 업데이트로 복구했고 검색은 제공하지 않습니다. [LOW_MEMORY 근거·복구·검색 재개 조건](history/2026-10-18-08-p2-search-low-memory-withdrawal.md)이 아래 실험 통과 기록보다 우선합니다. PR #12는 Draft입니다.
 
