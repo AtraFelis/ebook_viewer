@@ -44,3 +44,7 @@ adb shell am instrument -w -e suite lifecycle dev.example.ebookviewer.p0.test/de
 4. 대용량/취소/반복 검색의 안정성·기존 읽기 회귀와 사용자 수용을 통과한 뒤에만 UI를 다시 제공한다. 새 라이브러리/스택이 필요하면 별도 구성 승인을 받는다. 현재 다른 엔진이나 새 의존성은 도입하지 않는다.
 
 검색은 미완료, PR #12는 Draft다. 그 외 P2 기능·최종 성능/접근성 검증도 남아 있다.
+
+## 원격 기록
+
+철회 커밋 `1bb8d8906b1bac0690414a96952ac899faa34da8`을 일반 push했고 PR #12의 제목/설명을 장애·철회·재개 조건으로 수정했다. 원격 PR 최종 diff는 Markdown 13개뿐이며 app/기기 스크립트는 병합 main과 동일하다. 해당 철회 head의 [push CI 39102375613](https://github.com/AtraFelis/ebook_viewer/actions/runs/39102375613)은 마지막 확인 때 진행 중이다. PR의 전체 diff가 문서뿐이어서 새 pull_request CI는 관찰되지 않았다. 후속 기록 전용 head와 앱/복구 검사 소스를 구분한다. 실제 CodeRabbit 리뷰/인라인 지적은 여전히 0건이다.
