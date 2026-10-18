@@ -1,5 +1,7 @@
 # 문서 목차
 
+검색 재개 전 [별도 진단 APK/격리 UID와 예산 설계](adr/0011-isolated-search-diagnostics.md), [재현 절차](testing/search-isolation-probe.md), [실행·보호 중단·미실행](history/2026-10-18-09-search-isolation-probe.md)을 추가했습니다. 읽기 앱 검색은 계속 비활성화돼 있으며 이 진단이 원래 장애 해결/제품 수용을 뜻하지 않습니다.
+
 현재 P2 검색 실험은 많은 페이지의 개인 PDF에서 수용 실패해 철회했습니다. 기존 main 읽기 앱을 데이터 보존 업데이트로 복구했고 검색은 제공하지 않습니다. [LOW_MEMORY 근거·복구·검색 재개 조건](history/2026-10-18-08-p2-search-low-memory-withdrawal.md)이 아래 실험 통과 기록보다 우선합니다. PR #12는 Draft입니다.
 
 P2는 기존 기능 확장에서 목차·비밀번호 PDF 읽기를 사용자 후속 결정으로 제외하고 Figma 전면 적용도 별도 단계로 분리합니다. [착수 전 준비·기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 먼저 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md)과 [probe 재현 절차](testing/p2-platform-probes.md)를 추가했으며 앱 통합·실제 선명화 기준선은 미완료입니다.

@@ -16,6 +16,7 @@ local.properties
 # Private documents and artifacts
 local-documents/
 local-artifacts/
+__pycache__/
 *.hprof
 *.perfetto-trace
 .DS_Store

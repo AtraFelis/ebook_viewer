@@ -3,4 +3,7 @@
     <!-- ADR 0001 deliberately pins the approved compatibility set. Keep upgrade advice
          visible without treating 'not latest' as a correctness failure. -->
     <issue id="AndroidGradlePluginVersion" severity="informational" />
+    <!-- Version discovery can change with remote metadata. Locks and strict verification
+         remain mandatory; this preserves the same policy for Kotlin library upgrade advice. -->
+    <issue id="GradleDependency" severity="informational" />
 </lint>

@@ -109,6 +109,12 @@
 
 ## 후속 — P2
 
+- [x] 진단 전용 APK/격리 UID/호스트 deadline·정리와 고정 중단 정책 구현([ADR 0011](docs/adr/0011-isolated-search-diagnostics.md)). 읽기 앱에 의존/번들하지 않음, 새 런타임 라이브러리 없음.
+- [x] strict 기존/진단 앱 빌드·단위 22개·호스트 안전 12개·Lint 오류/경고 0·ktlint 통과. 초기 진단 APK guard 7개 및 작은 텍스트 1,000페이지 single/dual keep 완료, reopen 보호 중단을 구분([이력](docs/history/2026-10-18-09-search-isolation-probe.md)).
+- [ ] 최종 두 글자/430페이지 작은 이미지 APK의 기기 검증: 메모리 예산 미달로 guard/PDF 호출 전 거부. 초기 APK 결과를 최종 APK 전체 통과로 확대하지 않음.
+- [ ] 고해상도/압축/문서 구조 비교와 원인 재현, 제품 내 막힌 native 프로세스 종료/회수 보장. 샘플링 예산/외부 ADB 정리만으로 검색을 재활성화하지 않음.
+- [x] 진단 APK만 제거, 정리 당시 실행 중 읽기 앱 PID 유지. 사용자 개인 자료/앱 데이터 삭제·개인 PDF 재검색 없음. 의도하지 않은 Wrapper 변경은 백업 뒤 8.9 복구, 실제 Gradle/Wrapper pin 검사 추가.
+
 - [x] 검색 수용 실패 후 앱 중지·PR #12 Draft 전환·이번 앱 변경 철회. main 동일 소스·검색 클래스 없는 APK·strict 검사/단위 22개/Lint/ktlint·복구 수명 4개/실패 0·데이터 보존 업데이트/실행 확인([근거](docs/history/2026-10-18-08-p2-search-low-memory-withdrawal.md)).
 - [ ] 검색 대용량 안정성: LOW_MEMORY 원인/피크 메모리 진단, native 중단/메모리 예산·프로세스 격리 검증, 재활성화 전 합성 대용량/개인 수용. 현재 검색 제공 안 함.
 - [x] 철회 1bb8d89 일반 push·PR #12 Draft/문서만 남은 diff 확인. 해당 push CI 39102375613은 진행 중으로 결과 미확인, 실제 외부 리뷰 0건.
