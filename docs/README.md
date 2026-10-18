@@ -1,6 +1,8 @@
 # 문서 목차
 
-P2는 기존 기능 확장 전체를 포함하고 Figma 전면 적용은 별도 단계로 분리합니다. [착수 전 준비·기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 먼저 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md)과 [probe 재현 절차](testing/p2-platform-probes.md)를 추가했으며 앱 통합·목차 지원·실제 선명화 기준선은 미완료입니다.
+현재 P2는 사용자 결정으로 검색을 후속 보류하고 목차·비밀번호 PDF 읽기도 필수에서 제외합니다. [최신 범위](plan/p2-scope-and-completion.md)를 따릅니다. 선명도 작업은 검색과 독립된 [가시 면적/페이지 재사용 결정](adr/0012-bounded-page-reuse-and-sharpness.md), [실행 결과](history/2026-10-18-13-sharpness-baseline-and-page-reuse.md), [재현 절차](testing/sharpness-probe.md)에서 확인합니다.
+
+P2는 최신 범위의 기능 확장을 포함하고 Figma 전면 적용은 별도 단계로 분리합니다. [기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md) 후 보통 스크롤 선명화 기준선과 페이지 재사용 1차 개선·개인 PDF 체감 수용을 완료했습니다. 빠른 플링·고배율의 선명도 분포, 복잡한 자료와 최종 통합 검증 및 다른 필수 기능은 남아 있습니다. 목차는 필수 범위에서 제외했습니다.
 
 현재 개인 API 33 범위의 P1은 완료했습니다. [완료 판정·최종 CI·사용자 수용·미결 리뷰](history/2026-10-17-12-p1-completion.md), [다음 단계 로드맵](plan/roadmap.md)을 확인합니다.
 

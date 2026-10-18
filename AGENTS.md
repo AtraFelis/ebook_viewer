@@ -27,11 +27,13 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록 코덱 테스트 22개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명 29개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 계측 41개·앱 실행 통과. 프로세스 복원 2단계는 별도 이력, 실제 OOM 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 기본 41개·앱 실행 통과. 별도 화질 대조 1개/프로세스 복원 2단계는 이력별 범위, 실제 OOM 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
+
+현재 P2는 사용자 결정으로 문서 검색·목차·비밀번호 PDF 읽기를 필수에서 제외한다. 검색은 후속 보류/비활성화이며 진단 코드와 원인 미확정 이력은 Draft PR #12에 보존한다. 선명도 개선은 main 기반 독립 브랜치에서 기존 PdfRenderer로 진행한다. 선택/복사·TalkBack 본문 읽기 등 나머지 범위와 해당 native 안전 검증은 유지한다. [현재 계획](docs/plan/p2-scope-and-completion.md)을 따른다.
 
 ## 코드 스타일
 

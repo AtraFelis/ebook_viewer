@@ -28,6 +28,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    // Generated public synthetic data only; never package local documents in the reader APK.
+    sourceSets.getByName("androidTest").assets.srcDir(
+        rootProject.file("local-artifacts/sharpness-fixtures")
+    )
     lint {
         warningsAsErrors = true
     }
