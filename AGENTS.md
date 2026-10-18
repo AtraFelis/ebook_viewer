@@ -35,6 +35,8 @@ ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시�
 
 현재 P2 검색 실험은 개인 대용량 PDF의 LOW_MEMORY 수용 실패로 철회했다. 읽기 앱 런타임 소스/계측/기기 스크립트는 병합 main과 동일하며 검색은 제공하지 않는다. 복구 strict 검사·수명 계측 4개 통과와 재개 조건은 [장애 이력](docs/history/2026-10-18-08-p2-search-low-memory-withdrawal.md)을 따른다. 과거 실험의 합성/CI 통과를 현재 검색 안정성으로 취급하지 않는다.
 
+2026-10-18 사용자 후속 결정으로 검색 구현·추가 진단은 보류하며 P2 필수/종료 조건에서 제외한다. 현재 검색 UI는 계속 제공하지 않고 원인 미확정/실험 이력은 보존한다. 선택·복사와 TalkBack 본문 읽기는 별도 P2 범위로 유지하며 필요한 native 안전 검증을 각 기능에 적용한다. 검색 보류를 다른 기능의 암묵적 제외나 검색 안정성 해결로 해석하지 않는다.
+
 별도 `:searchprobe`는 진단 전용 testOnly APK(min 30)이며 읽기 앱의 의존성/런타임에 포함하지 않는다. [ADR 0011](docs/adr/0011-isolated-search-diagnostics.md)의 고정 예산·합성 자료만 사용하고 kernel 메모리 상한/제품 내 native 중단 보장으로 취급하지 않는다. 새 런타임 라이브러리는 없다. 생성/호스트 검사·기기 실행은 [절차](docs/testing/search-isolation-probe.md)를 따른다. Wrapper/실행 Gradle 8.9가 다르면 먼저 거부하며 버전 권고는 informational로 계속 표시한다.
 
 ## 코드 스타일
