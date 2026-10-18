@@ -35,3 +35,13 @@ Context7 resolve `/johngray1965/pdfiumandroidkt`/query를 사용했으나 버전
 점검 도구의 실제 실행·문서/스크립트 검사와 원격 PR/리뷰 결과를 구분해 후속 기록한다. 문서만이 아닌 script 변경이므로 원격 Android CI 실행 여부도 확인한다. ktlintFormat/릴리스/병합은 하지 않는다.
 
 최종 인벤토리 재실행에서 API 33/S·T 확장 23/클래스 5개와 probeId/완료 시각을 확인했다. standalone 도구는 API 30 미만을 사전 거부하고 앱 min 23을 바꾸지 않는다. PowerShell Parser 오류 0, Python AST/manifest 7개/합성 페이지·2단계 목차 확인 통과, `git diff --check`와 앱/Gradle/의존성 소스 불변 확인 통과. 별도 로컬 앱 빌드/전체 41개 계측을 반복하지 않았고 기존 통과 수치를 새 P2 통과로 재사용하지 않는다.
+
+## PR 게시·실제 CI와 리뷰
+
+P2 변경 16개만 `a387ad4`로 커밋/일반 push하고 main 대상 [PR #11](https://github.com/AtraFelis/ebook_viewer/pull/11)을 등록/대화에 연결했다. SESSION/CHECKLIST는 index에서 디자인 부분만 제외해 staged 버전을 만들었고 작업 파일을 덮어쓰지 않았다. 남은 작업 트리 diff는 디자인 두 문단/체크 목록과 history 01/02뿐이다. 기존 두 디자인 history의 SHA-256 불변도 확인했다. staged Markdown 내부 파일 링크 116개/누락 0, 공백/범위 검사 통과. 앱/Gradle 소스는 main과 같다.
+
+같은 head의 [pull_request Windows CI 39099974986](https://github.com/AtraFelis/ebook_viewer/actions/runs/39099974986)와 [push CI 39099946435](https://github.com/AtraFelis/ebook_viewer/actions/runs/39099946435)가 completed/success다. 도구 설치·Wrapper 검증·strict 앱/테스트 APK 빌드·단위/Lint/ktlint의 원격 결과이며 연결 기기 probe는 위 로컬 실행과 구분한다.
+
+[CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/11#issuecomment-6246012788)을 한 번 등록했고 [Review triggered 응답](https://github.com/AtraFelis/ebook_viewer/pull/11#issuecomment-6246013509) 후 [실제 리뷰](https://github.com/AtraFelis/ebook_viewer/pull/11#pullrequestreview-5561567427)가 head a387ad4의 16개 파일을 검토했다. 지적은 [로드맵 문구 1건](https://github.com/AtraFelis/ebook_viewer/pull/11#discussion_r4305846761): ‘구현/기기 측정 미실행’이 이미 완료한 플랫폼 probe/24개 격리 표본까지 부정하므로 앱 통합/최종 화면 성능의 미완료와 구분하라는 내용이었다. 현재 결과와 대조해 타당하므로 문구를 수정했다. 코드 동작 지적은 없었다. 리뷰의 CLI/Autofix 제안은 실행하지 않았고 이후 포함 리뷰 0건 한도 안내와 단순 문서 수정 범위를 고려해 중복 요청하지 않는다.
+
+후속 변경은 리뷰 문구/실제 결과 기록뿐이며 검증한 도구/앱 소스를 바꾸지 않는다. 최종 문서 head의 checks는 PR에서 별도 확인하고 새 앱 CI 실행으로 보고하지 않는다. PR 병합은 사용자가 한다.

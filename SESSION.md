@@ -4,6 +4,8 @@
 
 ## P2 착수 실행 — 플랫폼 검증
 
+착수 검증을 [PR #11](https://github.com/AtraFelis/ebook_viewer/pull/11)로 등록했다. 구현 head `a387ad4`의 [Windows CI 39099974986](https://github.com/AtraFelis/ebook_viewer/actions/runs/39099974986)와 push CI 39099946435가 성공했다. CodeRabbit [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/11#issuecomment-6246012788)/실제 접수 후 16개 파일 리뷰를 완료했고 로드맵의 미실행 범위 문구 1건을 타당해 수정했다. 코드 지적은 없었고 후속 문서 변경의 체크와 실행한 앱/도구 소스 CI를 구분한다. 기존 디자인 수정은 미커밋으로 보존하며 PR 병합은 사용자가 한다.
+
 현재 체크아웃의 `codex/p2-readiness`에서 기존 디자인/계획 미커밋 변경을 보존했다. 연결된 API 33 기기의 **S/T 확장 23**과 기본/PreV 공개 API를 자체 shell probe로 확인했다. 합성 자료에서 PreV 텍스트 추출·검색/결과 없음·선택·렌더, AES-128/256 암호 없음/오류 거부와 올바른 암호 검색/렌더를 통과했다. 앱 설치/개인 문서/기록은 건드리지 않았으며 앱 UI 기능 완료와 구분한다.
 
 그레이/RGB 등 합성 이미지 4종×2 renderer×3회=24개 격리 표본을 실행했다. 기본 renderer 첫 타일 중앙값은 그레이 q85 13.03ms, 같은 픽셀 RGB q85 37.15ms, RGB q50 35.77ms다. 앱 큐·실제 draw·프레임·PSS가 없는 측정이므로 사용자 PDF 병목이나 스크롤 개선/합격으로 보고하지 않는다. [ADR 0009](docs/adr/0009-p2-platform-pdf-capabilities.md), [실행·한계](docs/history/2026-10-18-05-p2-platform-readiness.md), [재현 절차](docs/testing/p2-platform-probes.md).
