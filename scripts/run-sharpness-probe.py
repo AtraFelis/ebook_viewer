@@ -44,12 +44,20 @@ def main():
         raise RuntimeError("Unlock the device before running this UI probe")
     apk = ROOT / "app/build/outputs/apk/profile/app-profile.apk"
     test_apk = ROOT / "app/build/outputs/apk/androidTest/profile/app-profile-androidTest.apk"
-    for path in (apk, test_apk):
-        if not path.is_file():
-            raise RuntimeError("Build both profile APKs first")
-        call(prefix + ["install", "--no-streaming", "-r", "-t", str(path)], timeout=60)
     directory = ROOT / "local-artifacts/sharpness"
     directory.mkdir(parents=True, exist_ok=True)
+    snapshots = {}
+    for kind, path in (("app", apk), ("test", test_apk)):
+        if not path.is_file():
+            raise RuntimeError("Build both profile APKs first")
+        snapshots[kind] = path.read_bytes()
+        frozen = directory / f"{args.label}-{kind}.apk"
+        frozen.write_bytes(snapshots[kind])
+        call(prefix + ["install", "--no-streaming", "-r", "-t", str(frozen)], timeout=60)
+    memory = call(prefix + ["shell", "cat", "/proc/meminfo"])
+    available = re.search(r"(?m)^MemAvailable:\s+(\d+)", memory)
+    if not available or int(available.group(1)) < 2 * 1024 * 1024:
+        raise RuntimeError("Memory reserve fell after install; probe not started")
     try:
         result = call(prefix + ["shell", "am", "instrument", "-w", "-e", "suite", "sharpness",
                                 "-e", "runs", str(args.runs),
@@ -66,11 +74,9 @@ def main():
     report = json.loads(match.group(1))
     if len(report["runs"]) != 3 * args.runs:
         raise RuntimeError("Incomplete fixture/run count")
-    report["apkSha256"] = hashlib.sha256(apk.read_bytes()).hexdigest()
-    report["testApkSha256"] = hashlib.sha256(test_apk.read_bytes()).hexdigest()
+    report["apkSha256"] = hashlib.sha256(snapshots["app"]).hexdigest()
+    report["testApkSha256"] = hashlib.sha256(snapshots["test"]).hexdigest()
     (directory / f"{args.label}-profile.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    (directory / f"{args.label}-app.apk").write_bytes(apk.read_bytes())
-    (directory / f"{args.label}-test.apk").write_bytes(test_apk.read_bytes())
     print(json.dumps({"passed": True, "runs": len(report["runs"]), "apkSha256": report["apkSha256"]}))
 
 

@@ -19,6 +19,7 @@ class P0Instrumentation : Instrumentation() {
     private var accessOnly = false
     private var lifecycleOnly = false
     private var sharpnessOnly = false
+    private var sharpnessPixelsOnly = false
     private var accessMethod: String? = null
     var restartPhase: String? = null
         private set
@@ -39,7 +40,8 @@ class P0Instrumentation : Instrumentation() {
                     "layout",
                     "access",
                     "lifecycle",
-                    "sharpness"
+                    "sharpness",
+                    "sharpnessPixels"
                 )
         )
         immersiveOnly = suite == "immersive"
@@ -49,6 +51,7 @@ class P0Instrumentation : Instrumentation() {
         accessOnly = suite == "access"
         lifecycleOnly = suite == "lifecycle"
         sharpnessOnly = suite == "sharpness"
+        sharpnessPixelsOnly = suite == "sharpnessPixels"
         accessMethod = arguments?.getString("method")
         require(accessMethod == null || accessOnly)
         val validMethod = DocumentAccessDeviceTest::class.java.declaredMethods.any {
@@ -65,6 +68,7 @@ class P0Instrumentation : Instrumentation() {
         require(!accessOnly || (!probe && restartPhase == null))
         require(!lifecycleOnly || (!probe && restartPhase == null))
         require(!sharpnessOnly || (!probe && restartPhase == null))
+        require(!sharpnessPixelsOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -113,7 +117,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (sharpnessOnly) {
+        val result = if (sharpnessPixelsOnly) {
+            core.run(SharpnessPixelsDeviceTest::class.java)
+        } else if (sharpnessOnly) {
             core.run(SharpnessProbe::class.java)
         } else if (lifecycleOnly) {
             core.run(ReaderLifecycleDeviceTest::class.java)

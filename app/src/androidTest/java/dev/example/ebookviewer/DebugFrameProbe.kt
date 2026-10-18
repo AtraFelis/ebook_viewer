@@ -16,6 +16,8 @@ import android.view.Window
 import java.io.File
 import java.security.MessageDigest
 import java.util.Collections
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.ceil
 import org.json.JSONArray
@@ -34,6 +36,18 @@ class DebugFrameProbe {
         val context = instrumentation.targetContext
         val fixture = File(context.cacheDir, "p0-probe-fixture.pdf")
         if (!fixture.exists()) SyntheticDocument.write(fixture)
+        val application = context.applicationContext as ReaderApplication
+        val fixtureUri = Uri.fromFile(fixture).toString()
+        var savedRecord: ReadingRecord? = null
+        var librarySucceeded = false
+        val snapshotDone = CountDownLatch(1)
+        application.library.execute({ it.list().singleOrNull { row -> row.uri == fixtureUri } }) {
+            librarySucceeded = it.isSuccess
+            savedRecord = it.getOrNull()
+            snapshotDone.countDown()
+        }
+        assertTrue("Synthetic record snapshot timeout", snapshotDone.await(5, TimeUnit.SECONDS))
+        assertTrue("Synthetic record snapshot failed", librarySucceeded)
         val sha = MessageDigest.getInstance(
             "SHA-256"
         ).digest(fixture.readBytes()).joinToString("") {
@@ -177,9 +191,20 @@ class DebugFrameProbe {
                         activity.finish()
                     }
                     thread.quitSafely()
+                    ui.await("Probe Activity did not finish") { activity.isDestroyed }
                 }
             }
         } finally {
+            val restoreDone = CountDownLatch(1)
+            application.library.execute({ store ->
+                val previous = savedRecord
+                if (previous == null) store.remove(fixtureUri) else store.put(previous)
+            }) {
+                librarySucceeded = it.isSuccess
+                restoreDone.countDown()
+            }
+            assertTrue("Synthetic record restore timeout", restoreDone.await(5, TimeUnit.SECONDS))
+            assertTrue("Synthetic record restore failed", librarySucceeded)
             // Keep this generated fixture so before/after runs use identical bytes and SHA.
             output.writeText(report.toString(2))
             val compact = JSONObject(report.toString())

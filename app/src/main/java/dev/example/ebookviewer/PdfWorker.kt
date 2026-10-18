@@ -162,19 +162,22 @@ class PdfWorker(
             try {
                 val request = pending.getAndSet(null) ?: return@execute
                 val current = renderer ?: return@execute
-                for (tile in request.tiles.take(4)) {
-                    if (!isCurrent(request)) break
-                    val started = if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
-                    val bitmap = Bitmap.createBitmap(
-                        tile.width,
-                        tile.height,
-                        Bitmap.Config.ARGB_8888
-                    )
-                    try {
-                        bitmap.eraseColor(Color.WHITE)
-                        val nativeStarted =
+                val batch = request.tiles.take(4)
+                RenderPageSession { index -> current.openPage(index) }.use { pages ->
+                    for ((offset, tile) in batch.withIndex()) {
+                        if (!isCurrent(request)) break
+                        val started =
                             if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
-                        current.openPage(tile.page).use { page ->
+                        val bitmap = Bitmap.createBitmap(
+                            tile.width,
+                            tile.height,
+                            Bitmap.Config.ARGB_8888
+                        )
+                        try {
+                            bitmap.eraseColor(Color.WHITE)
+                            val nativeStarted =
+                                if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
+                            val page = pages.page(tile.page)
                             val matrix = Matrix().apply {
                                 setScale(tile.scale.toFloat(), tile.scale.toFloat())
                                 postTranslate(-tile.x.toFloat(), -tile.y.toFloat())
@@ -185,35 +188,36 @@ class PdfWorker(
                                 matrix,
                                 PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
                             )
-                        }
-                        val rendered =
-                            if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
-                        if (!isRelevant(request, tile)) {
+                            if (offset == batch.lastIndex) pages.release()
+                            val rendered =
+                                if (onTiming == null) 0 else SystemClock.elapsedRealtimeNanos()
+                            if (!isRelevant(request, tile)) {
+                                bitmap.recycle()
+                                break
+                            }
+                            main.post {
+                                if (isRelevant(
+                                        request,
+                                        tile
+                                    )
+                                ) {
+                                    onTile(tile, bitmap)
+                                    onTiming?.invoke(
+                                        TileTiming(
+                                            started - request.enqueuedNanos,
+                                            rendered - nativeStarted,
+                                            SystemClock.elapsedRealtimeNanos() - rendered
+                                        )
+                                    )
+                                } else {
+                                    bitmap.recycle()
+                                }
+                            }
+                        } catch (_: Exception) {
                             bitmap.recycle()
+                            main.post { if (isCurrent(request)) onError(PdfFailure.RENDER) }
                             break
                         }
-                        main.post {
-                            if (isRelevant(
-                                    request,
-                                    tile
-                                )
-                            ) {
-                                onTile(tile, bitmap)
-                                onTiming?.invoke(
-                                    TileTiming(
-                                        started - request.enqueuedNanos,
-                                        rendered - nativeStarted,
-                                        SystemClock.elapsedRealtimeNanos() - rendered
-                                    )
-                                )
-                            } else {
-                                bitmap.recycle()
-                            }
-                        }
-                    } catch (_: Exception) {
-                        bitmap.recycle()
-                        main.post { if (isCurrent(request)) onError(PdfFailure.RENDER) }
-                        break
                     }
                 }
                 if (isCurrent(request) && request.tiles.size > 4) {
@@ -258,5 +262,5 @@ class PdfWorker(
     }
 }
 
-/** Delivered tiles only. Native interval includes page open/render/close; no text or URI. */
+/** Delivered tiles only. Native interval includes any page open/render/close for that tile; no text or URI. */
 data class TileTiming(val queueNanos: Long, val nativeNanos: Long, val deliveryNanos: Long)
