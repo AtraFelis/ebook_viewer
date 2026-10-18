@@ -1,5 +1,7 @@
 # P2 문서 검색 — 플랫폼 텍스트 어댑터와 앱 UI
 
+**후속 개인 대용량 수용 실패로 철회된 실험 기록이다.** 현재 앱/PR 상태는 [LOW_MEMORY 장애·복구 이력](2026-10-18-08-p2-search-low-memory-withdrawal.md)을 따른다. 아래 합성 통과는 실사용 안정성 통과가 아니다.
+
 2026-10-18 (Asia/Seoul). 작업 위치 `C:\Users\cotjs\workspace\ebook_viewer`.
 
 ## 기준과 보존
@@ -36,4 +38,4 @@ strict 앱/계측 빌드·단위 22개·Lint 오류/경고 0·ktlintCheck 통과
 
 줄바꿈/Unicode 경계·PDF `/Rotate` 메타데이터, 개인 PDF 검색 수용·최종 앱 성능/PSS·큰 글꼴/TalkBack은 미검증이다. 검색 어댑터를 검색 전체 종료 또는 P2 완료로 보고하지 않는다. 기존 렌더러가 그대로인 이번 기능 통합 뒤에도 선명도 최적화 전의 앱 draw 기준선/목표 고정은 필수다. 다음은 검색 경계 보완과 선택/복사, 선명도 계측·자동 배경색·테마/밝기/화면 유지·접근성이다. 목차·비밀번호 읽기는 사용자 결정으로 제외한다.
 
-PR 등록/원격 CI/CodeRabbit 실제 결과는 확인 후 추가한다. 사용자가 PR을 병합한다.
+[PR #12](https://github.com/AtraFelis/ebook_viewer/pull/12)에 실험 6258ce1을 등록했고 Windows CI 39101925343/39101921813은 성공했다. CodeRabbit 수동 요청은 접수 뒤 한도로 실제 미실행이다. 이후 사용자 대용량 검색 수용 실패로 PR을 Draft로 전환하고 앱 기능을 철회했다. [후속 장애·복구 이력](2026-10-18-08-p2-search-low-memory-withdrawal.md)이 현재 판정이다.

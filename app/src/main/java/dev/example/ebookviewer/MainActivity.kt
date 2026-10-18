@@ -49,8 +49,6 @@ class MainActivity : Activity() {
     private lateinit var pageIndicator: TextView
     private lateinit var pageJumpButton: Button
     private lateinit var bookmarksButton: Button
-    private lateinit var searchButton: Button
-    private var pendingSearchHit: PdfSearchHit? = null
     private var pageNumbersVisible = false
     private data class PageTarget(val page: Int, val y: Double? = null)
     private var pendingNavigation: PageTarget? = null
@@ -112,10 +110,7 @@ class MainActivity : Activity() {
             updatePageIndicator()
             scheduleSave()
         }
-        viewer.onUserInteraction = {
-            pendingNavigation = null
-            pendingSearchHit = null
-        }
+        viewer.onUserInteraction = { pendingNavigation = null }
         viewer.setOnClickListener {
             if (reading) {
                 readerTools.visibility =
@@ -223,17 +218,11 @@ class MainActivity : Activity() {
             setText(R.string.bookmarks)
             setOnClickListener { showBookmarks() }
         }
-        searchButton = Button(this).apply {
-            id = R.id.pdf_search_button
-            setText(R.string.pdf_search)
-            setOnClickListener { showSearch() }
-        }
         readerTools.addView(
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 addView(pageJumpButton, LinearLayout.LayoutParams(0, -2, 1f))
                 addView(bookmarksButton, LinearLayout.LayoutParams(0, -2, 1f))
-                addView(searchButton, LinearLayout.LayoutParams(0, -2, 1f))
             }
         )
         pageIndicator = TextView(this).apply {
@@ -386,20 +375,12 @@ class MainActivity : Activity() {
 
     fun openDocument(uri: Uri) = openDocument(uri, null)
 
-    private fun clearSearch() {
-        worker.cancelSearch()
-        navigationDialog?.dismiss()
-        pendingSearchHit = null
-        viewer.showSearchHit(null)
-    }
-
     private fun openDocument(
         uri: Uri,
         viewport: Bundle? = null,
         grantFlags: Int = 0,
         relink: String? = null
     ) {
-        clearSearch()
         saveReading()
         clearFailedOpen()
         pendingNavigation = null
@@ -536,7 +517,6 @@ class MainActivity : Activity() {
     }
 
     private fun showLibrary() {
-        clearSearch()
         saveReading()
         clearFailedOpen()
         pendingNavigation = null
@@ -727,28 +707,6 @@ class MainActivity : Activity() {
         }
         pageJumpButton.isEnabled = loaded && position != null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
-        searchButton.isEnabled = loaded && position != null
-    }
-
-    private fun showSearch() {
-        if (!loaded || navigationDialog != null) return
-        viewer.showSearchHit(null)
-        pendingSearchHit = null
-        pendingNavigation = null
-        trackNavigationDialog(
-            pdfSearchDialog(worker) { hit ->
-                pendingNavigation = null
-                pendingSearchHit = hit
-                if (viewer.showSearchHit(hit)) {
-                    pendingSearchHit = null
-                    cancelSave()
-                    saveReading()
-                } else if (hit != null) {
-                    requestPage(hit.page)
-                }
-            },
-            worker::cancelSearch
-        )
     }
 
     private fun showPageJump() {
@@ -777,19 +735,16 @@ class MainActivity : Activity() {
             pendingNavigation = null
             reportError(R.string.page_unavailable)
         } else if (viewer.goToPage(target.page, target.y)) {
-            pendingSearchHit?.let { viewer.showSearchHit(it) }
-            pendingSearchHit = null
             pendingNavigation = null
             cancelSave()
             saveReading()
         }
     }
 
-    private fun trackNavigationDialog(dialog: AlertDialog, dismissed: () -> Unit = {}) {
+    private fun trackNavigationDialog(dialog: AlertDialog) {
         navigationDialog?.dismiss()
         navigationDialog = dialog
         dialog.setOnDismissListener {
-            dismissed()
             if (navigationDialog === dialog) navigationDialog = null
             hideTools()
         }
@@ -1026,8 +981,6 @@ class MainActivity : Activity() {
     }
 
     override fun onStop() {
-        worker.cancelSearch()
-        navigationDialog?.dismiss()
         viewer.setRenderingEnabled(false)
         saveReading()
         cancelSave()

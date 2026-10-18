@@ -2,7 +2,7 @@
 
 2026-10-18 (Asia/Seoul). 상태: **플랫폼 실행 검증 완료 / 앱 통합 예정 / 추가 라이브러리 미승인**.
 
-후속 앱 구현: [ADR 0010](0010-on-demand-platform-pdf-search.md)의 온디맨드 검색 어댑터와 UI를 통합했다. 아래는 조사 당시 근거이며 선택/본문 읽기와 최종 성능 수용은 아직 남아 있다.
+후속 앱 실험: [ADR 0010](0010-on-demand-platform-pdf-search.md)의 온디맨드 검색 어댑터/UI가 개인 대용량 PDF에서 수용 실패해 철회됐다. [LOW_MEMORY 근거·복구·재개 조건](../history/2026-10-18-08-p2-search-low-memory-withdrawal.md)이 우선하며 아래 플랫폼 probe 통과를 실사용 안정성으로 재사용하지 않는다.
 
 ## 문제
 

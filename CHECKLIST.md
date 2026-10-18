@@ -109,8 +109,11 @@
 
 ## 후속 — P2
 
+- [x] 검색 수용 실패 후 앱 중지·PR #12 Draft 전환·이번 앱 변경 철회. main 동일 소스·검색 클래스 없는 APK·strict 검사/단위 22개/Lint/ktlint·복구 수명 4개/실패 0·데이터 보존 업데이트/실행 확인([근거](docs/history/2026-10-18-08-p2-search-low-memory-withdrawal.md)).
+- [ ] 검색 대용량 안정성: LOW_MEMORY 원인/피크 메모리 진단, native 중단/메모리 예산·프로세스 격리 검증, 재활성화 전 합성 대용량/개인 수용. 현재 검색 제공 안 함.
+
 - [x] PR #11 사용자 병합 main 5d74c68 및 최종 문서 head ccfb535의 Windows CI 39100314131 성공 확인.
-- [x] 기존 픽셀 렌더러를 유지한 온디맨드 플랫폼 검색 어댑터·진행/결과 이동/강조 구현([ADR 0010](docs/adr/0010-on-demand-platform-pdf-search.md)). 새 런타임 의존성 없음.
+- [x] 철회 전 실험: 온디맨드 플랫폼 검색 어댑터/진행/이동/강조와 합성 회귀 구현. 개인 대용량 수용 실패로 앱 기능 철회했으므로 현재 사용 가능/완료 체크가 아님([ADR 0010](docs/adr/0010-on-demand-platform-pdf-search.md)).
 - [x] API 33 전체 47개/실패 0 이후 검색 강조 초기화 보완 APK의 관련 6개/실패 0 재통과. strict 빌드·단위 22개·Lint 오류/경고 0·ktlint 통과([각 APK·검사 범위/한계](docs/history/2026-10-18-07-p2-document-search.md)).
 - [ ] 검색 줄바꿈/Unicode 경계·PDF `/Rotate` 메타데이터·개인 PDF 수용 및 최종 렌더링/접근성 회귀.
 

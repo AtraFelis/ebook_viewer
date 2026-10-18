@@ -38,35 +38,6 @@ class PdfCanvasView @JvmOverloads constructor(
     private var pendingPages: List<PageSize>? = null
     private var pageLayout = PageLayoutSettings()
     private var renderingEnabled = true
-    private var searchHit: PdfSearchHit? = null
-    private val searchPaint = Paint().apply { color = Color.argb(100, 255, 190, 0) }
-
-    fun showSearchHit(hit: PdfSearchHit?): Boolean {
-        if (hit == null) {
-            searchHit = null
-            invalidate()
-            return true
-        }
-        val document = layout ?: return false
-        if (hit.page !in document.pages.indices || hit.bounds.isEmpty()) return false
-        val bounds = hit.bounds.first()
-        val page = document.pages[hit.page]
-        if (!goToPage(hit.page, (bounds.centerY() / page.height).toDouble().coerceIn(0.0, 1.0))) {
-            return false
-        }
-        val left = viewport.x +
-            (document.left(hit.page) + bounds.left * document.scale(hit.page)) * viewport.zoom
-        val right = viewport.x +
-            (document.left(hit.page) + bounds.right * document.scale(hit.page)) * viewport.zoom
-        if (left < 0) {
-            viewport.x -= left
-        } else if (right > width) {
-            viewport.x -= right - width
-        }
-        searchHit = hit
-        constrain()
-        return true
-    }
 
     fun pageLayoutSettings(): PageLayoutSettings = pageLayout
 
@@ -187,7 +158,6 @@ class PdfCanvasView @JvmOverloads constructor(
     }
 
     fun reset() {
-        searchHit = null
         scroller.forceFinished(true)
         request(emptyList())
         layout = null
@@ -446,21 +416,6 @@ class PdfCanvasView @JvmOverloads constructor(
         for (tile in previews) cache.get(tile)?.let { drawTile(canvas, tile, it) }
         for (tile in fallback) cache.get(tile)?.let { drawTile(canvas, tile, it) }
         for (tile in requested) cache.get(tile)?.let { drawTile(canvas, tile, it) }
-        val hit = searchHit ?: return
-        val document = layout ?: return
-        if (hit.page !in document.pages.indices) return
-        val scale = viewport.zoom * document.scale(hit.page)
-        val left = viewport.x + document.left(hit.page) * viewport.zoom
-        val top = viewport.y + document.tops[hit.page] * viewport.zoom
-        for (bounds in hit.bounds) {
-            canvas.drawRect(
-                (left + bounds.left * scale).toFloat(),
-                (top + bounds.top * scale).toFloat(),
-                (left + bounds.right * scale).toFloat(),
-                (top + bounds.bottom * scale).toFloat(),
-                searchPaint
-            )
-        }
     }
 
     private fun drawTile(canvas: Canvas, tile: Tile, bitmap: Bitmap?) {

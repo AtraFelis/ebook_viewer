@@ -18,7 +18,6 @@ class P0Instrumentation : Instrumentation() {
     private var layoutOnly = false
     private var accessOnly = false
     private var lifecycleOnly = false
-    private var searchOnly = false
     private var accessMethod: String? = null
     var restartPhase: String? = null
         private set
@@ -38,8 +37,7 @@ class P0Instrumentation : Instrumentation() {
                     "navigation",
                     "layout",
                     "access",
-                    "lifecycle",
-                    "search"
+                    "lifecycle"
                 )
         )
         immersiveOnly = suite == "immersive"
@@ -48,7 +46,6 @@ class P0Instrumentation : Instrumentation() {
         layoutOnly = suite == "layout"
         accessOnly = suite == "access"
         lifecycleOnly = suite == "lifecycle"
-        searchOnly = suite == "search"
         accessMethod = arguments?.getString("method")
         require(accessMethod == null || accessOnly)
         val validMethod = DocumentAccessDeviceTest::class.java.declaredMethods.any {
@@ -64,7 +61,6 @@ class P0Instrumentation : Instrumentation() {
         require(!layoutOnly || (!probe && restartPhase == null))
         require(!accessOnly || (!probe && restartPhase == null))
         require(!lifecycleOnly || (!probe && restartPhase == null))
-        require(!searchOnly || (!probe && restartPhase == null))
         probeSeconds = (arguments?.getString("seconds")?.toIntOrNull() ?: 30).also {
             require(it in 10..600)
         }
@@ -113,9 +109,7 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (searchOnly) {
-            core.run(PdfSearchDeviceTest::class.java)
-        } else if (lifecycleOnly) {
+        val result = if (lifecycleOnly) {
             core.run(ReaderLifecycleDeviceTest::class.java)
         } else if (accessOnly) {
             val method = accessMethod
@@ -148,8 +142,7 @@ class P0Instrumentation : Instrumentation() {
                 NavigationDeviceTest::class.java,
                 PageLayoutDeviceTest::class.java,
                 DocumentAccessDeviceTest::class.java,
-                ReaderLifecycleDeviceTest::class.java,
-                PdfSearchDeviceTest::class.java
+                ReaderLifecycleDeviceTest::class.java
             )
         }
         finish(
