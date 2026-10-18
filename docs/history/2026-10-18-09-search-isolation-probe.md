@@ -45,3 +45,9 @@ single-reopen은 마지막 전달 표본 945페이지 뒤 **RESIDENT_BUDGET 보�
 마지막 재확인 MemAvailable 2,148,036KiB도 호스트 기준 2,228,224KiB보다 낮아 추가 guard/PDF 호출 없이 건너뛰었다. 이후 정확한 진단 패키지만 force-stop/uninstall해 정리했다. 정리 전 읽기 앱 프로세스가 실행 중이었고 정리 후 같은 PID였음을 확인했다. 읽기 앱 APK/데이터는 설치·삭제/초기화하지 않았다. 최종 빌드도 120 tasks, strict 성공이며 두 Lint 오류/경고 0, 앱 기존 단위 22개·호스트 12개·ktlint 통과다. 이 PC 재검사는 최종 APK 기기 검증의 대체가 아니다.
 
 430페이지 이미지 문서의 실제 문제는 재현/해결되지 않았다. 고해상도/압축/문서 구조·짧은 질의·무결과 처리의 비용과 native/시스템 메모리를 분리해야 한다. 격리/중단 정책은 kernel hard cap가 아니며 Java sleep/외부 ADB 정리 검증이 제품 내 막힌 native 프로세스 종료를 증명하지 않는다. [ADR 0011](../adr/0011-isolated-search-diagnostics.md)의 경계를 유지하고 원인·보호·최종 사용자 수용 전에는 검색 UI를 다시 켜지 않는다. P2 완료가 아니다.
+
+## PR/원격 검사
+
+구현 커밋 `fd16190b08ffad6a814cc937fe225bcbbba41623`을 기존 [PR #12](https://github.com/AtraFelis/ebook_viewer/pull/12)에 일반 push하고 제목/설명을 진단 도구·실제 범위로 갱신했다. Draft를 유지한다. 이 head의 [PR CI 39128387162](https://github.com/AtraFelis/ebook_viewer/actions/runs/39128387162)/[push CI 39128385242](https://github.com/AtraFelis/ebook_viewer/actions/runs/39128385242)는 마지막 확인 때 도구 설치를 통과하고 빌드/검사를 진행 중이었다. 새 host/진단 모듈 CI 성공을 아직 보고하지 않는다.
+
+새 코드에 [수동 리뷰를 한 번 요청](https://github.com/AtraFelis/ebook_viewer/pull/12#issuecomment-6250044688)했고 [Review triggered 실제 접수](https://github.com/AtraFelis/ebook_viewer/pull/12#issuecomment-6250054637)를 확인했다. 이전 head의 한도 거부/자동 Draft 건너뜀과 이번 수동 접수를 구분한다. 현재 리뷰 제출/인라인 지적은 아직 0건이며 리뷰 완료로 세지 않는다. 후속 지적은 계약/코드/이번 진단 범위에 대조해 판단한다.
