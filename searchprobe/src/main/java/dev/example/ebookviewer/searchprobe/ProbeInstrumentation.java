@@ -57,11 +57,13 @@ public final class ProbeInstrumentation extends Instrumentation {
             int before = ProbeMetrics.descriptors();
             JSONArray cases = new JSONArray();
             if (suite.equals("guards")) {
-                for (String operation : new String[] {"ping", "stall", "cancel", "allocate", "die"}) {
+                for (String operation : new String[] {"ping", "stall", "stall-main", "cancel", "allocate", "die", "abandon"}) {
                     String expected = operation.equals("stall") ? "TIME_BUDGET"
+                            : operation.equals("stall-main") ? "TIME_BUDGET"
                             : operation.equals("cancel") ? "CANCELLED"
                             : operation.equals("allocate") ? "RESIDENT_BUDGET"
-                            : operation.equals("die") ? "PROCESS_DIED" : "OK";
+                            : operation.equals("die") ? "PROCESS_DIED"
+                            : operation.equals("abandon") ? "PARENT_UNBOUND" : "OK";
                     cases.put(runCase(operation, null, 0, expected));
                 }
                 File oversized = new File(getTargetContext().getCacheDir(), "oversized-synthetic.pdf");
@@ -150,7 +152,7 @@ public final class ProbeInstrumentation extends Instrumentation {
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                dead.countDown();
+                // Connection loss alone is not proof that the remote Binder died.
             }
 
             @Override
@@ -185,7 +187,11 @@ public final class ProbeInstrumentation extends Instrumentation {
             JSONArray samples = new JSONArray();
             String outcome = null;
             boolean isolated = false;
-            while (SystemClock.elapsedRealtime() - start < 20_000) {
+            boolean mainBlocked = false;
+            boolean workerBlocked = false;
+            long unboundAt = 0;
+            long caseDeadline = start + 20_000;
+            while (SystemClock.elapsedRealtime() < caseDeadline) {
                 Bundle event = events.poll(100, TimeUnit.MILLISECONDS);
                 if (event != null) {
                     String type = event.getString("event", "");
@@ -193,6 +199,16 @@ public final class ProbeInstrumentation extends Instrumentation {
                         isolated = event.getBoolean("isolated") && event.getBoolean("differentUid");
                         result.put("start", json(event));
                         if (operation.equals("cancel")) remote.get().send(Message.obtain(null, 2));
+                    } else if (type.equals("main-blocked")) {
+                        mainBlocked = true;
+                    } else if (type.equals("worker-blocked") && operation.equals("abandon")) {
+                        workerBlocked = true;
+                        unboundAt = SystemClock.elapsedRealtime();
+                        runOnMainSync(() -> {
+                            context.unbindService(connection);
+                            bound.set(false);
+                        });
+                        caseDeadline = unboundAt + 2_000;
                     } else if (type.equals("sample")) {
                         samples.put(json(event));
                     } else if (type.equals("terminal")) {
@@ -206,7 +222,20 @@ public final class ProbeInstrumentation extends Instrumentation {
                     if (events.isEmpty()) break;
                 }
             }
-            require(dead.await(2, TimeUnit.SECONDS), "Child process survived the request deadline");
+            if (operation.equals("abandon")) {
+                require(workerBlocked && !bound.get(), "Parent did not abandon a blocked worker");
+                require(dead.getCount() == 0, "Child Binder survived parent unbind deadline");
+                require(outcome == null, "Child terminated itself instead of parent recovery");
+                outcome = "PARENT_UNBOUND";
+                result.put("recoveryMs", SystemClock.elapsedRealtime() - unboundAt);
+                result.put("parentUnbound", true).put("workerBlocked", true);
+            } else {
+                require(dead.await(2, TimeUnit.SECONDS), "Child process survived the request deadline");
+            }
+            if (operation.equals("stall-main")) {
+                require(mainBlocked, "Child main looper was not blocked");
+                result.put("mainBlocked", true);
+            }
             require(isolated, "Child did not confirm a separate isolated UID");
             if (outcome == null) outcome = "PROCESS_DIED";
             result.put("outcome", outcome).put("samples", samples);
@@ -216,7 +245,7 @@ public final class ProbeInstrumentation extends Instrumentation {
             return result;
         } finally {
             receiving.set(false);
-            runOnMainSync(() -> context.unbindService(connection));
+            if (bound.get()) runOnMainSync(() -> context.unbindService(connection));
         }
     }
 

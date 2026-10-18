@@ -2,6 +2,14 @@
 
 최종 갱신: 2026-10-18 (Asia/Seoul)
 
+## P2 검색 진단 후속 — 종료 경로 수정
+
+진단 도구의 종료가 메인 Handler에 의존하는 결함을 수정했다. 독립 스레드에서 terminal IPC 전에 자기 종료를 예약하고, 메인 대기/부모 unbind 후 Binder death 확인을 추가해 guard 9개·호스트 테스트 16개로 확대했다. strict 진단 빌드/Lint/ktlint와 호스트 16개 통과. 처음에는 설치 후 메모리 gate에 걸렸으나 이후 같은 기준을 만족했을 때 재설치 없이 새 APK의 **기기 guard 9개와 작은 이미지 430페이지 single-keep 검색(결과 0건)을 통과**했다. 원래 LOW_MEMORY의 원인 발견/제품 수정이나 검색 복구로 보고하지 않는다. [변경·명령·한계](docs/history/2026-10-18-10-search-probe-termination.md).
+
+부모 unbind→Binder death 107ms, 검색 루프 705ms/부모 case 전체 1,562ms, RSS 최고 관측 101,928KiB·시작 76,032KiB였다. 한 번의 32×32 RGB 합성 표본이며 고해상도 스캔이나 제품 성능 합격이 아니다. 종료 후 진단 APK만 제거했고 실행 중 읽기 앱 PID를 유지했다. 다음은 더 대표적인 이미지/구조의 통제 비교와 제품 검색의 격리/수명 통합이며 안전 검증 전에는 UI를 켜지 않는다.
+
+앞선 fd16190의 두 CI 및 cdff4ab CI 성공을 확인했다. CodeRabbit 새 코드 수동 요청은 접수 후 head 변경으로 취소됐으며 실제 리뷰는 아직 없다. 이번 수정/기록 push를 끝낸 head에서 한 번 요청하고, 리뷰 중 기록만을 위한 추가 push로 다시 취소시키지 않는다. Figma 변경은 계속 이번 커밋에서 제외한다.
+
 ## P2 검색 격리 진단 — 제품 기능은 계속 비활성화
 
 사용자는 장애 문서를 약 430페이지·스캔 이미지 위주/선택·복사 불가·두 글자 검색이라고 설명했다. 개인 PDF를 다시 실행하지 않고 별도 `:searchprobe` testOnly APK/격리 UID/고정 메모리·시간 예산·호스트 정리 도구를 구현했다. 새 런타임 의존성/읽기 앱 기능 변경은 없다. [ADR 0011](docs/adr/0011-isolated-search-diagnostics.md), [실제 결과/한계](docs/history/2026-10-18-09-search-isolation-probe.md).

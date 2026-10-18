@@ -12,8 +12,9 @@ READER = "dev.example.ebookviewer.p0"
 ROOT = Path(__file__).resolve().parents[1]
 MIN_AVAILABLE_KB = 2176 * 1024
 EXPECTED_GUARDS = [
-    ("ping", "OK"), ("stall", "TIME_BUDGET"), ("cancel", "CANCELLED"),
+    ("ping", "OK"), ("stall", "TIME_BUDGET"), ("stall-main", "TIME_BUDGET"), ("cancel", "CANCELLED"),
     ("allocate", "RESIDENT_BUDGET"), ("die", "PROCESS_DIED"),
+    ("abandon", "PARENT_UNBOUND"),
     ("search", "INPUT_LIMIT"), ("ping", "OK"),
 ]
 
@@ -61,6 +62,12 @@ class Adb:
             raise ProbeError("System memory counter unavailable")
         return int(match.group(1))
 
+    def install(self, apk: Path) -> None:
+        # Installation itself can consume memory; execute() must check again afterwards.
+        if self.available() < MIN_AVAILABLE_KB:
+            raise ProbeError("Not enough available system memory; diagnostic APK not installed")
+        self.call("install", "--no-streaming", "-r", "-t", str(apk), timeout=60)
+
     def instrument(self, suite: str, fixture: str, mode: str) -> dict:
         arguments = ["shell", "am", "instrument", "-w", "-e", "suite", suite]
         if suite == "search":
@@ -99,6 +106,12 @@ def execute(adb: Adb, suite: str, fixture: str, mode: str) -> dict:
         if len(cases) != len(EXPECTED_GUARDS) or any(
             (case.get("operation"), case.get("outcome")) != expected
             or case.get("childTerminated") is not True or case.get("isolatedUid") is not True
+            or (expected[0] == "stall-main" and case.get("mainBlocked") is not True)
+            or (expected[0] == "abandon" and (
+                case.get("parentUnbound") is not True or case.get("workerBlocked") is not True
+                or not isinstance(case.get("recoveryMs"), (int, float))
+                or not 0 <= case["recoveryMs"] <= 2000
+            ))
             for case, expected in zip(cases, EXPECTED_GUARDS)
         ):
             raise ProbeError("Incomplete guard suite; no PDF probe permitted")
@@ -137,7 +150,7 @@ def main() -> None:
         apk = ROOT / "searchprobe/build/outputs/apk/debug/searchprobe-debug.apk"
         if not apk.is_file():
             raise ProbeError("Build the separate diagnostic APK first")
-        adb.call("install", "--no-streaming", "-r", "-t", str(apk), timeout=60)
+        adb.install(apk)
     result = execute(adb, arguments.suite, arguments.fixture, arguments.mode)
     output = ROOT / "local-artifacts/search-isolation"
     output.mkdir(parents=True, exist_ok=True)

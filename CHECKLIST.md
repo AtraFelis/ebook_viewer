@@ -109,9 +109,13 @@
 
 ## 후속 — P2
 
+- [x] 진단 종료의 메인 Handler 의존을 제거, guard 9개/호스트 안전 16개로 확대. strict 진단 빌드/Lint/ktlint·호스트 16개 통과([한계/결과](docs/history/2026-10-18-10-search-probe-termination.md)).
+- [x] 새 APK의 기기 guard 9개(메인 대기 감시 종료/부모 unbind→Binder death 107ms/재연결 포함) 및 작은 이미지 430페이지 single-keep·두 글자 합성 검색 통과. gate 회복 후 실행, 결과 0건/검색 루프 705ms, 실제 고해상도 스캔·원래 장애 해결과 구분.
+- [x] fd16190 PR/push CI 39128387162/39128385242 및 cdff4ab CI 39128581528 성공 확인. CodeRabbit 수동 접수는 head 변경으로 취소됨을 확인, 실제 리뷰 아직 없음.
+
 - [x] 진단 전용 APK/격리 UID/호스트 deadline·정리와 고정 중단 정책 구현([ADR 0011](docs/adr/0011-isolated-search-diagnostics.md)). 읽기 앱에 의존/번들하지 않음, 새 런타임 라이브러리 없음.
 - [x] strict 기존/진단 앱 빌드·단위 22개·호스트 안전 12개·Lint 오류/경고 0·ktlint 통과. 초기 진단 APK guard 7개 및 작은 텍스트 1,000페이지 single/dual keep 완료, reopen 보호 중단을 구분([이력](docs/history/2026-10-18-09-search-isolation-probe.md)).
-- [ ] 최종 두 글자/430페이지 작은 이미지 APK의 기기 검증: 메모리 예산 미달로 guard/PDF 호출 전 거부. 초기 APK 결과를 최종 APK 전체 통과로 확대하지 않음.
+- 이전 APK 988a901c의 기기 검증은 메모리 예산 미달로 미실행이었다. 이후 수정 APK 0ba73ec7의 9개 guard/작은 이미지 430페이지 통과는 위 최신 항목과 구분한다.
 - [ ] 고해상도/압축/문서 구조 비교와 원인 재현, 제품 내 막힌 native 프로세스 종료/회수 보장. 샘플링 예산/외부 ADB 정리만으로 검색을 재활성화하지 않음.
 - [x] 진단 APK만 제거, 정리 당시 실행 중 읽기 앱 PID 유지. 사용자 개인 자료/앱 데이터 삭제·개인 PDF 재검색 없음. 의도하지 않은 Wrapper 변경은 백업 뒤 8.9 복구, 실제 Gradle/Wrapper pin 검사 추가.
 - [x] 진단 fd16190을 Draft PR #12에 일반 push하고 새 수동 리뷰 실제 접수 확인. CI 39128387162/39128385242 진행 중, 실제 리뷰 완료는 아직 미확인.

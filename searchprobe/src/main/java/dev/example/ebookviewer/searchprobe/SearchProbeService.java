@@ -72,9 +72,15 @@ public final class SearchProbeService extends Service {
         result.putLong("baselineRssKb", baselineRss);
         result.putLong("peakObservedRssKb", observedPeakRss);
         result.putLong("minObservedAvailableKb", observedMinAvailable);
+        // Neither the main looper nor a blocked PDF worker may delay process teardown.
+        // Arm this before IPC: even terminal delivery is only best effort.
+        Thread terminator = new Thread(() -> {
+            SystemClock.sleep(30);
+            Process.killProcess(Process.myPid());
+        }, "synthetic-pdf-terminator");
+        terminator.setDaemon(true);
+        terminator.start();
         send("terminal", result);
-        // Do not close a renderer concurrently with its active native call.
-        main.postDelayed(() -> Process.killProcess(Process.myPid()), 30);
     }
 
     private void watchdog() {
@@ -130,6 +136,18 @@ public final class SearchProbeService extends Service {
             if (finished.get()) return;
             if (operation.equals("die")) {
                 Process.killProcess(Process.myPid());
+            } else if (operation.equals("stall-main")) {
+                main.post(() -> {
+                    // Block only this synthetic child's looper, never the reader or system UI.
+                    send("main-blocked", new Bundle());
+                    deadline = SystemClock.elapsedRealtime() + 150;
+                    SystemClock.sleep(10_000);
+                });
+                SystemClock.sleep(10_000);
+            } else if (operation.equals("abandon")) {
+                // No cancel command/self-termination: the parent must release the last binding.
+                send("worker-blocked", new Bundle());
+                SystemClock.sleep(10_000);
             } else if (operation.equals("stall") || operation.equals("cancel")) {
                 SystemClock.sleep(10_000);
             } else if (operation.equals("allocate")) {

@@ -18,7 +18,8 @@ class ProbeRunnerTest(unittest.TestCase):
         adb.reader_process.return_value = "unchanged-process"
         adb.available.return_value = runner.MIN_AVAILABLE_KB + 1024
         adb.instrument.return_value = {"cases": [
-            {"operation": operation, "outcome": outcome, "childTerminated": True, "isolatedUid": True}
+            {"operation": operation, "outcome": outcome, "childTerminated": True, "isolatedUid": True,
+             "mainBlocked": True, "parentUnbound": True, "workerBlocked": True, "recoveryMs": 100}
             for operation, outcome in runner.EXPECTED_GUARDS
         ]}
         return adb
@@ -36,6 +37,21 @@ class ProbeRunnerTest(unittest.TestCase):
         adb.reader_process.return_value = ""
         result = runner.execute(adb, "guards", "text-1000.pdf", "single-keep")
         self.assertFalse(result["readerWasRunning"])
+
+    def test_install_refuses_before_adb_install_when_reserve_is_low(self):
+        adb = runner.Adb("adb", "synthetic-device")
+        with patch.object(adb, "available", return_value=runner.MIN_AVAILABLE_KB - 1), \
+                patch.object(adb, "call") as call:
+            with self.assertRaises(runner.ProbeError):
+                adb.install(Path("synthetic.apk"))
+        call.assert_not_called()
+
+    def test_install_uses_only_test_apk_and_fixed_deadline(self):
+        adb = runner.Adb("adb", "synthetic-device")
+        with patch.object(adb, "available", return_value=runner.MIN_AVAILABLE_KB), \
+                patch.object(adb, "call") as call:
+            adb.install(Path("synthetic.apk"))
+        call.assert_called_once_with("install", "--no-streaming", "-r", "-t", "synthetic.apk", timeout=60)
 
     def test_incomplete_guards_never_start_pdf(self):
         adb = self.fake()
@@ -82,11 +98,30 @@ class ProbeRunnerTest(unittest.TestCase):
         self.assertEqual(["shell", "am", "force-stop", runner.PACKAGE], commands[-1][3:])
         self.assertTrue(all(runner.READER not in command for command in commands))
 
-    def test_wrong_guard_outcome_blocks_pdf_even_when_case_count_is_seven(self):
+    def test_wrong_guard_outcome_blocks_pdf_even_when_case_count_matches(self):
         adb = self.fake()
         adb.instrument.return_value["cases"][1]["outcome"] = "OK"
         with self.assertRaises(runner.ProbeError):
             runner.execute(adb, "search", "text-1000.pdf", "single-keep")
+        self.assertEqual(1, adb.instrument.call_count)
+
+    def test_parent_recovery_requires_blocked_worker_and_bounded_binder_death(self):
+        for field, value in (("workerBlocked", False), ("parentUnbound", False),
+                             ("recoveryMs", 2001), ("recoveryMs", -1), ("recoveryMs", None)):
+            with self.subTest(field=field, value=value):
+                adb = self.fake()
+                case = next(c for c in adb.instrument.return_value["cases"] if c["operation"] == "abandon")
+                case[field] = value
+                with self.assertRaises(runner.ProbeError):
+                    runner.execute(adb, "search", "images-430.pdf", "single-keep")
+                self.assertEqual(1, adb.instrument.call_count)
+
+    def test_main_thread_guard_requires_actual_blockage_confirmation(self):
+        adb = self.fake()
+        case = next(c for c in adb.instrument.return_value["cases"] if c["operation"] == "stall-main")
+        case["mainBlocked"] = False
+        with self.assertRaises(runner.ProbeError):
+            runner.execute(adb, "search", "images-430.pdf", "single-keep")
         self.assertEqual(1, adb.instrument.call_count)
 
     def test_failed_instrumentation_cannot_pass_on_result_json_alone(self):
