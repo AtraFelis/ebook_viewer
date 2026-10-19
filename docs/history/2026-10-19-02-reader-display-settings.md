@@ -37,3 +37,13 @@ Context7 Android Developers resolve 후 `/websites/developer_android_reference` 
 사용자에게 현재 설치 앱에서 중앙 탭→설정→테마·밝기·화면 유지의 테마 전환/읽기 밝기 조절/목록에서 시스템 밝기 복귀를 확인하도록 요청했고 **“잘돼.”**라고 수용했다. 파일명/본문/이미지를 받지 않았고 이후 추가 기기 조작은 하지 않았다. 자동 Window flag 검사와 실제 가독성/밝기 자기보고를 구분하며 물리 절전 시간/기기 정책 전반 보장은 아니다. 기기 검사·개인 확인 완료 뒤 `gh pr ready 15`로 Draft를 해제했다. 사용자만 병합한다.
 
 사용자가 CodeRabbit이 보이지 않는 이유를 물어 GitHub 댓글·review·head check-runs를 대조했다. 실제 GitHub Actions 두 건만 있으며 봇 접수는 없었다. 저장소 추적 `.coderabbit.yaml`도 없다. [공식 문제 해결 문서](https://kb.coderabbit.ai/articles/1442026547-troubleshoot-why-coderabbit-reviews-might-not-trigger)의 Draft/상태 전환 자동 리뷰 제한을 확인했지만, 무응답의 내부 원인이 Draft라고 확정하지 않는다. 설치/권한/웹훅 변경은 하지 않는다. 최종 결과 기록을 올린 새 head에서 정식 PR 상태의 수동 요청을 한 번 수행하고 실제 응답을 확인한다. 같은 head의 접수/진행 중 요청을 중복하지 않는다.
+
+## CodeRabbit 대시보드 대조 — 실제 접수 미확인
+
+결과 문서 head 02f2ed7을 일반 push한 뒤 정식 PR 상태에서 [수동 요청 6263763069](https://github.com/AtraFelis/ebook_viewer/pull/15#issuecomment-6263763069)을 한 번 등록했다. 해당 head의 [PR CI 39228296780](https://github.com/AtraFelis/ebook_viewer/actions/runs/39228296780)는 SUCCESS다. `gh pr view 15 --repo AtraFelis/ebook_viewer --json headRefOid,isDraft,comments,reviews,statusCheckRollup`에서 Draft false, 사용자 요청 댓글 두 개, 실제 review 0건과 Actions 성공 한 건만 확인했다. CodeRabbit 접수/건너뜀/실패 체크가 없는 상태를 리뷰 통과로 세지 않는다.
+
+사용자가 Chrome에서 GitHub 로그인을 직접 완료한 뒤 CodeRabbit 화면을 읽기 위주로 조회했다. ebook_viewer는 Public/Installed였으며 완료 리뷰 이력에는 #14/#13/#12/#11/#8/#7/#5만 있었다. 저장소의 Use Organization Settings가 켜져 있고 조직의 Automatic review/Incremental review는 켜짐, Drafts는 꺼짐이었다. 제목/설명/라벨/사용자 제외 필드는 비어 있었다. UI는 별도 YAML 설정이 우선할 수 있다고 안내하므로 이 화면만으로 최종 서버 설정 전부를 확정하지 않는다. 공개 [상태 페이지](https://status.coderabbit.ai/)는 조사 시 Reviews/GitHub Webhooks 정상으로 표시됐으며 특정 PR 처리 정상의 증거는 아니다.
+
+전체 PR 목록에는 #15가 없었고, 해당 PR의 [대시보드 상세](https://app.coderabbit.ai/triage/review/AtraFelis/ebook_viewer/pull/15/overview)는 `No Review Stack for this pull request`를 표시했다. 접수/진행 중 리뷰가 없어 사용자 승인된 수동 요청 범위에서 `Start CodeRabbit review`를 한 번 눌렀다. `Starting review…` 뒤 원래 버튼으로 돌아왔으며 접수 확인/오류 이유는 없고 화면 콘솔의 error/warn도 없었다. 후속 GitHub 조회에서도 기존 요청 두 댓글만 있고 봇 응답/review가 없었다. ignored 화면 증거는 `local-artifacts/coderabbit-pr15-dashboard.png`다. 버튼 클릭이 실제 서버 작업을 시작했다고 단정하지 않는다.
+
+초기 Draft가 자동 리뷰 제외 조건인 사실과 정식 PR/수동 요청 무응답을 구분한다. 현재 관찰로 연결 해제나 자동 리뷰 비활성화는 발견하지 못했으며 내부 웹훅/작업 큐/권한 오류 중 무엇인지 확정할 근거는 없다. 설정 Apply/동기화/재설치/권한·좌석·요금제 변경/지원 문의 전송은 하지 않았다. 같은 요청을 계속 보내지 않으며 서비스 내부 진단이 필요하면 위 PR/댓글 링크와 시각을 근거로 문의할 수 있다. 이번 후속은 문서뿐이며 앱 테스트·기기 조작은 재실행하지 않았다. 사용자 Figma 블록/두 이력은 그대로 보존한다.
