@@ -47,3 +47,9 @@ Context7 Android Developers resolve 후 `/websites/developer_android_reference` 
 전체 PR 목록에는 #15가 없었고, 해당 PR의 [대시보드 상세](https://app.coderabbit.ai/triage/review/AtraFelis/ebook_viewer/pull/15/overview)는 `No Review Stack for this pull request`를 표시했다. 접수/진행 중 리뷰가 없어 사용자 승인된 수동 요청 범위에서 `Start CodeRabbit review`를 한 번 눌렀다. `Starting review…` 뒤 원래 버튼으로 돌아왔으며 접수 확인/오류 이유는 없고 화면 콘솔의 error/warn도 없었다. 후속 GitHub 조회에서도 기존 요청 두 댓글만 있고 봇 응답/review가 없었다. ignored 화면 증거는 `local-artifacts/coderabbit-pr15-dashboard.png`다. 버튼 클릭이 실제 서버 작업을 시작했다고 단정하지 않는다.
 
 초기 Draft가 자동 리뷰 제외 조건인 사실과 정식 PR/수동 요청 무응답을 구분한다. 현재 관찰로 연결 해제나 자동 리뷰 비활성화는 발견하지 못했으며 내부 웹훅/작업 큐/권한 오류 중 무엇인지 확정할 근거는 없다. 설정 Apply/동기화/재설치/권한·좌석·요금제 변경/지원 문의 전송은 하지 않았다. 같은 요청을 계속 보내지 않으며 서비스 내부 진단이 필요하면 위 PR/댓글 링크와 시각을 근거로 문의할 수 있다. 이번 후속은 문서뿐이며 앱 테스트·기기 조작은 재실행하지 않았다. 사용자 Figma 블록/두 이력은 그대로 보존한다.
+
+## 사용자 요청에 따른 PR 재등록
+
+사용자가 “그냥 이번 PR 내렸다가 다시 올려봐.”라고 명시했다. Git 상태는 기존 Figma 두 문서 블록/미추적 이력 두 개뿐이고 현재 브랜치는 `codex/p2-reading-settings`였다. 원격 조회에서 #15 OPEN/non-Draft·head 74d2cebe58f6ace990b0e051a7f4ca028152d561과 원격 브랜치 SHA가 같고 리뷰 0건/봇 응답 없음임을 확인했다. 기본 sandbox의 GitHub 조회는 연결 오류였지만 승인된 네트워크 조회는 성공했다.
+
+`gh pr close 15 --repo AtraFelis/ebook_viewer` 후 동일 main/head 브랜치와 제목·기존 검증 본문으로 `gh pr create`를 실행해 [PR #16](https://github.com/AtraFelis/ebook_viewer/pull/16)을 정식 등록했다. 브랜치 삭제/소스 수정/강제 push/병합은 하지 않았다. 새 PR 본문은 기존 #15의 대체임을 명시한다. PR attachment 도구는 이번에는 성공했다. `gh pr comment 16 ... --body '@coderabbitai review'`로 [수동 요청 6263981481](https://github.com/AtraFelis/ebook_viewer/pull/16#issuecomment-6263981481)을 한 번 등록했다. 생성 직후 조회는 OPEN/non-Draft/같은 SHA, 사용자 요청 댓글 한 개, review 0건/봇 응답 없음, CI 두 체크 진행 중이었다. 새 PR 등록을 CodeRabbit 접수나 원인 해결로 보고하지 않는다. 앱 검사/기기 조작은 재실행하지 않았고 문서 후속만 일반 push한다. 현재 검토/사용자 병합 대상은 #16이며 #15는 닫힌 이력으로 보존한다.

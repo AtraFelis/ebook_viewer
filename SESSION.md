@@ -4,6 +4,8 @@
 
 ## 읽기 화면 설정 — P2
 
+사용자 요청으로 무응답이던 PR #15를 닫고 같은 브랜치/동일 head 74d2ceb로 **[PR #16](https://github.com/AtraFelis/ebook_viewer/pull/16)**을 정식 PR로 다시 등록했다. #15의 댓글/진단 이력과 브랜치를 보존하고 #16을 채팅에 연결했다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/16#issuecomment-6263981481)을 한 번 등록했으며 생성 직후 봇 접수/리뷰는 없고 CI는 진행 중이다. 새 PR 생성 성공을 리뷰 문제 해결로 판단하지 않는다. 아래 #15 기록은 이전 시도 이력이다. 현재 리뷰/사용자 병합 대상은 #16이며 앱 소스·기기 설치는 변경하지 않았다.
+
 PR #14 사용자 병합 d35ff36/마지막 문서 head 181ea11의 [PR CI 성공](https://github.com/AtraFelis/ebook_viewer/actions/runs/39203788443)을 확인했다. 현재 체크아웃에서 사용자 Figma 변경을 백업·stash/해시 대조·재적용한 뒤 main을 ff-only 동기화하고 `codex/p2-reading-settings`를 만들었다. 복구용 stash와 미추적 디자인 이력을 보존한다.
 
 [ADR 0014](docs/adr/0014-reader-display-settings.md)의 시스템/밝게/어둡게 테마, 열람 중 시스템/수동 1~100% 밝기·화면 유지, 별도 AtomicFile v1 저장을 구현했다. 기존 View/PdfRenderer/캐시·새 의존성 없는 스택을 유지한다. 테마 재생성에서 기존 viewport를 복원하고 PDF/외부 배경색은 그대로다. 읽기 설정 메뉴는 스크롤 가능하며 방향 5개 선택은 별도 메뉴로 분리했다.
