@@ -25,3 +25,15 @@ Context7 Android Developers resolve 후 `/websites/developer_android_reference` 
 이전 APK로 먼저 시작한 `./scripts/device-smoke.ps1`은 **48개/실패 2개**로 끝나 성공 판정하지 않았다. 방향 메뉴 첫 선택을 찾는 기존 `orientationSettingsPreserveAnchorAndSurviveRelaunch`와 `reverseDirectionsRotateTheDisplayAndKeepAnchorAndSavedChoice`가 실패했고 다른 46개는 통과했다. Dialog dismiss listener가 메인 큐에 게시되기 전에 새 방향 메뉴의 non-null guard가 걸리는 경로를 확인했다. 설정 메뉴 전환에서 이전 listener를 분리하고 참조를 동기로 비운 뒤 새 대화상자를 열도록 앱을 수정했다. 방향 assertion이나 테스트를 제거하지 않았다. 같은 정리는 배치/배경/표시 하위 메뉴의 이전 콜백이 새 소유자를 지우는 것도 막는다.
 
 수정 뒤 strict 앱/계측 빌드·Lint·ktlint를 통과하고 최신 app SHA-256 `41093bcf089abe7c7ec8f96104667ea1a2ff78b2d678f7af003b8ec90f744e99`, 계측 `cadababf5bb5d9776f13d95113478d9196a83845ce08c42b0f92937cfaa20c0b`로 업데이트 설치했다. `-e suite immersive` 재검증과 후속 전체 결과는 아래 기록으로 구분한다. 설치/검사 로그는 ignored `local-artifacts/reading-settings-*.log`이며 개인 PDF/설정을 clear하지 않는다.
+
+## 최종 기기 회귀·개인 수용·PR
+
+최신 APK 쌍의 방향/전체 화면 suite는 **5개/실패 0**이었다. 이후 strict 단위 재실행도 통과했고 `./scripts/device-smoke.ps1`을 재실행해 같은 app 41093bcf/계측 cadababf의 **전체 48개/실패 0·앱 실행 Status ok**를 확인했다. 별도 5개와 기본 48개를 하나의 53개 실행으로 합치지 않는다. 새 4개도 이번 48개에 포함돼 Force Dark 차단 속성/PDF bitmap 불변·소유권 전환을 포함한 최신 앱에서 통과했다. 원시 로그는 ignored `reading-settings-final-unit.log`, `reading-settings-orientation.log`, `reading-settings-final-smoke.log`다. 새 프레임 성능/실제 OOM/다른 API 기기·프로세스 복원 전체를 실행한 것은 아니다.
+
+검사 진행 중 검토 병행용으로 f3b1816 `feat(reader): add theme brightness and screen-on settings`를 만들고 같은 브랜치에 일반 push해 [Draft PR #15](https://github.com/AtraFelis/ebook_viewer/pull/15)을 등록했다. 상태/검사 미완료를 본문에 명시했으며 Figma 두 블록을 뺀 SESSION/CHECKLIST index 복사본과 명시한 24개 파일만 커밋했다. unstaged diff는 Figma 두 블록 각 6줄만 남은 것을 확인했다. PR 채팅 연결 도구는 응답이 지연돼 대기를 중단했으므로 실제 attachment 성공은 미확인이다. PR 생성/push 성공과 혼동하지 않는다.
+
+최초 [CodeRabbit 수동 요청 6263631101](https://github.com/AtraFelis/ebook_viewer/pull/15#issuecomment-6263631101)을 등록했다. 구현 head f3b1816의 [push CI 39227054763](https://github.com/AtraFelis/ebook_viewer/actions/runs/39227054763)·[PR CI 39227060932](https://github.com/AtraFelis/ebook_viewer/actions/runs/39227060932)는 모두 SUCCESS였다. 접수/리뷰/건너뜀 체크는 없고 봇 응답도 아직 없었다. 성공한 두 GitHub Actions 체크를 CodeRabbit 검토 완료로 세지 않는다.
+
+사용자에게 현재 설치 앱에서 중앙 탭→설정→테마·밝기·화면 유지의 테마 전환/읽기 밝기 조절/목록에서 시스템 밝기 복귀를 확인하도록 요청했고 **“잘돼.”**라고 수용했다. 파일명/본문/이미지를 받지 않았고 이후 추가 기기 조작은 하지 않았다. 자동 Window flag 검사와 실제 가독성/밝기 자기보고를 구분하며 물리 절전 시간/기기 정책 전반 보장은 아니다. 기기 검사·개인 확인 완료 뒤 `gh pr ready 15`로 Draft를 해제했다. 사용자만 병합한다.
+
+사용자가 CodeRabbit이 보이지 않는 이유를 물어 GitHub 댓글·review·head check-runs를 대조했다. 실제 GitHub Actions 두 건만 있으며 봇 접수는 없었다. 저장소 추적 `.coderabbit.yaml`도 없다. [공식 문제 해결 문서](https://kb.coderabbit.ai/articles/1442026547-troubleshoot-why-coderabbit-reviews-might-not-trigger)의 Draft/상태 전환 자동 리뷰 제한을 확인했지만, 무응답의 내부 원인이 Draft라고 확정하지 않는다. 설치/권한/웹훅 변경은 하지 않는다. 최종 결과 기록을 올린 새 head에서 정식 PR 상태의 수동 요청을 한 번 수행하고 실제 응답을 확인한다. 같은 head의 접수/진행 중 요청을 중복하지 않는다.
