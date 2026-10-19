@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -43,6 +44,10 @@ class MainActivity : Activity() {
     private lateinit var homeScreen: LinearLayout
     private lateinit var readerTools: LinearLayout
     private lateinit var readingWindow: ReadingWindow
+    private lateinit var displayWindow: DisplayWindow
+    private var displaySettings = DisplaySettings()
+    private var appliedDarkTheme = false
+    private var resumed = false
     private lateinit var root: FrameLayout
     private var settingsDialog: AlertDialog? = null
     private var navigationDialog: AlertDialog? = null
@@ -76,8 +81,21 @@ class MainActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val restoredTheme = savedInstanceState?.getString("displayTheme")?.let { name ->
+            ReaderTheme.entries.firstOrNull { it.name == name }
+        } ?: ReaderTheme.SYSTEM
+        displaySettings = DisplaySettings(theme = restoredTheme)
+        appliedDarkTheme = restoredTheme.isDark(systemDarkTheme())
+        setTheme(
+            if (appliedDarkTheme) {
+                R.style.ReaderDark
+            } else {
+                R.style.ReaderLight
+            }
+        )
         super.onCreate(savedInstanceState)
-        readingWindow = ReadingWindow(window)
+        readingWindow = ReadingWindow(window, !appliedDarkTheme, themeBackground())
+        displayWindow = DisplayWindow(window)
         status = TextView(this).apply { setText(R.string.ready) }
         homeStatus = TextView(this).apply { setText(R.string.ready) }
         viewer = PdfCanvasView(this) { worker.request(it) }
@@ -85,6 +103,7 @@ class MainActivity : Activity() {
             onLoaded = {
                 val first = !loaded
                 loaded = true
+                updateDisplayWindow()
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
                 if (first) hideTools()
@@ -186,7 +205,7 @@ class MainActivity : Activity() {
         readerTools = LinearLayout(this).apply {
             id = R.id.reader_tools
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.argb(245, 255, 255, 255))
+            setBackgroundColor(themeBackground())
             visibility = View.GONE
             addView(status)
             addView(
@@ -235,7 +254,7 @@ class MainActivity : Activity() {
             textSize = 12f
         }
         root = FrameLayout(this).apply {
-            setBackgroundColor(Color.DKGRAY)
+            setBackgroundColor(themeBackground())
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
             addView(homeScreen, FrameLayout.LayoutParams(-1, -1))
             addView(pageIndicator, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END))
@@ -299,6 +318,11 @@ class MainActivity : Activity() {
         }
         viewer.visibility = View.GONE
         readingWindow.apply(false)
+        settings.loadDisplay { result ->
+            if (isDestroyed || isFinishing) return@loadDisplay
+            result.onSuccess(::applyDisplaySettings)
+                .onFailure { reportError(R.string.settings_error) }
+        }
         settings.load { result ->
             if (isDestroyed) return@load
             result.onSuccess {
@@ -507,6 +531,7 @@ class MainActivity : Activity() {
 
     private fun showReader() {
         reading = true
+        updateDisplayWindow()
         root.setBackgroundColor(viewer.outsideBackgroundColor())
         homeScreen.visibility = View.GONE
         viewer.visibility = View.VISIBLE
@@ -527,7 +552,8 @@ class MainActivity : Activity() {
         activeRecord = null
         synthetic = false
         reading = false
-        root.setBackgroundColor(Color.DKGRAY)
+        updateDisplayWindow()
+        root.setBackgroundColor(themeBackground())
         worker.closeDocument()
         viewer.reset()
         viewer.restoreViewport(null)
@@ -812,6 +838,21 @@ class MainActivity : Activity() {
 
     private fun showSettings() {
         if (settingsDialog != null) return
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.reader_settings_title)
+            .setView(ScrollView(this).apply { addView(settingsControls()) })
+            .setNegativeButton(R.string.close_settings, null)
+            .create()
+        settingsDialog = dialog
+        dialog.setOnDismissListener {
+            settingsDialog = null
+            hideTools()
+        }
+        dialog.show()
+    }
+
+    private fun showOrientationSettings() {
+        if (settingsDialog != null) return
         settings.load { result ->
             if (isDestroyed || settingsDialog != null) return@load
             result.onSuccess { mode ->
@@ -824,8 +865,7 @@ class MainActivity : Activity() {
                         getString(R.string.orientation_reverse_landscape)
                     )
                 val dialog = AlertDialog.Builder(this)
-                    .setTitle(R.string.reader_settings_title)
-                    .setView(settingsControls())
+                    .setTitle(R.string.orientation_settings)
                     .setSingleChoiceItems(labels, mode.ordinal) { selectedDialog, index ->
                         selectedDialog.dismiss()
                         val selected = OrientationMode.entries[index]
@@ -872,11 +912,25 @@ class MainActivity : Activity() {
     }
 
     private fun settingsControls(): LinearLayout {
+        val orientationButton = Button(this).apply {
+            setText(R.string.orientation_settings)
+            setOnClickListener {
+                dismissSettingsForNextDialog()
+                showOrientationSettings()
+            }
+        }
+        val displayButton = Button(this).apply {
+            setText(R.string.display_settings)
+            setOnClickListener {
+                dismissSettingsForNextDialog()
+                showDisplaySettings()
+            }
+        }
         val layoutButton = Button(this).apply {
             setText(R.string.page_layout_settings)
             isEnabled = loaded && reading
             setOnClickListener {
-                settingsDialog?.dismiss()
+                dismissSettingsForNextDialog()
                 val dialog = pageLayoutDialog(viewer.pageLayoutSettings()) {
                     viewer.setPageLayoutSettings(it)
                     cancelSave()
@@ -893,7 +947,7 @@ class MainActivity : Activity() {
         val backgroundButton = Button(this).apply {
             setText(R.string.background_settings)
             setOnClickListener {
-                settingsDialog?.dismiss()
+                dismissSettingsForNextDialog()
                 showBackgroundSettings()
             }
         }
@@ -922,10 +976,21 @@ class MainActivity : Activity() {
         }
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            addView(displayButton)
+            addView(orientationButton)
             addView(backgroundButton)
             addView(checkbox)
             addView(layoutButton)
         }
+    }
+
+    private fun dismissSettingsForNextDialog() {
+        // Dialog dismiss callbacks are posted. An old callback must not clear the new owner.
+        val previous = settingsDialog
+        settingsDialog = null
+        previous?.setOnDismissListener(null)
+        previous?.dismiss()
+        hideTools()
     }
 
     private fun applyOrientation(mode: OrientationMode) {
@@ -937,6 +1002,54 @@ class MainActivity : Activity() {
             OrientationMode.REVERSE_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
         }
         if (requestedOrientation != requested) requestedOrientation = requested
+    }
+
+    private fun showDisplaySettings() {
+        settings.loadDisplay { result ->
+            if (isDestroyed || isFinishing || settingsDialog != null) return@loadDisplay
+            result.onSuccess { current ->
+                val dialog = displaySettingsDialog(current) { selected ->
+                    settings.saveDisplay(selected) { saved ->
+                        if (isDestroyed || isFinishing) return@saveDisplay
+                        saved.onSuccess(::applyDisplaySettings)
+                            .onFailure { reportError(R.string.settings_error) }
+                    }
+                }
+                settingsDialog = dialog
+                dialog.setOnDismissListener {
+                    settingsDialog = null
+                    hideTools()
+                }
+                dialog.show()
+            }.onFailure { reportError(R.string.settings_error) }
+        }
+    }
+
+    private fun systemDarkTheme(): Boolean =
+        resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Configuration.UI_MODE_NIGHT_YES
+
+    private fun themeBackground(): Int =
+        obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground)).let {
+            try {
+                it.getColor(0, Color.BLACK)
+            } finally {
+                it.recycle()
+            }
+        }
+
+    private fun applyDisplaySettings(value: DisplaySettings) {
+        displaySettings = value
+        updateDisplayWindow()
+        if (value.theme.isDark(systemDarkTheme()) != appliedDarkTheme) {
+            // The existing saved viewport path preserves zoom/anchor across themed View inflation.
+            saveReading()
+            recreate()
+        }
+    }
+
+    private fun updateDisplayWindow() {
+        displayWindow.apply(displaySettings, reading && loaded, resumed)
     }
 
     /** Synthetic fixture only. File IO and generation run on the PDF worker. */
@@ -974,7 +1087,15 @@ class MainActivity : Activity() {
         viewer.setRenderingEnabled(true)
     }
 
+    override fun onResume() {
+        super.onResume()
+        resumed = true
+        updateDisplayWindow()
+    }
+
     override fun onPause() {
+        resumed = false
+        updateDisplayWindow()
         saveReading()
         cancelSave()
         super.onPause()
@@ -993,6 +1114,8 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        resumed = false
+        updateDisplayWindow()
         navigationDialog?.dismiss()
         navigationDialog = null
         settingsDialog?.setOnDismissListener(null)
@@ -1007,6 +1130,7 @@ class MainActivity : Activity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("displayTheme", displaySettings.theme.name)
         saveReading()
         pendingNavigation?.let {
             outState.putInt("pendingPage", it.page)

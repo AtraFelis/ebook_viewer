@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="ReaderLight" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:alertDialogTheme">@style/ReaderAlertLight</item>
+    </style>
+    <style name="ReaderDark" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:alertDialogTheme">@style/ReaderAlertDark</item>
+    </style>
+    <style name="ReaderAlertLight" parent="android:style/Theme.Material.Light.Dialog.Alert" />
+    <style name="ReaderAlertDark" parent="android:style/Theme.Material.Dialog.Alert" />
+</resources>

@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="theme_system" type="id" />
+    <item name="theme_light" type="id" />
+    <item name="theme_dark" type="id" />
+    <item name="system_brightness" type="id" />
+    <item name="reading_brightness" type="id" />
+    <item name="brightness_label" type="id" />
+    <item name="keep_screen_on" type="id" />
     <item name="original_page_size" type="id" />
     <item name="uniform_page_width" type="id" />
     <item name="page_gap_input" type="id" />

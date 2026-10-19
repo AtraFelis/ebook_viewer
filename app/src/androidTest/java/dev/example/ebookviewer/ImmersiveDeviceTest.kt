@@ -267,6 +267,7 @@ class ImmersiveDeviceTest {
                     it.isShown && it.text == activity.getString(R.string.settings)
                 }.performClick()
         }
+        clickDialogText(activity.getString(R.string.orientation_settings))
     }
 
     private fun clickDialogText(text: String) {

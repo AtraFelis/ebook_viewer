@@ -2,6 +2,14 @@
 
 최종 갱신: 2026-10-19 (Asia/Seoul)
 
+## 읽기 화면 설정 — P2 진행 중
+
+PR #14 사용자 병합 d35ff36/마지막 문서 head 181ea11의 [PR CI 성공](https://github.com/AtraFelis/ebook_viewer/actions/runs/39203788443)을 확인했다. 현재 체크아웃에서 사용자 Figma 변경을 백업·stash/해시 대조·재적용한 뒤 main을 ff-only 동기화하고 `codex/p2-reading-settings`를 만들었다. 복구용 stash와 미추적 디자인 이력을 보존한다.
+
+[ADR 0014](docs/adr/0014-reader-display-settings.md)의 시스템/밝게/어둡게 테마, 열람 중 시스템/수동 1~100% 밝기·화면 유지, 별도 AtomicFile v1 저장을 구현했다. 기존 View/PdfRenderer/캐시·새 의존성 없는 스택을 유지한다. 테마 재생성에서 기존 viewport를 복원하고 PDF/외부 배경색은 그대로다. 읽기 설정 메뉴는 스크롤 가능하며 방향 5개 선택은 별도 메뉴로 분리했다.
+
+최신 앱/계측 strict 빌드·단위 41개/실패 0·Lint 오류/경고 0·ktlint를 통과했다. 새 기기 4개 최초 통과 뒤 전체 48개는 방향 메뉴 2개 실패였다. 이전 dismiss 콜백/소유권 전환을 앱에서 고치고 Force Dark 보호도 추가해 최신 app 41093bcf/계측 cadababf로 방향/전체 화면 5개를 재통과했다. 테스트를 제거/완화하지 않았다. 실제 Window 플래그 검증에는 테스트 도구의 강제 화면 유지를 제외한다. 최종 전체 48개는 실행 중이며 개인 수용/원격 CI·실제 리뷰와 구분한다. 검토 병행용 Draft PR에 이 상태를 명시하고 사용자 확인 전에는 완료로 표시하지 않는다. [실제 명령/미결](docs/history/2026-10-19-02-reader-display-settings.md)을 따른다. 선택·본문 읽기/접근성 및 최종 P2 통합도 남아 있다.
+
 ## 자동 배경색 — P2
 
 main 3043b7d 기반 `codex/p2-auto-background`의 구현 head 1415185를 일반 push하고 [PR #14](https://github.com/AtraFelis/ebook_viewer/pull/14)을 등록/채팅에 연결했다. Figma 사용자 블록과 두 이력은 백업/해시 대조 뒤 그대로 보존하고 PR에서 제외했다. 새 런타임 의존성/SDK·CI 변경 없이 [ADR 0013](docs/adr/0013-automatic-page-background.md)의 자동/수동 선택·v1 수동 호환/v2 저장, 별도 bounded 미리보기 분석, 24dp 완충/120ms 안정화·대체색을 구현했다.

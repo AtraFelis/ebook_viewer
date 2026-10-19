@@ -14,6 +14,7 @@ class P0Instrumentation : Instrumentation() {
     private var probe = false
     private var immersiveOnly = false
     private var backgroundOnly = false
+    private var displayOnly = false
     private var navigationOnly = false
     private var layoutOnly = false
     private var accessOnly = false
@@ -38,6 +39,7 @@ class P0Instrumentation : Instrumentation() {
                 suite in listOf(
                     "immersive",
                     "background",
+                    "display",
                     "navigation",
                     "layout",
                     "access",
@@ -48,6 +50,7 @@ class P0Instrumentation : Instrumentation() {
         )
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
+        displayOnly = suite == "display"
         navigationOnly = suite == "navigation"
         layoutOnly = suite == "layout"
         accessOnly = suite == "access"
@@ -67,6 +70,7 @@ class P0Instrumentation : Instrumentation() {
         require(!probe || restartPhase == null)
         require(!immersiveOnly || (!probe && restartPhase == null))
         require(!backgroundOnly || (!probe && restartPhase == null))
+        require(!displayOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
         require(!layoutOnly || (!probe && restartPhase == null))
         require(!accessOnly || (!probe && restartPhase == null))
@@ -140,6 +144,8 @@ class P0Instrumentation : Instrumentation() {
             core.run(NavigationDeviceTest::class.java)
         } else if (backgroundOnly) {
             core.run(BackgroundDeviceTest::class.java)
+        } else if (displayOnly) {
+            core.run(DisplayDeviceTest::class.java)
         } else if (immersiveOnly) {
             core.run(ImmersiveDeviceTest::class.java)
         } else if (restartPhase != null) {
@@ -155,6 +161,7 @@ class P0Instrumentation : Instrumentation() {
                 LibraryDeviceTest::class.java,
                 ImmersiveDeviceTest::class.java,
                 BackgroundDeviceTest::class.java,
+                DisplayDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
                 PageLayoutDeviceTest::class.java,
                 DocumentAccessDeviceTest::class.java,
