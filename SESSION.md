@@ -4,17 +4,14 @@
 
 ## 자동 배경색 — P2
 
-사용자 병합한 PR #13의 main 3043b7d에서 현재 체크아웃에 `codex/p2-auto-background`를 만들었다. main은 fetch/ff-only로 동기화했고 Figma 사용자 블록·두 이력의 해시는 backup/stash 후 동일하게 재적용했다. 새 런타임 의존성/SDK 변경 없이 [자동 배경색 ADR 0013](docs/adr/0013-automatic-page-background.md)을 구현한다. 기존 배경색 v1은 수동 그대로 읽고 자동/수동·대체색 v2로 저장한다. 이미 준비된 미리보기를 읽는 별도 bounded worker, 24dp 경계 완충/120ms 안정화, 복잡/불충분 표본의 지정 대체색을 적용한다.
+main 3043b7d 기반 `codex/p2-auto-background`의 구현 head 1415185를 일반 push하고 [PR #14](https://github.com/AtraFelis/ebook_viewer/pull/14)을 등록/채팅에 연결했다. Figma 사용자 블록과 두 이력은 백업/해시 대조 뒤 그대로 보존하고 PR에서 제외했다. 새 런타임 의존성/SDK·CI 변경 없이 [ADR 0013](docs/adr/0013-automatic-page-background.md)의 자동/수동 선택·v1 수동 호환/v2 저장, 별도 bounded 미리보기 분석, 24dp 완충/120ms 안정화·대체색을 구현했다.
 
-strict debug 앱/계측 빌드·단위 37개/실패 0·Lint 오류/경고 0·ktlint와 profile 앱/계측 빌드는 통과했다. 기기 자동 검사·같은 APK의 수동/자동 30초×3회 프레임 대조·개인 PDF 사용자 수용/PR·원격 CI는 [실행 이력](docs/history/2026-10-19-01-automatic-background.md)의 후속 결과를 따른다. 현재 구현/PC 통과를 해당 미결 검증 또는 P2 전체 완료로 확대하지 않는다.
+strict 앱/계측 빌드·단위 **37개/실패 0**·Lint 오류/경고 0·ktlint, API 33 기본 **44개/실패 0**·앱 실행을 확인했다. 이후 보강한 실제 두 색 페이지 경계 왕복 테스트의 고정 px 가정을 density/zoom 기준으로 고쳐 최신 strict 계측 빌드/Lint/ktlint 및 배경 suite **6개/실패 0**을 재확인했다. 기본 44개와 보강 6개는 같은 app f7ad8a2f/다른 계측 APK의 별도 실행이다. 최종 debug 설치/실행도 확인했다. 사용자는 profile 설치본에서 **“이 정도면 괜찮은 것 같아. 수동으로 돌려도 지정 색으로 돌아와.”**라고 수용했다. 이후 앱 runtime은 동일하며 수용 질문을 반복하지 않는다.
 
-이후 API 33 기본 44개/실패 0·앱 실행과 비디버그 같은 APK의 수동/자동 각각 30초×3회 비교를 완료했다. 수동 p95 6.06~6.52ms/p99 최대 7.36ms, 자동 p95 6.26~6.81ms/p99 최대 15.60ms이며 16.7/33.3ms 목표·64MiB cache·보고 누락 0/관측 FD 구간 증가 없음이다. 첫 자동 p99는 수동보다 증가했으며, 임의 PDF/실제 peak 메모리·최종 P2 통합 성능 보장은 아니다.
+기존 profile app 41850cd1/계측 c86c23c8의 보고서는 보존하되 초기 설정 로드가 측정 모드를 덮어쓸 수 있어 모드별 비교 합격 근거로 확정하지 않는다. 계측의 직렬 설정 큐/메인 콜백 완료를 기다리고 실패/시간 초과 시 실패 처리하도록 수정했다. strict profile/debug 계측 빌드·Lint·ktlint 통과 뒤 동일 비디버그 profile app 163007c7/계측 05492bfa로 수동·자동 각각 30초×3회 재측정했다. p95 최대 6.27→7.11ms/p99 최대 7.64→8.47ms로 기존 목표 이내·cache≤64MiB·보고 누락 0·관측 FD 구간 증가 없음이다. 일부 비용은 증가했으며 임의 PDF/native 순간 peak·새 선명화 분포나 최종 P2 통합 성능 보장은 아니다. [조건/실제 명령·결과·도구 차단/복구](docs/history/2026-10-19-01-automatic-background.md)를 따른다.
 
-기본 검사 후 실제 View의 두 색 페이지 경계 왕복 검사를 보강해 최신 debug 계측 빌드/ktlint까지 통과했다. 보강한 배경 6개 재실행·최종 debug 재설치는 **자동 승인 검토 서비스 `Selected model is at capacity`로 명령 자체가 실행되지 않았다**. 후속 최신 Lint 명령도 같은 처리 실패로 미실행이며, 앞선 Lint 통과와 구분한다. 승인 검사를 우회하지 않았다. 현재 기기에는 측정을 마친 새 profile app 41850cd1이 설치돼 있다. 사용자는 개인 PDF의 자동 색상이 **“이 정도면 괜찮은 것 같아. 수동으로 돌려도 지정 색으로 돌아와.”**라고 확인해 자동/수동 수용을 완료했다. 응답 후 최신 계측 빌드/Lint/ktlint를 재시도했지만 동일한 승인 검토 모델 용량 오류로 명령 자체가 미실행이었다. 커밋/push/새 PR/CodeRabbit 요청·새 CI는 아직 진행하지 않았다. 검토 서비스 복구 후 잔여 기기 검사/최신 Lint→기록/커밋/PR→수동 리뷰/CI를 이어간다. Figma 블록과 이력 2개는 미커밋으로 계속 보존한다.
+구현 head의 [push CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39199720880)·[PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39199726286)는 모두 성공했다. CodeRabbit [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/14#issuecomment-6259682228)/[실제 접수·완료](https://github.com/AtraFelis/ebook_viewer/pull/14#issuecomment-6259683425) 후 20개 파일 리뷰를 확인했다. 두 지적(계측 모드 경합, 오래된 PR 상태 기록)은 타당해 수정 중이며 최신 검증 뒤 같은 브랜치에 일반 push한다. 초기 자동 건너뜀 성공은 리뷰 완료로 세지 않는다. 사용자만 병합하며 P2 전체 완료는 아니다. 이후 읽기 설정/선택·복사·접근성과 최종 통합 검증이 남는다.
 
-위 차단 기록 이후 사용자의 권한 변경으로 동일 승인 요청 경로에서 최신 debug 계측 빌드/Lint 오류·경고 0/ktlint를 실행·통과했다. 보강 suite는 처음 6개 중 1개가 실패했다. 테스트가 40px 이동을 고정해 실제 450dpi 기기의 24dp 완충 구간(zoom=1에서 67.5px)을 벗어나지 못한 것이 원인이었다. 테스트만 density/zoom 기반 구간 안/밖으로 고쳐 재빌드/Lint/ktlint 및 **배경 6개/실패 0**을 확인했다. 최종 debug app f7ad8a2f는 기본 44개 당시와 동일하며 최신 계측 APK는 031a2f82다. debug 앱 설치/실행도 확인했고 사용자 수용 질문은 반복하지 않는다.
-
-이후 원격 조회가 다시 자동 검토로 전달돼 한 번 차단됐지만, 사용자가 잠시 자동으로 바꿨다가 승인 요청으로 되돌렸다고 확인했다. 현재 승인 경로에서 `git fetch origin`/기존 PR 조회가 정상 실행됐고 main 3043b7d/동일 브랜치 PR 없음, 의존성·SDK·CI 변경 없음도 확인했다. 앱 검증/개인 수용은 완료했으며 커밋·push·PR/CodeRabbit·원격 CI 절차를 진행한다. 사용자 Figma 블록과 두 이력은 별도 보존하고 PR에서 제외한다. 차단/복구의 실제 이력은 위 링크를 따른다.
 
 ## 선명도 개선 — main 기반 독립 브랜치
 

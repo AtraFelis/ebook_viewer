@@ -90,6 +90,19 @@ class DebugFrameProbe {
                     dropped.addAndGet(dropCount)
                 }
                 try {
+                    // The repository and main-handler callbacks are FIFO. This read completes
+                    // after Activity's initial load, before the probe overrides the View mode.
+                    val backgroundLoadDone = CountDownLatch(1)
+                    var backgroundLoadSucceeded = false
+                    application.settings.loadBackground {
+                        backgroundLoadSucceeded = it.isSuccess
+                        backgroundLoadDone.countDown()
+                    }
+                    assertTrue(
+                        "Initial background settings load timeout",
+                        backgroundLoadDone.await(5, TimeUnit.SECONDS)
+                    )
+                    assertTrue("Initial background settings load failed", backgroundLoadSucceeded)
                     val openStart = SystemClock.elapsedRealtime()
                     instrumentation.runOnMainSync {
                         (activity as MainActivity).openDocument(Uri.fromFile(fixture))

@@ -59,3 +59,23 @@ Context7 첫 Android SDK 검색은 무관한 Firebase 등의 결과여서 채택
 원격 단계 준비를 위해 `git fetch origin`/`gh pr list --head codex/p2-auto-background`를 요청했으나, 이 요청은 다시 `auto_review`로 전달돼 동일 모델 용량 오류로 **명령 자체가 미실행**이었다. 현재 실행 환경의 `auto_review`와 사용자에게 보이는 현재 채팅 권한 메뉴의 선택 항목을 대조하도록 질문했다. 원격 조회/게시를 다른 도구로 우회하거나 자동 검토를 해제하지 않았다. 따라서 최신 원격 조회·커밋·push·PR·CodeRabbit·새 CI는 아직 수행하지 않았다. 앱 검증/수용은 완료됐으므로 권한 경로 정상화 후 Git/PR 단계부터 재개한다. Figma 두 이력/SESSION·CHECKLIST 블록을 제외한 staging 복사본과 정확한 검증을 포함한 PR 본문만 로컬에 준비한다.
 
 사용자는 중간에 자동 모드로 바꿨다가 다시 승인 요청으로 되돌렸다고 설명했다. 반영된 권한에서 같은 `git fetch origin`/`gh pr list`가 정상 실행됐고 origin/main 3043b7d/동일 브랜치 기존 PR 없음, Gradle·SDK·CI 설정 차이 없음을 확인했다. 사용자가 정식 권한 메뉴에서 선택한 정상 승인 요청 경로를 사용했으며 샌드박스/서명/검사 우회나 무제한 권한 설정 변경은 하지 않았다. 검증을 반복하지 않고 준비된 변경만 일반 커밋·push/PR 단계로 진행한다.
+
+## PR 등록과 실제 리뷰 접수
+
+Figma 블록만 뺀 SESSION/CHECKLIST staging 복사본과 명시한 앱/검사/ADR/로드맵/이력을 stage하고 `git diff --cached --check`를 통과했다. `git diff --stat`에는 사용자 Figma 두 블록(각 6줄)만 남은 것을 확인했다. `git commit -m 'feat(reader): add automatic page background colors'`로 1415185를 만들고 `git push -u origin codex/p2-auto-background`, `gh pr create --base main --head codex/p2-auto-background --body-file ...`로 [PR #14](https://github.com/AtraFelis/ebook_viewer/pull/14)을 생성/채팅에 연결했다. 일반 push이며 강제/reset/clean/병합은 하지 않았다. 사용자 두 Figma 이력은 미추적 상태 그대로 유지했다.
+
+`gh pr comment 14 --body '@coderabbitai review'`를 한 번 실행해 [수동 요청 6259682228](https://github.com/AtraFelis/ebook_viewer/pull/14#issuecomment-6259682228)을 등록했고 [접수 6259683425](https://github.com/AtraFelis/ebook_viewer/pull/14#issuecomment-6259683425)의 Review triggered와 PENDING을 확인했다. 초기 자동 건너뜀 SUCCESS는 실제 리뷰로 세지 않는다. 구현 head 1415185의 [push CI 39199720880](https://github.com/AtraFelis/ebook_viewer/actions/runs/39199720880)와 [PR CI 39199726286](https://github.com/AtraFelis/ebook_viewer/actions/runs/39199726286)는 당시 진행 중이며 실제 리뷰/CI 결과는 후속 확인한다. 진행 중 head를 바꾸지 않도록 결과 기록은 로컬에서 준비한다.
+
+## 실제 리뷰 결과와 측정 모드 경합 수정
+
+구현 head 1415185의 push/PR CI가 모두 SUCCESS로 끝났다. 수동 요청 응답은 Review finished로 바뀌었고 실제 COMMENTED 리뷰 `PRR_kwDOVLKYJM8AAAABS9G0HQ`에서 20개 파일/지적 2건을 확인했다. 성공 체크만 읽은 것이 아니다. 초기 상태 문서가 PR 생성 전을 가리키는 지적 4310374914는 타당해 SESSION/CHECKLIST의 현재 상태를 갱신하고 과거 이력은 보존했다.
+
+지적 4310374907도 타당하다. Activity는 저장 배경 설정을 비동기로 읽으며 기존 awaitReady는 타일만 기다린다. 따라서 늦은 초기 콜백이 probe의 강제 모드를 덮어쓸 가능성이 있다. 기존 보고서/수치를 삭제하지 않되, 모드별 비교 합격 근거로 확정하지 않는다. Activity 시작 후 동일 설정 repository에 추가 읽기를 넣고 직렬 executor/메인 Handler의 FIFO 완료를 CountDownLatch로 기다린 뒤 모드를 적용하도록 계측만 수정했다. 실패/5초 시간 초과는 테스트 실패이며 Activity 정리 finally 안에 두었다. 앱 runtime/저장 설정은 변경하지 않았다.
+
+수정한 `:app:assembleProfile :app:assembleProfileAndroidTest -Pp0TestBuildType=profile :app:lintDebug ktlintCheck --dependency-verification strict --console=plain` 첫 요청은 잠시 다시 반영된 auto_review의 모델 용량 오류로 미실행이었다. 승인 요청 모드가 재반영된 뒤 같은 정상 경로에서 재실행/통과했다. 새 profile app SHA-256 `163007c7b9741364c03f54e725a277f99e0d7cb31009046046074c96a14390d9`, 계측 `05492bfa08ef487d886ba5854c7cb4f8e1c6ced4f250ce69eb3ac02503cf6713`를 기록하고 두 모드를 이 동일 APK 쌍으로 다시 측정한다. 초기 기기는 승인 1대/잠금 해제/Awake, MemAvailable 2,241,336KiB/thermal status 0이었다. 데이터 보존 업데이트 설치/앱 자체 force-stop만 수행하며 개인 PDF/설정 파일은 읽거나 변경하지 않는다. 새 결과와 수정 push/후속 CI는 아래 후속 기록으로 구분한다.
+
+재측정은 같은 설치 APK 쌍에서 `am instrument -w -e probe true -e seconds 30 -e runs 3 .../P0Instrumentation`, 이어 `-e autoBackground true`로 수행해 각각 1개 계측/실패 0이었다. 각 run의 설정 로드 완료/성공을 기다린 뒤 View 모드를 강제하며 저장 파일을 쓰지 않는다. 합성 SHA ec89d937/비디버그/60.000004Hz는 동일하다. 자동 시작 MemAvailable 2,257,836KiB/thermal 0도 기록했다. 새 보고서는 ignored `local-artifacts/auto-background-review-{manual,automatic}.{log,json}`다.
+
+수동 p95 5.941899/6.023040/6.262683ms, p99 6.908118/7.630151/7.558934ms, cache 최대 67,100,672bytes였다. 자동 p95 6.278926/6.793786/7.108658ms, p99 7.641390/8.052766/8.467598ms, cache 최대 67,108,864bytes였다. 두 모드 기존 목표 16.7/33.3ms·64MiB 충족/보고 누락 모두 0이다. FD 수동 140→135/143→138/143→138, 자동 140→135/143→137/143→139로 관측 구간 증가 없음이다. 수동 PSS 전후(KiB) 184407→273836/256854→250299/247460→277718, 자동 173245→266224/224155→267149/228601→249543이다. 순서/배경/CPU를 완전 통제하지 않았고 자동 수치가 일부 증가했다. 실제 native peak/임의 PDF·새 선명화 분포/최종 P2 통합 합격으로 확대하지 않는다.
+
+수정 계측의 별도 `:app:assembleDebug :app:assembleDebugAndroidTest --dependency-verification strict`도 통과했다. 앱 runtime을 변경하지 않아 이전 단위 37개·기본 44개·보강 6개 및 개인 PDF 수용을 반복하지 않았다. 사용자 Figma 이력 두 SHA를 재대조해 그대로 보존했다. 두 리뷰 수정은 검증 결과와 함께 일반 push하며 이후 실제 CI/재리뷰 상태는 별도로 기록한다.
