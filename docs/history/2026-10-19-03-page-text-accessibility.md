@@ -37,3 +37,25 @@ strict debug 앱/계측 빌드·단위 **44개/실패·오류 0**·Lint **0 erro
 새 본문 10개 최초 실행은 접근성 이벤트 1개 실패였다. 독립 suite 시작 시 UiAutomation 연결 전에 action이 먼저 실행될 수 있어 연결/AccessibilityManager 활성화를 먼저 기다리도록 계측을 고쳤고, timeout의 타 앱 window 텍스트가 trace에 포함되지 않도록 일반 실패로 바꿨다. 기대하는 정확한 TYPE_VIEW_SCROLLED/페이지 인덱스 필터는 유지했다. 이어서 본문 **10개/실패 0**(빠른 교체에서 이전 FD/결과 폐기, 짧은 2페이지 문서의 첫 페이지 본문 접근과 줌/위치 불변 포함), 본문 창까지 포함한 글꼴 **1개/실패 0**(6조합)을 확인했고 원래 배율 1.1을 복원했다.
 
 최종 debug app **35c52b4b40124d038cb19ddcc90fed167a38db92d23ce134d23daa96412bb881**/계측 **84455f8ba364ed119f1ebf9649fe5cfe9d7052890507b24c6951f5b091c7cbfd**의 strict 빌드·단위 44개/Lint/ktlint를 통과한 뒤 기본 **59개**와 최종 별도 화질·프로세스 복원을 실행 중이다. 이전 57개/별도 검사를 최종 59개 통과로 합산하지 않는다. 앱은 pause 중 새 본문 요청도 시작하지 않는다. 상세 재현/통합 측정 판정은 [최종 통합 절차](../testing/p2-integration.md)를 따른다.
+
+## 2026-10-20 최종 회귀 실패와 범위 제한 재검사
+
+최종 `./scripts/device-smoke.ps1`은 **59개/실패 1개**로 끝났다(로컬 ignored `accessibility-final-smoke-59.log`, 약 8분). `NavigationDeviceTest.pageJumpAndBookmarksKeepCurrentZoomAndSurviveActivityRelaunch`의 `Did not navigate to selected page`였다. 앞선 실패로 연결된 별도 최종 화질·프로세스 복원 명령은 실행되지 않았다.
+
+앱/계측 소스를 변경하거나 재설치하지 않고 `. ./scripts/android-env.ps1` 후 `adb shell am instrument -w -e suite navigation dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation`만 실행했다. **4개/실패 0**이었다(ignored `accessibility-navigation-recheck.log`). 재현되지 않은 원인을 테스트 타이밍이나 앱 오류로 단정하지 않으며, 전체 통과/해결로 바꾸지 않는다. 사용자의 소요 시간 질문에 구현 보완과 재검증이 반복된 점을 설명했고, 추가 기능을 늘리지 않고 해당 간헐 실패 진단과 기존 필수 검증에 집중한다.
+
+구현 c7ea3ed를 일반 push하고 [PR #17](https://github.com/AtraFelis/ebook_viewer/pull/17)을 등록했다. [수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6271078778)에 [실제 접수](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6271097847) 및 리뷰 진행 응답이 왔다. 조회 시 reviews는 비어 있었고 push/PR CI 39279202637/39279404607은 queued였다. 완료 리뷰/CI 성공으로 보고하지 않는다. 앱 첨부 도구 호출은 응답 없이 대기해 성공 여부를 확정하지 못했다. 최종 성능 비교·10분 연속 검사·실제 TalkBack/큰 글꼴 사용자 확인·사용자 병합은 미완료다.
+
+## PR #17 CI 대기 진단·재실행 시도
+
+사용자 질문에 실제 job을 조회했다. `windows-latest`, runner_id/name은 null, steps는 비어 있고 push/PR 두 실행은 queued였다. Actions는 enabled/all이며 공개 개인 저장소다. 계정 소유 19개 저장소의 실행 수만 조회한 결과 in_progress 0, queued 2, 조회 실패 0이었다. 조회 시 GitHub Status Actions는 operational/incident 없음이었다. 이 정보로 공급 부족이나 내부 장애 원인을 확정하지 않는다.
+
+동일 head의 멈춘 CI를 정상 취소 후 PR CI 한 건만 재실행하려 했으나, `gh run cancel 39279202637`와 `gh run cancel 39279404607`은 모두 `Cannot cancel a workflow run that is completed`로 거부됐다. 이어 `gh run rerun 39279404607`은 `This workflow is already running`으로 거부됐다. 재조회도 attempt 1/queued/steps 없음이었다. 정상 취소·재실행은 성공하지 않았고 새 실행도 없다. 상태 응답의 불일치 자체만 확인했으며 GitHub 내부 원인은 미확정이다. 반복 요청/강제 취소/우회 커밋/워크플로 변경은 하지 않는다. 로컬 검증을 계속하고 원격 CI 결과 확인 전 사용자 병합은 보류한다.
+
+## 후속 확인 — 원래 CI 성공·CodeRabbit 실제 완료·입력 반영 대기
+
+재조회에서 c7ea3ed의 [push CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39279202637)·[PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39279404607)가 모두 성공했다. 원래 attempt 1이며 취소/재실행 성공이 아니다. [CodeRabbit 완료 응답](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6271088510)에도 실제 31개 파일 검토·`No actionable comments` 및 [Review finished](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6271097847)를 확인했다. API의 봇 login은 `coderabbitai[bot]`이므로 표시 이름 `coderabbitai`로만 필터링한 초기 조회의 누락을 바로잡았다. 별도 docstring coverage 80% 권고는 이유·제약 중심 주석이라는 계약의 필수 기준이 아니며, 설명을 반복하는 주석 일괄 생성/봇 Autofix를 채택하지 않는다.
+
+간헐 페이지 이동 검사에는 ACTION_SET_TEXT 요청 뒤 실제 입력 값이 보일 때까지 기다리는 조건과 합성 페이지/줌/centerY/화면 크기 실패 진단을 추가했다. 기존 페이지 69·줌/북마크 복원 assertion은 유지하며 제품 동작은 바꾸지 않는다. 최초 검사에서 계측 줄바꿈 ktlint 오류가 있어 수동 수정한 후 strict 계측 빌드/Lint/ktlint를 통과했다. 동일 앱에 글꼴 suite 1개(6조합)→navigation suite 4개를 순서대로 실행해 각각 실패 0이었다. 최초 실패의 원인은 여전히 미확정이며 입력 대기를 증명된 원인 수정으로 표현하지 않는다. 현재 계측으로 최종 전체 59개와 통과 후 별도 화질/복원·성능 비교를 진행한다.
+
+최종 성능 app `db330d6c71b1203a9277f76dffe89144b3d102207eaac5932a00c3a3ce7064ca`, 공통 profile 계측 `bbec085f92b28afb299b88a9bece02a386a524a563df9a25611ff4dcf4d2ae10`을 strict 빌드해 동결했다. 이전 final/common APK는 해시명 파일로 보존했고 기준 `06423be61af1ea5f52fccd2831fa2921f4ce8a45a5690230a5ea59cc03e0665c`는 변경하지 않았다. 이는 현재 소스의 측정 준비이며 실제 성능 결과/통과는 별도 확인한다.
