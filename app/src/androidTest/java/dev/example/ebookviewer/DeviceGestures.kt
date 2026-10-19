@@ -12,7 +12,10 @@ import android.view.ViewGroup
 import android.widget.Button
 import org.junit.Assert.assertTrue
 
-class DeviceGestures(private val instrumentation: Instrumentation) {
+class DeviceGestures(
+    private val instrumentation: Instrumentation,
+    private val keepScreenAwake: Boolean = true
+) {
     fun views(view: View): List<View> = buildList {
         add(view)
         if (view is ViewGroup) {
@@ -39,9 +42,11 @@ class DeviceGestures(private val instrumentation: Instrumentation) {
                 if (latest !== activity) {
                     activity = latest
                     stableSince = SystemClock.uptimeMillis()
-                    activity.window.addFlags(
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                    )
+                    if (keepScreenAwake) {
+                        activity.window.addFlags(
+                            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        )
+                    }
                 }
                 !activity.isDestroyed &&
                     !activity.isFinishing &&
@@ -55,6 +60,7 @@ class DeviceGestures(private val instrumentation: Instrumentation) {
     }
 
     private fun keepAwake(activity: Activity) {
+        if (!keepScreenAwake) return
         // Test-window lifetime only; do not alter the user's device timeout or app preference.
         instrumentation.runOnMainSync {
             activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

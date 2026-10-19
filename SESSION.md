@@ -2,6 +2,18 @@
 
 최종 갱신: 2026-10-19 (Asia/Seoul)
 
+## 읽기 화면 설정 — P2
+
+사용자 요청으로 무응답이던 PR #15를 닫고 같은 브랜치/동일 head 74d2ceb로 **[PR #16](https://github.com/AtraFelis/ebook_viewer/pull/16)**을 정식 PR로 다시 등록했다. #15의 댓글/진단 이력과 브랜치를 보존하고 #16을 채팅에 연결했다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/16#issuecomment-6263981481)을 한 번 등록했으며 생성 직후 봇 접수/리뷰는 없고 CI는 진행 중이다. 새 PR 생성 성공을 리뷰 문제 해결로 판단하지 않는다. 아래 #15 기록은 이전 시도 이력이다. 현재 리뷰/사용자 병합 대상은 #16이며 앱 소스·기기 설치는 변경하지 않았다.
+
+PR #14 사용자 병합 d35ff36/마지막 문서 head 181ea11의 [PR CI 성공](https://github.com/AtraFelis/ebook_viewer/actions/runs/39203788443)을 확인했다. 현재 체크아웃에서 사용자 Figma 변경을 백업·stash/해시 대조·재적용한 뒤 main을 ff-only 동기화하고 `codex/p2-reading-settings`를 만들었다. 복구용 stash와 미추적 디자인 이력을 보존한다.
+
+[ADR 0014](docs/adr/0014-reader-display-settings.md)의 시스템/밝게/어둡게 테마, 열람 중 시스템/수동 1~100% 밝기·화면 유지, 별도 AtomicFile v1 저장을 구현했다. 기존 View/PdfRenderer/캐시·새 의존성 없는 스택을 유지한다. 테마 재생성에서 기존 viewport를 복원하고 PDF/외부 배경색은 그대로다. 읽기 설정 메뉴는 스크롤 가능하며 방향 5개 선택은 별도 메뉴로 분리했다.
+
+최신 앱/계측 strict 빌드·단위 41개/실패 0·Lint 오류/경고 0·ktlint를 통과했다. 새 기기 4개 최초 통과 뒤 전체 48개는 방향 메뉴 2개 실패였다. 이전 dismiss 콜백/소유권 전환을 앱에서 고치고 Force Dark 보호도 추가해 최신 app 41093bcf/계측 cadababf로 방향/전체 화면 5개 및 후속 **전체 48개/실패 0·앱 실행**을 통과했다. 테스트를 제거/완화하지 않았다. 실제 Window 플래그 검증에는 테스트 도구의 강제 화면 유지를 제외한다. 사용자는 테마/읽기 밝기·목록에서 시스템 밝기 복귀 확인 요청에 **“잘돼.”**라고 수용했다. 개인 파일/본문을 받지 않았고 이후 기기를 추가 조작하지 않는다.
+
+구현 f3b1816을 일반 push해 [PR #15](https://github.com/AtraFelis/ebook_viewer/pull/15)을 Draft로 등록했다. [push CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39227054763)·[PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39227060932)는 모두 성공했다. 전체 기기/사용자 수용 후 Draft를 해제했고 문서 head 02f2ed7의 [PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39228296780)도 성공했다. 최초 요청과 정식 PR/새 head의 [CodeRabbit 재요청](https://github.com/AtraFelis/ebook_viewer/pull/15#issuecomment-6263763069) 모두 봇 응답이 없다. 사용자 로그인 후 대시보드에서 저장소 Installed·상속 조직 자동 리뷰 켜짐/Draft 리뷰 꺼짐을 확인했다. #15는 Review Stack이 없으며 화면의 시작 버튼을 한 번 눌러도 접수/오류 사유를 확인하지 못했다. 내부 원인은 미확정이며 설정 변경/반복 요청은 하지 않는다. 코드 head/실제 검사와 문서 후속을 구분하며 리뷰 결과·사용자 병합은 남아 있다. [실제 명령/미결](docs/history/2026-10-19-02-reader-display-settings.md)을 따른다. 선택·본문 읽기/접근성 및 최종 P2 통합도 남아 있다.
+
 ## 자동 배경색 — P2
 
 main 3043b7d 기반 `codex/p2-auto-background`의 구현 head 1415185를 일반 push하고 [PR #14](https://github.com/AtraFelis/ebook_viewer/pull/14)을 등록/채팅에 연결했다. Figma 사용자 블록과 두 이력은 백업/해시 대조 뒤 그대로 보존하고 PR에서 제외했다. 새 런타임 의존성/SDK·CI 변경 없이 [ADR 0013](docs/adr/0013-automatic-page-background.md)의 자동/수동 선택·v1 수동 호환/v2 저장, 별도 bounded 미리보기 분석, 24dp 완충/120ms 안정화·대체색을 구현했다.

@@ -18,6 +18,39 @@ class ReaderSettingsRepository(private val file: () -> File) : java.io.Closeable
     private var stored: OrientationMode? = null
     private var storedBackground: BackgroundSettings? = null
     private var storedPageNumbers: Boolean? = null
+    private var storedDisplay: DisplaySettings? = null
+
+    private fun displayFile(): File = file().let { File(it.parentFile, "${it.name}.display") }
+
+    fun loadDisplay(complete: (Result<DisplaySettings>) -> Unit) =
+        submit(complete) { readDisplay() }
+
+    private fun readDisplay(): DisplaySettings = storedDisplay ?: run {
+        val path = displayFile()
+        try {
+            AtomicFile(path).openRead().use(DisplaySettingsCodec::read)
+        } catch (error: FileNotFoundException) {
+            if (path.exists()) throw error
+            DisplaySettings()
+        }
+    }.also { storedDisplay = it }
+
+    fun saveDisplay(value: DisplaySettings, complete: (Result<DisplaySettings>) -> Unit) =
+        submit(complete) {
+            // Unknown/corrupt settings must not be replaced by a new selection.
+            readDisplay()
+            val atomic = AtomicFile(displayFile())
+            val stream = atomic.startWrite()
+            try {
+                DisplaySettingsCodec.write(stream, value)
+                atomic.finishWrite(stream)
+                storedDisplay = value
+                value
+            } catch (error: Exception) {
+                atomic.failWrite(stream)
+                throw error
+            }
+        }
 
     private fun pageNumbersFile(): File = file().let { File(it.parentFile, "${it.name}.pages") }
 

@@ -32,6 +32,16 @@
     <string name="remove_record_message">목록과 읽기 위치를 삭제할까요? 원본 PDF 파일은 삭제하지 않습니다.</string>
     <string name="remove_record_hint">항목을 길게 누르면 원본 파일을 유지하고 기록만 삭제할 수 있습니다.</string>
     <string name="settings">설정</string>
+    <string name="display_settings">테마·밝기·화면 유지</string>
+    <string name="app_theme">앱 테마</string>
+    <string name="theme_system">시스템 따름</string>
+    <string name="theme_light">밝게</string>
+    <string name="theme_dark">어둡게</string>
+    <string name="display_description">테마는 앱 메뉴에 적용됩니다. PDF 색상과 페이지 외부 배경색은 유지합니다. 밝기와 화면 유지는 문서를 읽는 동안에만 적용됩니다.</string>
+    <string name="reading_brightness">읽기 밝기</string>
+    <string name="system_brightness">밝기 · 시스템 설정 따르기</string>
+    <string name="brightness_percent">읽기 밝기 %1$d%%</string>
+    <string name="keep_screen_on">읽는 동안 화면 켜짐 유지</string>
     <string name="page_layout_settings">페이지 크기·간격</string>
     <string name="page_layout_description">이 문서의 페이지 배치입니다. 너비 통일은 가장 넓은 페이지에 맞추며 PDF 내용과 사용자 줌은 유지합니다.</string>
     <string name="original_page_size">원본 크기 비율</string>
@@ -43,7 +53,8 @@
     <string name="orientation_reverse_portrait">세로 역방향 고정</string>
     <string name="orientation_reverse_landscape">가로 역방향 고정</string>
     <string name="settings_error">설정을 읽거나 저장하지 못했습니다. 기존 설정 파일은 유지합니다.</string>
-    <string name="reader_settings_title">읽기 설정 · 화면 방향</string>
+    <string name="reader_settings_title">읽기 설정</string>
+    <string name="orientation_settings">화면 방향</string>
     <string name="background_settings">페이지 외부 배경색</string>
     <string name="background_description">페이지 바깥 영역의 색상을 선택하세요. 자동 모드는 현재 페이지 가장자리 색을 사용하며, 분석이 어려우면 아래 지정 색을 사용합니다. PDF 자체의 색상과 내부 여백은 바꾸지 않습니다.</string>
     <string name="background_automatic">페이지 색에서 자동 추출</string>

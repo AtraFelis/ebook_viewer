@@ -1,5 +1,7 @@
 # 문서 목차
 
+P2 읽기 화면 설정은 [ADR 0014](adr/0014-reader-display-settings.md), [실행/미결](history/2026-10-19-02-reader-display-settings.md)을 따릅니다. 새 의존성 없이 테마와 열람 중 밝기/화면 유지를 구현하며 기기 검사/개인 수용·최종 통합은 실제 이력의 상태를 따릅니다.
+
 P2 자동 배경색은 [ADR 0013](adr/0013-automatic-page-background.md), [실행/미결](history/2026-10-19-01-automatic-background.md)을 따릅니다. 기존 수동 설정을 보존하는 선택 기능이며 선명도/자동 배경색의 최종 통합 검증과 다른 P2 필수 기능은 별도입니다.
 
 현재 P2는 사용자 결정으로 검색을 후속 보류하고 목차·비밀번호 PDF 읽기도 필수에서 제외합니다. [최신 범위](plan/p2-scope-and-completion.md)를 따릅니다. 선명도 작업은 검색과 독립된 [가시 면적/페이지 재사용 결정](adr/0012-bounded-page-reuse-and-sharpness.md), [실행 결과](history/2026-10-18-13-sharpness-baseline-and-page-reuse.md), [재현 절차](testing/sharpness-probe.md)에서 확인합니다.
