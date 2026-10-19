@@ -7,6 +7,7 @@ import android.text.InputFilter
 import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -16,6 +17,11 @@ fun Activity.backgroundSettingsDialog(
     current: BackgroundSettings,
     save: (BackgroundSettings) -> Unit
 ): AlertDialog {
+    val automatic = CheckBox(this).apply {
+        id = R.id.background_automatic
+        setText(R.string.background_automatic)
+        isChecked = current.automatic
+    }
     val input = EditText(this).apply {
         id = R.id.background_color_input
         isSingleLine = true
@@ -61,6 +67,7 @@ fun Activity.backgroundSettingsDialog(
                 setText(R.string.background_description)
             }
         )
+        addView(automatic)
         addView(input)
         val swatchHeight = (32 * resources.displayMetrics.density).toInt()
         addView(swatch, LinearLayout.LayoutParams(-1, swatchHeight))
@@ -78,7 +85,7 @@ fun Activity.backgroundSettingsDialog(
             if (color == null) {
                 input.error = getString(R.string.background_invalid_color)
             } else {
-                save(BackgroundSettings(color))
+                save(BackgroundSettings(color, automatic.isChecked))
                 dialog.dismiss()
             }
         }

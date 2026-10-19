@@ -7,6 +7,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.LruCache
 import android.view.GestureDetector
@@ -68,15 +70,86 @@ class PdfCanvasView @JvmOverloads constructor(
     var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
     private var outsideColor = DEFAULT_BACKGROUND_COLOR
+    private var backgroundSettings = BackgroundSettings()
+    private val backgroundColors = LinkedHashMap<Int, Int>()
+    private var backgroundAnalyzer: PageBackgroundAnalyzer? = null
+    private var backgroundCandidate = -1
+    private var selectedBackgroundPage = -1
+    private var analyzingPreview: Tile? = null
+    private val backgroundHandler = Handler(Looper.getMainLooper())
+    private val commitBackgroundPage = Runnable {
+        selectedBackgroundPage = backgroundCandidate
+        analyzingPreview = null
+        applyOutsideColor(
+            backgroundColors[selectedBackgroundPage] ?: backgroundSettings.customColor
+        )
+        analyzeBackgroundPreview()
+    }
 
     fun setBackgroundSettings(settings: BackgroundSettings) {
-        if (outsideColor == settings.customColor) return
-        outsideColor = settings.customColor
+        if (backgroundSettings == settings) return
+        backgroundSettings = settings
+        stopBackgroundAnalysis(clearColors = true)
+        applyOutsideColor(settings.customColor)
+        updateBackgroundPage()
+    }
+
+    private fun applyOutsideColor(color: Int) {
+        if (outsideColor == color) return
+        outsideColor = color
         onBackgroundColorChanged?.invoke(outsideColor)
         invalidate()
     }
 
     fun outsideBackgroundColor(): Int = outsideColor
+
+    private fun updateBackgroundPage() {
+        if (!backgroundSettings.automatic || !renderingEnabled) return
+        val document = layout ?: return
+        val centerY = (height / 2.0 - viewport.y) / viewport.zoom
+        val page = backgroundPage(
+            document,
+            centerY,
+            selectedBackgroundPage,
+            24.0 * resources.displayMetrics.density / viewport.zoom
+        )
+        if (page != backgroundCandidate) {
+            backgroundCandidate = page
+            backgroundHandler.removeCallbacks(commitBackgroundPage)
+            backgroundHandler.postDelayed(commitBackgroundPage, 120)
+        } else if (page == selectedBackgroundPage) {
+            analyzeBackgroundPreview()
+        }
+    }
+
+    private fun analyzeBackgroundPreview() {
+        if (!backgroundSettings.automatic || !renderingEnabled || selectedBackgroundPage < 0) return
+        if (backgroundColors.containsKey(selectedBackgroundPage)) return
+        val preview = previews.firstOrNull { it.page == selectedBackgroundPage } ?: return
+        if (analyzingPreview == preview) return
+        val bitmap = cache.get(preview) ?: return
+        val analyzer = backgroundAnalyzer ?: PageBackgroundAnalyzer { page, color ->
+            // Results are document-scoped; close invalidates queued callbacks before reset/reuse.
+            backgroundColors.remove(page)
+            backgroundColors[page] = color
+            if (backgroundColors.size > 16) backgroundColors.remove(backgroundColors.keys.first())
+            if (backgroundSettings.automatic && page == selectedBackgroundPage) {
+                applyOutsideColor(color)
+            }
+        }.also { backgroundAnalyzer = it }
+        analyzingPreview = preview
+        analyzer.submit(selectedBackgroundPage, bitmap, backgroundSettings.customColor)
+    }
+
+    private fun stopBackgroundAnalysis(clearColors: Boolean) {
+        backgroundHandler.removeCallbacks(commitBackgroundPage)
+        backgroundAnalyzer?.close()
+        backgroundAnalyzer = null
+        analyzingPreview = null
+        backgroundCandidate = -1
+        selectedBackgroundPage = -1
+        if (clearColors) backgroundColors.clear()
+    }
 
     fun goToPage(page: Int, fractionY: Double? = null): Boolean {
         val document = layout ?: return false
@@ -171,6 +244,8 @@ class PdfCanvasView @JvmOverloads constructor(
     }
 
     fun reset() {
+        stopBackgroundAnalysis(clearColors = true)
+        applyOutsideColor(backgroundSettings.customColor)
         scroller.forceFinished(true)
         request(emptyList())
         layout = null
@@ -297,6 +372,7 @@ class PdfCanvasView @JvmOverloads constructor(
 
     fun putTile(tile: Tile, bitmap: Bitmap) {
         cache.put(tile, bitmap)
+        updateBackgroundPage()
         if (requested.all { cache.get(it) != null }) fallback = emptyList()
         invalidate()
     }
@@ -314,6 +390,7 @@ class PdfCanvasView @JvmOverloads constructor(
     )
 
     fun trimCache() {
+        stopBackgroundAnalysis(clearColors = false)
         request(emptyList())
         cache.evictAll()
         requested = emptyList()
@@ -355,6 +432,16 @@ class PdfCanvasView @JvmOverloads constructor(
             viewport.y += (h - oldh) / 2.0
         }
         constrain()
+    }
+
+    override fun onDetachedFromWindow() {
+        stopBackgroundAnalysis(clearColors = false)
+        super.onDetachedFromWindow()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        updateBackgroundPage()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -420,6 +507,7 @@ class PdfCanvasView @JvmOverloads constructor(
             }
             request((previews + visible).distinct().filter { cache.get(it) == null })
         }
+        updateBackgroundPage()
     }
 
     override fun onDraw(canvas: Canvas) {

@@ -6,6 +6,7 @@
     <item name="home_screen" type="id" />
     <item name="reader_tools" type="id" />
     <item name="background_color_input" type="id" />
+    <item name="background_automatic" type="id" />
     <item name="page_number_input" type="id" />
     <item name="page_indicator" type="id" />
 </resources>
