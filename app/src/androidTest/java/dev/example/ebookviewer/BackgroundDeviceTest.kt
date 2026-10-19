@@ -4,7 +4,9 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
+import android.os.Looper
 import android.os.SystemClock
 import android.util.AtomicFile
 import android.view.accessibility.AccessibilityNodeInfo
@@ -19,6 +21,170 @@ import org.junit.Test
 class BackgroundDeviceTest {
     private val instrumentation get() = PdfRendererDeviceTest.instrumentation
     private val ui get() = DeviceGestures(instrumentation)
+
+    @Test
+    fun automaticPreviewChangesOnlyOutsideAndResetDropsDocumentColors() {
+        lateinit var view: PdfCanvasView
+        lateinit var page: Bitmap
+        lateinit var output: Bitmap
+        var secondPage: Bitmap? = null
+        var requests = emptyList<Tile>()
+        var requestCount = 0
+        var before: Bundle? = null
+        var requestsBefore = 0
+        var cachedBefore = 0
+        var crossingFraction = 0.0
+        var insideFraction = 0.0
+        ui.onMain {
+            view = PdfCanvasView(instrumentation.targetContext) {
+                requests = it
+                requestCount++
+            }
+            view.layout(0, 0, 800, 800)
+            view.setPages(listOf(PageSize(400, 800), PageSize(800, 800)))
+            val preview = requests.first()
+            page = Bitmap.createBitmap(preview.width, preview.height, Bitmap.Config.ARGB_8888)
+            page.eraseColor(Color.rgb(244, 236, 216))
+            Canvas(page).drawRect(
+                page.width / 3f,
+                page.height / 3f,
+                page.width * 2f / 3f,
+                page.height * 2f / 3f,
+                Paint().apply { color = Color.BLACK }
+            )
+            output = Bitmap.createBitmap(800, 800, Bitmap.Config.ARGB_8888)
+            view.putTile(preview, page)
+            before = view.saveViewport()
+            val zoom = requireNotNull(before).getDouble("zoom")
+            val deadBand = 24.0 * view.resources.displayMetrics.density / zoom
+            crossingFraction = (deadBand + 16.0 / zoom) / 800.0
+            insideFraction = deadBand / 2 / 800.0
+            assertTrue(crossingFraction > insideFraction && crossingFraction < 0.5)
+            cachedBefore = view.renderState().cachedBytes
+            requestsBefore = requestCount
+            view.setBackgroundSettings(BackgroundSettings(Color.MAGENTA, automatic = true))
+        }
+        try {
+            ui.await("Automatic paper background not ready") {
+                view.outsideBackgroundColor() == Color.rgb(244, 236, 216)
+            }
+            ui.onMain {
+                view.draw(Canvas(output))
+                assertEquals(Color.rgb(244, 236, 216), output.getPixel(50, 400))
+                assertEquals(Color.BLACK, output.getPixel(400, 400))
+                val after = requireNotNull(view.saveViewport())
+                for (key in listOf("zoom", "centerX", "centerY")) {
+                    assertEquals(requireNotNull(before).getDouble(key), after.getDouble(key), 0.0)
+                }
+                assertEquals(cachedBefore, view.renderState().cachedBytes)
+                assertEquals(requestsBefore, requestCount)
+                view.goToPage(0, 1.0)
+                val secondPreview = requests.first { it.page == 1 }
+                secondPage = Bitmap.createBitmap(
+                    secondPreview.width,
+                    secondPreview.height,
+                    Bitmap.Config.ARGB_8888
+                ).apply { eraseColor(Color.BLUE) }
+                view.putTile(secondPreview, requireNotNull(secondPage))
+            }
+            SystemClock.sleep(200)
+            ui.onMain {
+                assertEquals(Color.rgb(244, 236, 216), view.outsideBackgroundColor())
+                view.goToPage(1, crossingFraction)
+            }
+            ui.await("Next page background did not change after crossing dead band") {
+                view.outsideBackgroundColor() == Color.BLUE
+            }
+            ui.onMain { view.goToPage(0, 1.0 - insideFraction) }
+            SystemClock.sleep(200)
+            ui.onMain {
+                assertEquals(Color.BLUE, view.outsideBackgroundColor())
+                view.goToPage(0, 1.0 - crossingFraction)
+            }
+            ui.await("Returning page background did not recover") {
+                view.outsideBackgroundColor() == Color.rgb(244, 236, 216)
+            }
+            ui.onMain {
+                view.reset()
+                view.setPages(listOf(PageSize(600, 800)))
+                assertEquals(Color.MAGENTA, view.outsideBackgroundColor())
+                view.setBackgroundSettings(BackgroundSettings(Color.BLUE))
+            }
+            SystemClock.sleep(200)
+            ui.onMain { assertEquals(Color.BLUE, view.outsideBackgroundColor()) }
+        } finally {
+            ui.onMain { view.reset() }
+            page.recycle()
+            secondPage?.recycle()
+            output.recycle()
+        }
+    }
+
+    @Test
+    fun analyzerDeliversOnMainAndCloseRejectsAllPendingResults() {
+        val bitmap = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(Color.BLUE)
+        lateinit var analyzer: PageBackgroundAnalyzer
+        val delivered = CountDownLatch(1)
+        var correct = false
+        var lateCallbacks = 0
+        ui.onMain {
+            analyzer = PageBackgroundAnalyzer { page, color ->
+                correct = page == 1 &&
+                    color == Color.BLUE &&
+                    Looper.myLooper() == Looper.getMainLooper()
+                delivered.countDown()
+            }
+            analyzer.submit(1, bitmap, Color.MAGENTA)
+        }
+        try {
+            assertTrue(delivered.await(5, TimeUnit.SECONDS))
+            assertTrue(correct)
+            ui.onMain { analyzer.close() }
+            ui.await("Analyzer did not terminate") { analyzer.isTerminated() }
+            ui.onMain {
+                analyzer = PageBackgroundAnalyzer { _, _ -> lateCallbacks++ }
+                repeat(100) { analyzer.submit(it, bitmap, Color.MAGENTA) }
+                analyzer.close()
+            }
+            ui.await("Cancelled analyzer did not terminate") { analyzer.isTerminated() }
+            ui.onMain { assertEquals(0, lateCallbacks) }
+        } finally {
+            ui.onMain { analyzer.close() }
+            ui.await("Analyzer cleanup did not terminate") { analyzer.isTerminated() }
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun automaticChoicePersistsAndReturningToManualKeepsItsCustomColor() {
+        val repository =
+            (instrumentation.targetContext.applicationContext as ReaderApplication).settings
+        val previous = setting(repository::loadBackground)
+        var activity = ui.launch()
+        try {
+            openBackground(activity, null)
+            setColor("#12AB34")
+            if (!previous.automatic) click(activity.getString(R.string.background_automatic))
+            click(activity.getString(R.string.apply_settings))
+            assertEquals(
+                BackgroundSettings(Color.rgb(18, 171, 52), automatic = true),
+                setting(repository::loadBackground)
+            )
+            ui.onMain { activity.finish() }
+            activity = ui.launch()
+            openBackground(activity, null)
+            click(activity.getString(R.string.background_automatic))
+            click(activity.getString(R.string.apply_settings))
+            assertEquals(
+                BackgroundSettings(Color.rgb(18, 171, 52), automatic = false),
+                setting(repository::loadBackground)
+            )
+        } finally {
+            ui.onMain { activity.finish() }
+            setting { repository.saveBackground(previous, it) }
+        }
+    }
 
     @Test
     fun backgroundChangesOnlyOutsidePdfWithoutMovingAnchorOrRequestingTiles() {
@@ -116,6 +282,7 @@ class BackgroundDeviceTest {
             ui.drag(view, true)
             val before = ui.state(view)
             openBackground(activity, view)
+            if (previous.automatic) click(activity.getString(R.string.background_automatic))
             setColor("#123")
             click(activity.getString(R.string.apply_settings))
             assertEquals(previous, setting(repository::loadBackground))

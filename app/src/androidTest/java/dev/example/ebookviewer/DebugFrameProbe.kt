@@ -59,6 +59,7 @@ class DebugFrameProbe {
             .put("debuggable", debuggable).put("secondsPerRun", instrumentation.probeSeconds)
             .put("model", Build.MODEL).put("api", Build.VERSION.SDK_INT)
             .put("fixtureSha256", sha).put("fixtureBytes", fixture.length()).put("runs", runs)
+            .put("autoBackground", instrumentation.autoBackground)
         val descriptor = ParcelFileDescriptor.open(fixture, ParcelFileDescriptor.MODE_READ_ONLY)
         val nativeStart = SystemClock.elapsedRealtime()
         val renderer = try {
@@ -89,6 +90,19 @@ class DebugFrameProbe {
                     dropped.addAndGet(dropCount)
                 }
                 try {
+                    // The repository and main-handler callbacks are FIFO. This read completes
+                    // after Activity's initial load, before the probe overrides the View mode.
+                    val backgroundLoadDone = CountDownLatch(1)
+                    var backgroundLoadSucceeded = false
+                    application.settings.loadBackground {
+                        backgroundLoadSucceeded = it.isSuccess
+                        backgroundLoadDone.countDown()
+                    }
+                    assertTrue(
+                        "Initial background settings load timeout",
+                        backgroundLoadDone.await(5, TimeUnit.SECONDS)
+                    )
+                    assertTrue("Initial background settings load failed", backgroundLoadSucceeded)
                     val openStart = SystemClock.elapsedRealtime()
                     instrumentation.runOnMainSync {
                         (activity as MainActivity).openDocument(Uri.fromFile(fixture))
@@ -104,6 +118,11 @@ class DebugFrameProbe {
                     }
                     val firstTileMs = SystemClock.elapsedRealtime() - openStart
                     val view = ui.awaitReady(activity)
+                    instrumentation.runOnMainSync {
+                        view.setBackgroundSettings(
+                            BackgroundSettings(automatic = instrumentation.autoBackground)
+                        )
+                    }
                     val firstVisibleMs = SystemClock.elapsedRealtime() - openStart
                     ui.pinch(view)
                     repeat(4) { ui.drag(view, it < 2) }

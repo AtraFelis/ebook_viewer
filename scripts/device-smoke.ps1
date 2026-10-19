@@ -1,7 +1,8 @@
-param([string]$Serial, [switch]$SkipTests, [switch]$Probe, [switch]$Profile, [ValidateRange(10,600)][int]$Seconds = 30, [ValidateRange(1,3)][int]$Runs = 3)
+param([string]$Serial, [switch]$SkipTests, [switch]$Probe, [switch]$Profile, [switch]$AutoBackground, [ValidateRange(10,600)][int]$Seconds = 30, [ValidateRange(1,3)][int]$Runs = 3)
 
 $ErrorActionPreference = 'Stop'
 if ($Probe -and $SkipTests) { throw '-Probe cannot be combined with -SkipTests.' }
+if ($AutoBackground -and -not $Probe) { throw '-AutoBackground requires -Probe.' }
 $projectRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'android-env.ps1')
 $adb = Join-Path $env:ANDROID_HOME 'platform-tools/adb.exe'
@@ -41,10 +42,11 @@ try {
         Invoke-DeviceAdb @('install', '-r', "app/build/outputs/apk/androidTest/$variant/app-$variant-androidTest.apk") | Write-Host
         $arguments = @('shell', 'am', 'instrument', '-w')
         if ($Probe) { $arguments += @('-e', 'probe', 'true', '-e', 'seconds', [string]$Seconds, '-e', 'runs', [string]$Runs) }
+        if ($AutoBackground) { $arguments += @('-e', 'autoBackground', 'true') }
         $arguments += 'dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation'
         $result = Invoke-DeviceAdb $arguments
         $result | Write-Host
-        $expectedTests = if ($Probe) { 1 } else { 41 }
+        $expectedTests = if ($Probe) { 1 } else { 44 }
         if (($result -join "`n") -notmatch "P0 tests=$expectedTests, failures=0") {
             throw 'Device tests did not report the expected successes.'
         }

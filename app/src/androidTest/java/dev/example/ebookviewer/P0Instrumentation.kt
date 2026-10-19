@@ -27,6 +27,8 @@ class P0Instrumentation : Instrumentation() {
         private set
     var probeRuns = 3
         private set
+    var autoBackground = false
+        private set
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
@@ -52,6 +54,8 @@ class P0Instrumentation : Instrumentation() {
         lifecycleOnly = suite == "lifecycle"
         sharpnessOnly = suite == "sharpness"
         sharpnessPixelsOnly = suite == "sharpnessPixels"
+        autoBackground = arguments?.getString("autoBackground") == "true"
+        require(!autoBackground || probe)
         accessMethod = arguments?.getString("method")
         require(accessMethod == null || accessOnly)
         val validMethod = DocumentAccessDeviceTest::class.java.declaredMethods.any {
