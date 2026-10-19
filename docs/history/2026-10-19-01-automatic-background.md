@@ -79,3 +79,13 @@ Figma 블록만 뺀 SESSION/CHECKLIST staging 복사본과 명시한 앱/검사/
 수동 p95 5.941899/6.023040/6.262683ms, p99 6.908118/7.630151/7.558934ms, cache 최대 67,100,672bytes였다. 자동 p95 6.278926/6.793786/7.108658ms, p99 7.641390/8.052766/8.467598ms, cache 최대 67,108,864bytes였다. 두 모드 기존 목표 16.7/33.3ms·64MiB 충족/보고 누락 모두 0이다. FD 수동 140→135/143→138/143→138, 자동 140→135/143→137/143→139로 관측 구간 증가 없음이다. 수동 PSS 전후(KiB) 184407→273836/256854→250299/247460→277718, 자동 173245→266224/224155→267149/228601→249543이다. 순서/배경/CPU를 완전 통제하지 않았고 자동 수치가 일부 증가했다. 실제 native peak/임의 PDF·새 선명화 분포/최종 P2 통합 합격으로 확대하지 않는다.
 
 수정 계측의 별도 `:app:assembleDebug :app:assembleDebugAndroidTest --dependency-verification strict`도 통과했다. 앱 runtime을 변경하지 않아 이전 단위 37개·기본 44개·보강 6개 및 개인 PDF 수용을 반복하지 않았다. 사용자 Figma 이력 두 SHA를 재대조해 그대로 보존했다. 두 리뷰 수정은 검증 결과와 함께 일반 push하며 이후 실제 CI/재리뷰 상태는 별도로 기록한다.
+
+## 수정 push·CI 성공과 재리뷰 한도
+
+수동/자동 재측정 종료 후 `adb install -r`로 debug 앱/최신 debug 계측을 복원하고 앱 실행 Status ok를 확인했다. debug 앱 f7ad8a2f는 기존 기능 검사와 동일하다. 개인 데이터 clear/기기 설정 변경/개인 PDF 검사는 하지 않았다.
+
+Figma 블록을 제외한 index 복사본을 재생성하고 명시한 5개 파일만 stage했다. `git diff --cached --check` 통과/unstaged는 Figma 두 블록 각 6줄만 남은 것을 확인했다. `git commit -m 'test(reader): wait for background settings before frame probes'`로 45afa40을 만들고 같은 브랜치에 일반 push했다. PR 본문도 새 계측의 결과/기존 보고서 한계로 갱신했다. GraphQL로 두 기존 스레드 PRRT_kwDOVLKYJM6tyY7e/PRRT_kwDOVLKYJM6tyY7i의 해결 상태를 확인했다.
+
+수정 head 45afa40의 [push CI 39202987397](https://github.com/AtraFelis/ebook_viewer/actions/runs/39202987397)·[PR CI 39202990303](https://github.com/AtraFelis/ebook_viewer/actions/runs/39202990303)는 모두 SUCCESS다. 기존 head 리뷰가 진행 중이지 않은 것을 확인한 뒤 [재검토 6260135828](https://github.com/AtraFelis/ebook_viewer/pull/14#issuecomment-6260135828)을 한 번 요청했지만 [응답 6260136985](https://github.com/AtraFelis/ebook_viewer/pull/14#issuecomment-6260136985)은 Review rate limited였다. 수정 head의 실제 재리뷰는 미실행이며 성공 체크를 리뷰 완료로 확대하지 않는다. 한도 우회/중복 요청/별도 자동 수정 도구 도입은 하지 않았다.
+
+후속은 이 상태를 반영한 Markdown 기록뿐이며 원격 앱 검사 SHA 45afa40과 구분한다. 사용자만 PR을 병합한다. 자동 배경색의 기능/개인 수용·수정 계측 성능 비교를 완료했지만 P2 전체/최종 통합 완료는 아니다. 다음은 기존 UI의 읽기 설정(시스템/밝은/어두운 테마, 읽기 밝기, 화면 켜짐 유지)이며 이후 선택·복사/현재 페이지 본문 읽기의 native 안전과 TalkBack·큰 글꼴/최종 통합 검증이 남는다.
