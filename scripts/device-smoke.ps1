@@ -28,6 +28,10 @@ function Invoke-DeviceAdb([string[]]$DeviceArguments) {
 $api = Invoke-DeviceAdb @('shell', 'getprop', 'ro.build.version.sdk')
 if ([int]($api | Select-Object -Last 1) -lt 23) { throw 'Android API 23 or newer is required.' }
 Write-Host "Authorized device: Android API $api (identifier omitted)"
+$originalFontScale = (Invoke-DeviceAdb @('shell', 'settings', 'get', 'system', 'font_scale') | Out-String).Trim()
+if ($originalFontScale -ne 'null' -and $originalFontScale -notmatch '^\d+(\.\d+)?$') {
+    throw 'Unexpected font scale; no workload started.'
+}
 
 Push-Location $projectRoot
 try {
@@ -46,7 +50,7 @@ try {
         $arguments += 'dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation'
         $result = Invoke-DeviceAdb $arguments
         $result | Write-Host
-        $expectedTests = if ($Probe) { 1 } else { 48 }
+        $expectedTests = if ($Probe) { 1 } else { 59 }
         if (($result -join "`n") -notmatch "P0 tests=$expectedTests, failures=0") {
             throw 'Device tests did not report the expected successes.'
         }
@@ -65,5 +69,16 @@ try {
     if (($launch -join "`n") -notmatch 'Status: ok') { throw 'Activity launch was not confirmed.' }
     Write-Host 'Activity launch confirmed. Manually check PDF reading, center tap, settings orientation, pinch, fling, and document switching.'
 } finally {
-    Pop-Location
+    try {
+        $currentFontScale = (Invoke-DeviceAdb @('shell', 'settings', 'get', 'system', 'font_scale') | Out-String).Trim()
+        if ($currentFontScale -ne $originalFontScale) {
+            if ($originalFontScale -eq 'null') {
+                Invoke-DeviceAdb @('shell', 'settings', 'delete', 'system', 'font_scale') | Out-Null
+            } else {
+                Invoke-DeviceAdb @('shell', 'settings', 'put', 'system', 'font_scale', $originalFontScale) | Out-Null
+            }
+        }
+    } finally {
+        Pop-Location
+    }
 }

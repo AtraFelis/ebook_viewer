@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="read_page_text" type="id" />
+    <item name="page_text_content" type="id" />
     <item name="theme_system" type="id" />
     <item name="theme_light" type="id" />
     <item name="theme_dark" type="id" />

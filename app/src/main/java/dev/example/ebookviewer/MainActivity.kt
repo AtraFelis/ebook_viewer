@@ -42,6 +42,7 @@ class MainActivity : Activity() {
     )
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
+    private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
     private lateinit var readingWindow: ReadingWindow
     private lateinit var displayWindow: DisplayWindow
@@ -51,6 +52,9 @@ class MainActivity : Activity() {
     private lateinit var root: FrameLayout
     private var settingsDialog: AlertDialog? = null
     private var navigationDialog: AlertDialog? = null
+    private var pageTextDialog: AlertDialog? = null
+    private lateinit var pageTextClient: PageTextClient
+    private lateinit var readPageButton: Button
     private lateinit var pageIndicator: TextView
     private lateinit var pageJumpButton: Button
     private lateinit var bookmarksButton: Button
@@ -59,7 +63,6 @@ class MainActivity : Activity() {
     private var pendingNavigation: PageTarget? = null
     private var reading = false
     private lateinit var libraryView: LinearLayout
-    private lateinit var libraryScroll: ScrollView
     private lateinit var homeButton: Button
     private val library get() = (application as ReaderApplication).library
     private val settings get() = (application as ReaderApplication).settings
@@ -94,10 +97,13 @@ class MainActivity : Activity() {
             }
         )
         super.onCreate(savedInstanceState)
+        pageTextClient = PageTextClient(this)
         readingWindow = ReadingWindow(window, !appliedDarkTheme, themeBackground())
         displayWindow = DisplayWindow(window)
         status = TextView(this).apply { setText(R.string.ready) }
         homeStatus = TextView(this).apply { setText(R.string.ready) }
+        status.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        homeStatus.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         viewer = PdfCanvasView(this) { worker.request(it) }
         worker = PdfWorker(
             onLoaded = {
@@ -130,6 +136,7 @@ class MainActivity : Activity() {
             scheduleSave()
         }
         viewer.onUserInteraction = { pendingNavigation = null }
+        viewer.onReadPageText = { showPageText() }
         viewer.setOnClickListener {
             if (reading) {
                 readerTools.visibility =
@@ -137,7 +144,6 @@ class MainActivity : Activity() {
             }
         }
         libraryView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        libraryScroll = ScrollView(this).apply { addView(libraryView) }
         homeButton = Button(this).apply {
             setText(R.string.document_list)
             setOnClickListener { showLibrary() }
@@ -200,7 +206,8 @@ class MainActivity : Activity() {
                     addView(reselectButton, LinearLayout.LayoutParams(0, -2, 1f))
                 }
             )
-            addView(libraryScroll, LinearLayout.LayoutParams(-1, 0, 1f))
+            // One scrolling home surface keeps actions and records reachable at 200% font size.
+            addView(libraryView)
         }
         readerTools = LinearLayout(this).apply {
             id = R.id.reader_tools
@@ -244,6 +251,12 @@ class MainActivity : Activity() {
                 addView(bookmarksButton, LinearLayout.LayoutParams(0, -2, 1f))
             }
         )
+        readPageButton = Button(this).apply {
+            id = R.id.read_page_text
+            setText(R.string.read_page_text)
+            setOnClickListener { showPageText() }
+        }
+        readerTools.addView(readPageButton)
         pageIndicator = TextView(this).apply {
             id = R.id.page_indicator
             setTextColor(Color.WHITE)
@@ -253,12 +266,16 @@ class MainActivity : Activity() {
             visibility = View.GONE
             textSize = 12f
         }
+        homeScroll = ScrollView(this).apply { addView(homeScreen) }
         root = FrameLayout(this).apply {
             setBackgroundColor(themeBackground())
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
-            addView(homeScreen, FrameLayout.LayoutParams(-1, -1))
+            addView(homeScroll, FrameLayout.LayoutParams(-1, -1))
             addView(pageIndicator, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END))
-            addView(readerTools, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
+            addView(
+                ScrollView(this@MainActivity).apply { addView(readerTools) },
+                FrameLayout.LayoutParams(-1, -2, Gravity.TOP)
+            )
             setOnApplyWindowInsetsListener { _, insets ->
                 // Only physical cutouts reserve PDF space; transient system bars never resize it.
                 if (Build.VERSION.SDK_INT >= 28) {
@@ -405,6 +422,7 @@ class MainActivity : Activity() {
         grantFlags: Int = 0,
         relink: String? = null
     ) {
+        closePageText()
         saveReading()
         clearFailedOpen()
         pendingNavigation = null
@@ -509,6 +527,7 @@ class MainActivity : Activity() {
     }
 
     private fun openSample(viewport: Bundle? = null) {
+        closePageText()
         saveReading()
         clearFailedOpen()
         pendingNavigation = null
@@ -534,6 +553,7 @@ class MainActivity : Activity() {
         updateDisplayWindow()
         root.setBackgroundColor(viewer.outsideBackgroundColor())
         homeScreen.visibility = View.GONE
+        homeScroll.visibility = View.GONE
         viewer.visibility = View.VISIBLE
         homeButton.visibility = View.VISIBLE
         hideTools()
@@ -542,6 +562,7 @@ class MainActivity : Activity() {
     }
 
     private fun showLibrary() {
+        closePageText()
         saveReading()
         clearFailedOpen()
         pendingNavigation = null
@@ -560,6 +581,7 @@ class MainActivity : Activity() {
         viewer.visibility = View.GONE
         homeButton.visibility = View.GONE
         homeScreen.visibility = View.VISIBLE
+        homeScroll.visibility = View.VISIBLE
         readerTools.visibility = View.GONE
         readingWindow.apply(false)
         setStatus(R.string.ready)
@@ -733,6 +755,60 @@ class MainActivity : Activity() {
         }
         pageJumpButton.isEnabled = loaded && position != null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
+        if (::readPageButton.isInitialized) readPageButton.isEnabled = loaded && position != null
+    }
+
+    private fun showPageText(selectedPage: Int? = null) {
+        if (!resumed || !reading || !loaded || pageTextDialog != null) return
+        val page = selectedPage ?: viewer.readingPosition()?.page ?: return
+        if (page !in 0 until expectedPages) return
+        val generation = opening
+        val content = TextView(this).apply {
+            id = R.id.page_text_content
+            setText(R.string.page_text_loading)
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            isFocusable = true
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.page_text_title, page + 1))
+            .setView(ScrollView(this).apply { addView(content) })
+            .setNeutralButton(R.string.choose_page_text) { _, _ ->
+                closePageText()
+                val picker = pageJumpDialog(page, expectedPages) { showPageText(it) }
+                picker.setTitle(R.string.choose_page_text)
+                trackNavigationDialog(picker)
+            }
+            .setNegativeButton(R.string.close_settings, null)
+            .create()
+        pageTextDialog = dialog
+        dialog.setOnDismissListener {
+            if (pageTextDialog === dialog) {
+                pageTextDialog = null
+                pageTextClient.cancel()
+                hideTools()
+            }
+            content.text = ""
+        }
+        dialog.show()
+        pageTextClient.read(page, worker::duplicateSource) { error, text ->
+            if (isDestroyed || generation != opening || pageTextDialog !== dialog) return@read
+            content.text = when {
+                error != 0 -> getString(error)
+                text.isNullOrBlank() -> getString(R.string.page_text_empty)
+                else -> text
+            }
+        }
+    }
+
+    private fun closePageText() {
+        val previous = pageTextDialog
+        pageTextDialog = null
+        pageTextClient.cancel()
+        previous?.setOnDismissListener(null)
+        previous?.findViewById<TextView>(R.id.page_text_content)?.text = ""
+        previous?.dismiss()
     }
 
     private fun showPageJump() {
@@ -1094,6 +1170,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        closePageText()
         resumed = false
         updateDisplayWindow()
         saveReading()
@@ -1114,6 +1191,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        closePageText()
         resumed = false
         updateDisplayWindow()
         navigationDialog?.dismiss()

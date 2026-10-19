@@ -12,9 +12,12 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.LruCache
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.OverScroller
 import kotlin.math.ceil
 import kotlin.math.max
@@ -67,6 +70,7 @@ class PdfCanvasView @JvmOverloads constructor(
         setPages(pages)
     }
     var onPositionChanged: (() -> Unit)? = null
+    var onReadPageText: (() -> Unit)? = null
     var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
     private var outsideColor = DEFAULT_BACKGROUND_COLOR
@@ -239,8 +243,80 @@ class PdfCanvasView @JvmOverloads constructor(
     init {
         contentDescription = context.getString(R.string.viewer_description)
         isClickable = true
+        isFocusable = true
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
         // Only single-tap controls are supported; fast repeated taps must still toggle tools.
         gestures.setOnDoubleTapListener(null)
+    }
+
+    override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+        super.onInitializeAccessibilityNodeInfo(info)
+        val position = readingPosition() ?: return
+        val count = layout?.pages?.size ?: return
+        info.contentDescription = context.getString(
+            R.string.accessible_page,
+            position.page + 1,
+            count
+        )
+        info.isScrollable = count > 1
+        info.addAction(
+            AccessibilityNodeInfo.AccessibilityAction(
+                AccessibilityNodeInfo.ACTION_CLICK,
+                context.getString(R.string.reading_tools_action)
+            )
+        )
+        info.addAction(
+            AccessibilityNodeInfo.AccessibilityAction(
+                R.id.read_page_text,
+                context.getString(R.string.read_page_text)
+            )
+        )
+        if (position.page + 1 < count) {
+            info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD)
+        }
+        if (position.page > 0) {
+            info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)
+        }
+    }
+
+    override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean {
+        val position = readingPosition()
+        return when {
+            action == R.id.read_page_text && position != null -> {
+                onReadPageText?.invoke()
+                true
+            }
+            action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD && position != null ->
+                accessiblePageJump(position.page + 1)
+            action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD && position != null ->
+                accessiblePageJump(position.page - 1)
+            else -> super.performAccessibilityAction(action, arguments)
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val page = readingPosition()?.page
+        return when {
+            keyCode == KeyEvent.KEYCODE_PAGE_DOWN && page != null -> accessiblePageJump(page + 1)
+            keyCode == KeyEvent.KEYCODE_PAGE_UP && page != null -> accessiblePageJump(page - 1)
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    private fun accessiblePageJump(page: Int): Boolean {
+        if (!goToPage(page)) return false
+        // Invalidate assistive services' cached page description after an explicit page action.
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SCROLLED)
+        return true
+    }
+
+    override fun onInitializeAccessibilityEvent(event: AccessibilityEvent) {
+        super.onInitializeAccessibilityEvent(event)
+        val position = readingPosition() ?: return
+        event.isScrollable = true
+        event.itemCount = layout?.pages?.size ?: 0
+        event.fromIndex = position.page
+        event.toIndex = position.page
     }
 
     fun reset() {

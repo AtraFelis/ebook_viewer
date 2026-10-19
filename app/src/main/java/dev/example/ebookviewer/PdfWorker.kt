@@ -43,6 +43,9 @@ class PdfWorker(
     private val desired = AtomicReference<Request?>()
     private val scheduled = AtomicBoolean()
     private var renderer: PdfRenderer? = null
+
+    // Non-owning reference: PdfRenderer owns/closes it; duplication runs on the same worker.
+    private var sourceDescriptor: ParcelFileDescriptor? = null
     private var closed = false
 
     fun open(source: () -> ParcelFileDescriptor) {
@@ -63,6 +66,7 @@ class PdfWorker(
             if (document.get() != id) return@execute
             renderer?.close()
             renderer = null
+            sourceDescriptor = null
             try {
                 openRequest.throwIfCanceled()
                 val descriptor = source(openRequest)
@@ -80,6 +84,7 @@ class PdfWorker(
                     throw PdfSourceException(PdfFailure.INVALID)
                 }
                 renderer = opened
+                sourceDescriptor = descriptor
                 openRequest.throwIfCanceled()
                 if (opened.pageCount == 0) throw PdfSourceException(PdfFailure.EMPTY)
                 val pageCount = opened.pageCount
@@ -97,6 +102,7 @@ class PdfWorker(
             } catch (error: Exception) {
                 renderer?.close()
                 renderer = null
+                sourceDescriptor = null
                 val failure = when (error) {
                     is PdfSourceException -> error.failure
                     is SecurityException -> PdfFailure.ACCESS
@@ -146,6 +152,33 @@ class PdfWorker(
         desired.set(request)
         pending.set(request)
         schedule()
+    }
+
+    fun duplicateSource(complete: (ParcelFileDescriptor?) -> Unit) {
+        if (closed) {
+            complete(null)
+            return
+        }
+        val id = document.get()
+        executor.execute {
+            val descriptor = try {
+                if (id == document.get() && renderer != null) {
+                    sourceDescriptor?.let { ParcelFileDescriptor.dup(it.fileDescriptor) }
+                } else {
+                    null
+                }
+            } catch (_: Exception) {
+                null
+            }
+            main.post {
+                if (closed || id != document.get()) {
+                    descriptor?.close()
+                    complete(null)
+                } else {
+                    complete(descriptor)
+                }
+            }
+        }
     }
 
     /** Invalidate queued deliveries too, even if the same tile is requested again after a trim. */
@@ -250,6 +283,7 @@ class PdfWorker(
         executor.execute {
             renderer?.close()
             renderer = null
+            sourceDescriptor = null
         }
     }
 

@@ -15,6 +15,8 @@ class P0Instrumentation : Instrumentation() {
     private var immersiveOnly = false
     private var backgroundOnly = false
     private var displayOnly = false
+    private var textOnly = false
+    private var fontOnly = false
     private var navigationOnly = false
     private var layoutOnly = false
     private var accessOnly = false
@@ -30,6 +32,10 @@ class P0Instrumentation : Instrumentation() {
         private set
     var autoBackground = false
         private set
+    var sharpnessMode = "normal"
+        private set
+    var complexSharpness = false
+        private set
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
@@ -40,6 +46,8 @@ class P0Instrumentation : Instrumentation() {
                     "immersive",
                     "background",
                     "display",
+                    "text",
+                    "font",
                     "navigation",
                     "layout",
                     "access",
@@ -51,12 +59,19 @@ class P0Instrumentation : Instrumentation() {
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
         displayOnly = suite == "display"
+        textOnly = suite == "text"
+        fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
         layoutOnly = suite == "layout"
         accessOnly = suite == "access"
         lifecycleOnly = suite == "lifecycle"
         sharpnessOnly = suite == "sharpness"
         sharpnessPixelsOnly = suite == "sharpnessPixels"
+        sharpnessMode = arguments?.getString("sharpnessMode") ?: "normal"
+        require(sharpnessMode in listOf("normal", "fling", "zoom32"))
+        require(sharpnessMode == "normal" || sharpnessOnly)
+        complexSharpness = arguments?.getString("complexSharpness") == "true"
+        require(!complexSharpness || sharpnessOnly)
         autoBackground = arguments?.getString("autoBackground") == "true"
         require(!autoBackground || probe)
         accessMethod = arguments?.getString("method")
@@ -71,6 +86,8 @@ class P0Instrumentation : Instrumentation() {
         require(!immersiveOnly || (!probe && restartPhase == null))
         require(!backgroundOnly || (!probe && restartPhase == null))
         require(!displayOnly || (!probe && restartPhase == null))
+        require(!textOnly || (!probe && restartPhase == null))
+        require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
         require(!layoutOnly || (!probe && restartPhase == null))
         require(!accessOnly || (!probe && restartPhase == null))
@@ -125,7 +142,11 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (sharpnessPixelsOnly) {
+        val result = if (fontOnly) {
+            core.run(LargeFontDeviceTest::class.java)
+        } else if (textOnly) {
+            core.run(PageTextDeviceTest::class.java)
+        } else if (sharpnessPixelsOnly) {
             core.run(SharpnessPixelsDeviceTest::class.java)
         } else if (sharpnessOnly) {
             core.run(SharpnessProbe::class.java)
@@ -162,6 +183,8 @@ class P0Instrumentation : Instrumentation() {
                 ImmersiveDeviceTest::class.java,
                 BackgroundDeviceTest::class.java,
                 DisplayDeviceTest::class.java,
+                PageTextDeviceTest::class.java,
+                LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
                 PageLayoutDeviceTest::class.java,
                 DocumentAccessDeviceTest::class.java,

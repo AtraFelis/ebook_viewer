@@ -13,6 +13,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.FrameMetrics
 import android.view.Window
+import android.view.WindowManager
 import java.io.File
 import java.security.MessageDigest
 import java.util.Collections
@@ -69,6 +70,7 @@ class DebugFrameProbe {
             throw error
         }
         val nativeOpened = SystemClock.elapsedRealtime()
+        val fixturePageCount = renderer.pageCount
         renderer.use {
             repeat(it.pageCount) { index -> it.openPage(index).use { page -> page.width } }
         }
@@ -102,7 +104,19 @@ class DebugFrameProbe {
                         "Initial background settings load timeout",
                         backgroundLoadDone.await(5, TimeUnit.SECONDS)
                     )
-                    assertTrue("Initial background settings load failed", backgroundLoadSucceeded)
+                    val backgroundSetter = PdfCanvasView::class.java.methods.singleOrNull {
+                        it.name == "setBackgroundSettings"
+                    }
+                    // Frozen P1 has no automatic mode and may reject the newer settings schema.
+                    // Preserve those bytes; its manual fallback is the documented baseline mode.
+                    if (backgroundSetter != null) {
+                        assertTrue(
+                            "Initial background settings load failed",
+                            backgroundLoadSucceeded
+                        )
+                    } else {
+                        assertTrue("Automatic mode is missing", !instrumentation.autoBackground)
+                    }
                     val openStart = SystemClock.elapsedRealtime()
                     instrumentation.runOnMainSync {
                         (activity as MainActivity).openDocument(Uri.fromFile(fixture))
@@ -118,8 +132,15 @@ class DebugFrameProbe {
                     }
                     val firstTileMs = SystemClock.elapsedRealtime() - openStart
                     val view = ui.awaitReady(activity)
+                    val layoutField = PdfCanvasView::class.java.getDeclaredField("layout").apply {
+                        isAccessible = true
+                    }
+                    ui.await("Complete synthetic catalog not ready", 30_000) {
+                        (layoutField.get(view) as? DocumentLayout)?.pages?.size == fixturePageCount
+                    }
                     instrumentation.runOnMainSync {
-                        view.setBackgroundSettings(
+                        backgroundSetter?.invoke(
+                            view,
                             BackgroundSettings(automatic = instrumentation.autoBackground)
                         )
                     }
@@ -132,6 +153,10 @@ class DebugFrameProbe {
                         @Suppress("DEPRECATION")
                         refreshHz = activity.windowManager.defaultDisplay.refreshRate
                         activity.window.addOnFrameMetricsAvailableListener(listener, handler)
+                        activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        val attributes = activity.window.attributes
+                        attributes.screenBrightness = 0.5f
+                        activity.window.attributes = attributes
                         listenerAttached = true
                     }
                     val before = memory()
@@ -149,6 +174,10 @@ class DebugFrameProbe {
                         ui.drag(view, samples % 8 < 4, fling = true)
                         if (samples % 8 == 0) ui.pinch(view, outward = samples % 16 == 0)
                         instrumentation.runOnMainSync {
+                            assertTrue(
+                                "Reader left the foreground during measurement",
+                                activity.window.decorView.hasWindowFocus() && view.isShown
+                            )
                             val state = view.renderState()
                             maxCache = maxOf(maxCache, state.cachedBytes)
                             if (state.readyTiles < state.visibleTiles) missingSamples++
@@ -175,6 +204,7 @@ class DebugFrameProbe {
                         values[(ceil(values.size * fraction).toInt() - 1).coerceAtLeast(0)] /
                             1_000_000.0
                     val result = JSONObject().put("run", run + 1).put("elapsedMs", elapsed)
+                        .put("testWindowBrightness", 0.5)
                         .put(
                             "refreshHz",
                             refreshHz
