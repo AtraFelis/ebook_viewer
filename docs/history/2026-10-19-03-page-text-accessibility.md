@@ -83,3 +83,16 @@ watchdog debug/profile 계측 strict 빌드/Lint/ktlint는 타입별 호출로 �
 접근성 수정의 첫 strict 실행은 주석 앞 빈 줄 ktlint 오류였고 수동 수정 뒤 debug 앱/계측 빌드·단위 **44개/실패 0**·Lint/ktlint를 통과했다. 이어 본문 전용 **10개/실패 0**, 27.5초 종료·앱/테스트 force-stop을 확인했다. 해당 debug APK 쌍은 ignored `accessibility-page-cursor-apks.json`으로 연결하며 전체 59개는 현재 별도 확인 중이다.
 
 수정된 최종 profile app **5e968f60ab7a7dd536ef6c524f66445b6f367927b71a6e8252f595bb5df5cbfc**/공통 계측 **834c353ffa9e983474fa09fb3b0d133fbaff7906432bd2962a7b58089e16688a**을 strict 빌드해 동결했다. 이전 세대는 SHA명으로 보존했고 baseline `06423be6…`은 그대로다. 실제 성능 수집/통과는 아직 아니다. f8d9265의 [CodeRabbit 재검토 완료](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6283922091)는 계측 변경 5개 파일(문서 4개 유사 변경 건너뜀)에서 수정 요구 없음이었다. 이 후속 watchdog/접근성 수정에 대한 검토와 혼동하지 않는다.
+
+## 최종 기능 검증 — 통과와 성능 준비 조건
+
+watchdog a67f3f2·접근성 수정 0a95883을 같은 PR 브랜치에 일반 push했다. 사용자 Figma SESSION/CHECKLIST의 6줄씩과 미추적 이력 2개는 제외·해시 대조 보존했다. 0a95883의 [push CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39375277426)·[PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39375281644)는 모두 성공했다. 새 head CodeRabbit 자동 건너뜀 성공 체크를 실제 재검토로 세지 않는다.
+
+최종 debug app **87b75a3bba2a0f344de5883962ee0f5c6d9f119f339d7399c832dd923134959f**/계측 **d6bd685f6d853a33db738c876d2fc5c25c2f5795590cd00651a3bf9dfec112a5**에서 다음을 각각 확인했다.
+
+- 기본 **59개/실패 0**, 453.3초 종료(ignored `accessibility-page-cursor-basic-59.log`). 이전 실패 접근성 이벤트·navigation도 이번 실행에서 통과했다.
+- 별도 `suite sharpnessPixels` **1개/실패 0**, 4.6초(ignored `accessibility-final-pixels-page-cursor.log`). 벡터/그레이/RGB의 확대 픽셀 대조다.
+- 별도 `libraryRestart seed` **1개/실패 0**, 7초→host 종료→`verify` **1개/실패 0**, 10초(ignored `accessibility-final-restart-page-cursor-{seed,verify}.log`). 서로 다른 PID/읽기 위치·줌·페이지 배치 복원이다.
+- 최종 단위 XML 합산 **44개/실패·오류 0**, Lint XML **0 errors/0 warnings**, ktlint 통과. 각 별도 실행을 하나의 62개 기본 suite로 표현하지 않는다.
+
+모든 invocation 후 앱/테스트를 멈췄고 전역 글꼴 **1.1**을 확인했다. 여유 메모리는 **2,526,968KiB**로 준비 조건 2GiB 이상이지만 **thermal 3**으로 기준 0~1을 벗어났다. 이 상태에서 성능을 시작하거나 합격선을 낮추지 않고 앱 중지 상태로 냉각을 기다린다. 최종 정상/플링/32배율/복잡 자료 비교·프레임·10분 실제 Activity·TalkBack/가독성 개인 수용·사용자 병합은 미완료다.

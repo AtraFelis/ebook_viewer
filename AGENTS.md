@@ -29,7 +29,7 @@
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
 | 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·호환 44개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 재개 전체 59개는 접근성 이벤트 1개 실패. 세로/다중 가시 페이지의 인덱스 건너뜀을 수정해 본문 10개 통과, 최종 전체 재검사 중. 최초 별도 페이지 이동 실패 원인은 미확정. 계측 자체 deadline 실제 종료 확인. 별도 화질/복원은 이력별 범위, 실제 OOM 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 최종 기본 59개/실패 0(453.3초). 별도 화질 1개·프로세스 복원 seed/verify 각 1개 통과. 접근성 인덱스 건너뜀 수정·계측 자체 deadline 종료 확인. 최초 다른 페이지 이동 실패 원인은 미확정으로 보존. 실제 OOM/다른 API 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 
