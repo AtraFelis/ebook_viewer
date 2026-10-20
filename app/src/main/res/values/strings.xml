@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="read_page_text">현재 페이지 본문 읽기</string>
+    <string name="choose_page_text">페이지 선택</string>
+    <string name="reading_tools_action">읽기 도구 열기 또는 닫기</string>
+    <string name="accessible_page">PDF %1$d / %2$d 페이지. 읽기 도구, 페이지 이동 및 현재 페이지 본문 읽기를 사용할 수 있습니다.</string>
+    <string name="page_text_title">%1$d 페이지 본문</string>
+    <string name="page_text_loading">선택한 한 페이지만 읽는 중입니다. 닫으면 취소됩니다.</string>
+    <string name="page_text_empty">읽을 수 있는 텍스트가 없습니다. 스캔 이미지의 문자 인식은 지원하지 않습니다.</string>
+    <string name="page_text_stopped">시간·메모리 제한 또는 문서 처리 오류로 본문 읽기를 중단했습니다. PDF 읽기는 계속할 수 있습니다.</string>
+    <string name="page_text_memory">여유 메모리가 부족해 본문 읽기를 시작하지 않았습니다. PDF 읽기는 계속할 수 있습니다.</string>
+    <string name="page_text_unsupported">이 Android 환경에서는 페이지 본문 읽기를 지원하지 않습니다. PDF 읽기는 계속할 수 있습니다.</string>
     <string name="app_name">PDF Viewer</string>
     <string name="open_pdf">PDF 열기</string>
     <string name="sample_pdf">합성 100페이지</string>

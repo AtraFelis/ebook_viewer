@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import java.util.Locale
 
@@ -75,7 +76,7 @@ fun Activity.backgroundSettingsDialog(
     }
     val dialog = AlertDialog.Builder(this)
         .setTitle(R.string.background_settings)
-        .setView(content)
+        .setView(ScrollView(this).apply { addView(content) })
         .setPositiveButton(R.string.apply_settings, null)
         .setNegativeButton(android.R.string.cancel, null)
         .create()

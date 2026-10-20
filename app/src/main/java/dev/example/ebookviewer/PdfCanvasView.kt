@@ -12,9 +12,12 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.LruCache
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.OverScroller
 import kotlin.math.ceil
 import kotlin.math.max
@@ -31,6 +34,9 @@ class PdfCanvasView @JvmOverloads constructor(
     private var tapAllowed = true
     private var hadMultiplePointers = false
     private var layout: DocumentLayout? = null
+
+    // At document edges or small zoom, a requested page cannot always be centered geometrically.
+    private var accessiblePage: Int? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private var requested = emptyList<Tile>()
     private var previews = emptyList<Tile>()
@@ -67,6 +73,7 @@ class PdfCanvasView @JvmOverloads constructor(
         setPages(pages)
     }
     var onPositionChanged: (() -> Unit)? = null
+    var onReadPageText: ((Int) -> Unit)? = null
     var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
     private var outsideColor = DEFAULT_BACKGROUND_COLOR
@@ -154,6 +161,7 @@ class PdfCanvasView @JvmOverloads constructor(
     fun goToPage(page: Int, fractionY: Double? = null): Boolean {
         val document = layout ?: return false
         if (page !in document.pages.indices) return false
+        accessiblePage = null
         scroller.forceFinished(true)
         viewport.moveToPage(document, page, fractionY, width, height)
         constrain()
@@ -239,9 +247,88 @@ class PdfCanvasView @JvmOverloads constructor(
     init {
         contentDescription = context.getString(R.string.viewer_description)
         isClickable = true
+        isFocusable = true
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
         // Only single-tap controls are supported; fast repeated taps must still toggle tools.
         gestures.setOnDoubleTapListener(null)
     }
+
+    override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+        super.onInitializeAccessibilityNodeInfo(info)
+        val page = accessiblePageIndex() ?: return
+        val count = layout?.pages?.size ?: return
+        info.contentDescription = context.getString(
+            R.string.accessible_page,
+            page + 1,
+            count
+        )
+        info.isScrollable = count > 1
+        info.addAction(
+            AccessibilityNodeInfo.AccessibilityAction(
+                AccessibilityNodeInfo.ACTION_CLICK,
+                context.getString(R.string.reading_tools_action)
+            )
+        )
+        info.addAction(
+            AccessibilityNodeInfo.AccessibilityAction(
+                R.id.read_page_text,
+                context.getString(R.string.read_page_text)
+            )
+        )
+        if (page + 1 < count) {
+            info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD)
+        }
+        if (page > 0) {
+            info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)
+        }
+    }
+
+    override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean {
+        val page = accessiblePageIndex()
+        return when {
+            action == R.id.read_page_text && page != null -> {
+                onReadPageText?.invoke(page)
+                true
+            }
+            action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD && page != null ->
+                accessiblePageJump(page + 1)
+            action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD && page != null ->
+                accessiblePageJump(page - 1)
+            else -> super.performAccessibilityAction(action, arguments)
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val page = accessiblePageIndex()
+        return when {
+            keyCode == KeyEvent.KEYCODE_PAGE_DOWN && page != null -> accessiblePageJump(page + 1)
+            keyCode == KeyEvent.KEYCODE_PAGE_UP && page != null -> accessiblePageJump(page - 1)
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    private fun accessiblePageJump(page: Int): Boolean {
+        if (!goToPage(page, 0.5)) return false
+        accessiblePage = page
+        // Invalidate assistive services' cached page description after an explicit page action.
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SCROLLED)
+        return true
+    }
+
+    override fun onInitializeAccessibilityEvent(event: AccessibilityEvent) {
+        super.onInitializeAccessibilityEvent(event)
+        val page = accessiblePageIndex() ?: return
+        event.isScrollable = true
+        event.itemCount = layout?.pages?.size ?: 0
+        event.fromIndex = page
+        event.toIndex = page
+    }
+
+    private fun accessiblePageIndex(): Int? =
+        accessiblePage?.takeIf { it in (layout?.pages?.indices ?: IntRange.EMPTY) }
+            ?: readingPosition()?.page
+
+    fun pageForTextReading(): Int? = accessiblePageIndex()
 
     fun reset() {
         stopBackgroundAnalysis(clearColors = true)
@@ -249,6 +336,7 @@ class PdfCanvasView @JvmOverloads constructor(
         scroller.forceFinished(true)
         request(emptyList())
         layout = null
+        accessiblePage = null
         pendingPages = null
         cache.evictAll()
         requested = emptyList()
@@ -447,6 +535,7 @@ class PdfCanvasView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                accessiblePage = null
                 onUserInteraction?.invoke()
                 tapAllowed = scroller.isFinished
                 hadMultiplePointers = false

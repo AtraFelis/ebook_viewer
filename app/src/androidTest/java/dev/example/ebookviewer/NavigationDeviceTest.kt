@@ -146,8 +146,19 @@ class NavigationDeviceTest {
             val zoom = ui.state(view).getDouble("zoom")
             jump(activity, view, "0")
             setPage("70", activity)
-            ui.await("Did not navigate to selected page", 30_000) {
-                view.readingPosition()?.page == 69
+            try {
+                ui.await("Did not navigate to selected page", 30_000) {
+                    view.readingPosition()?.page == 69
+                }
+            } catch (failure: AssertionError) {
+                val state = ui.state(view)
+                throw AssertionError(
+                    "Synthetic page jump: page=${state.getInt("page")} " +
+                        "zoom=${state.getDouble("zoom")} " +
+                        "centerY=${state.getDouble("centerY")} " +
+                        "size=${ui.onMain { "${view.width}x${view.height}" }}",
+                    failure
+                )
             }
             assertEquals(zoom, ui.state(view).getDouble("zoom"), 0.000001)
             ui.drag(view, true)
@@ -205,6 +216,13 @@ class NavigationDeviceTest {
             instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(hint)
                 ?.firstOrNull { it.className == "android.widget.EditText" }
                 ?.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments) == true
+        }
+        // Accessibility accepts a queued action before its edited value is observable.
+        awaitAction {
+            instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(hint)
+                ?.any {
+                    it.className == "android.widget.EditText" && it.text?.toString() == value
+                } == true
         }
         action(activity.getString(R.string.navigate))
     }

@@ -13,7 +13,7 @@
 | 플랫폼·언어 | Android 네이티브 / Kotlin |
 | 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
 | 앱 UI | 플랫폼 Activity + View/Canvas, P1 전체 화면/중앙 탭 도구/방향 설정. Compose 셸 최종 선택은 후속 비교 |
-| PDF | P0 PdfRenderer 승인. API 33 합성 문서·test provider 계측 완료, 다른 기기 미검증. 범위·제한은 ADR 0001/0007. 비탐색 파일은 취소/256MiB 상한의 익명 임시 복사 |
+| PDF | P0 PdfRenderer 승인. API 33 합성 문서·test provider 계측 완료, 다른 기기 미검증. 본문 읽기는 플랫폼 PdfRenderer/PreV의 요청별 isolated process(ADR 0015). 범위·제한은 ADR 0001/0007/0015. 비탐색 파일은 취소/256MiB 상한의 익명 임시 복사 |
 | 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v2는 문서별 크기/간격을 추가하고 v1을 읽음(ADR 0006). 배경색 v2는 자동/수동 선택을 추가하고 v1 수동색을 읽음(ADR 0004/0013). 테마/읽기 밝기/화면 유지는 별도 v1(ADR 0014). 북마크/방향/번호 표시는 별도 v1(ADR 0002/0003/0005). 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
@@ -27,13 +27,13 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·호환 41개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·호환 44개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 기본 48개·앱 실행 통과(기존 41 + 자동 배경색 3 + 표시 설정 4). 별도 화질 대조 1개/프로세스 복원 2단계는 이력별 범위, 실제 OOM 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 최종 기본 59개/실패 0(453.3초). 별도 화질 1개·프로세스 복원 seed/verify 각 1개 통과. 접근성 인덱스 건너뜀 수정·계측 자체 deadline 종료 확인. 최초 다른 페이지 이동 실패 원인은 미확정으로 보존. 실제 OOM/다른 API 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 
-현재 P2는 사용자 결정으로 문서 검색·목차·비밀번호 PDF 읽기를 필수에서 제외한다. 검색은 후속 보류/비활성화이며 진단 코드와 원인 미확정 이력은 Draft PR #12에 보존한다. 선명도 개선은 main 기반 독립 브랜치에서 기존 PdfRenderer로 진행한다. 선택/복사·TalkBack 본문 읽기 등 나머지 범위와 해당 native 안전 검증은 유지한다. [현재 계획](docs/plan/p2-scope-and-completion.md)을 따른다.
+현재 P2는 사용자 결정으로 문서 검색·목차·비밀번호 PDF 읽기를 필수에서 제외한다. 검색은 후속 보류/비활성화이며 진단 코드와 원인 미확정 이력은 Draft PR #12에 보존한다. 선명도 개선은 main 기반 독립 브랜치에서 기존 PdfRenderer로 진행한다. 2026-10-19 사용자 결정으로 선택/복사 UI도 후속으로 미룬다. 현재 페이지 본문 읽기·TalkBack/큰 글꼴과 해당 native 안전 검증·최종 통합 검증은 유지한다. [현재 계획](docs/plan/p2-scope-and-completion.md)을 따른다.
 
 ## 코드 스타일
 

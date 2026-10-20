@@ -8,6 +8,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.ScrollView
 import android.widget.TextView
 import java.util.Locale
 
@@ -54,7 +55,7 @@ fun Activity.pageLayoutDialog(
     }
     val dialog = AlertDialog.Builder(this)
         .setTitle(R.string.page_layout_settings)
-        .setView(content)
+        .setView(ScrollView(this).apply { addView(content) })
         .setPositiveButton(R.string.apply_settings, null)
         .setNegativeButton(android.R.string.cancel, null)
         .create()

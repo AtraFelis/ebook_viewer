@@ -5,6 +5,8 @@ import android.os.Debug
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.MotionEvent
+import android.view.WindowManager
+import android.widget.OverScroller
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
@@ -31,10 +33,17 @@ class SharpnessProbe {
     @Test
     fun normalScrollBaseline() {
         val runs = JSONArray()
-        val report = JSONObject().put("kind", "synthetic normal scroll; onDraw submission")
-            .put("runs", runs).put("samplesPerScenario", 30)
+        val sampleCount = if (instrumentation.sharpnessMode == "normal") 30 else 10
+        val report = JSONObject().put("kind", "synthetic scroll; onDraw submission")
+            .put("mode", instrumentation.sharpnessMode)
+            .put("runs", runs).put("samplesPerScenario", sampleCount)
         try {
-            for (fixture in listOf("vector", "gray.pdf", "rgb.pdf")) {
+            val fixtures = if (instrumentation.complexSharpness) {
+                listOf("complex.pdf")
+            } else {
+                listOf("vector", "gray.pdf", "rgb.pdf")
+            }
+            for (fixture in fixtures) {
                 val file = fixture(fixture)
                 val sha = MessageDigest.getInstance("SHA-256").digest(file.readBytes())
                     .joinToString("") { "%02x".format(it) }
@@ -74,6 +83,7 @@ class SharpnessProbe {
         val delivered = ArrayList<TileTiming>()
         val failure = AtomicInteger()
         var pages = 0
+        var catalog = emptyList<PageSize>()
         var initialZoom = 0.0
         var viewportWidth = 0
         var viewportHeight = 0
@@ -87,6 +97,7 @@ class SharpnessProbe {
                 worker = PdfWorker(
                     onLoaded = { sizes ->
                         pages = sizes.size
+                        catalog = sizes
                         view.setPages(sizes)
                     },
                     onTile = { tile, bitmap -> view.putTile(tile, bitmap) },
@@ -112,7 +123,24 @@ class SharpnessProbe {
                 failure.get() == 0 && pages == if (name == "vector") 100 else 48
             }
             ui.await("Initial view not sharp") { progress?.sharp != null }
+            if (instrumentation.sharpnessMode == "zoom32") {
+                val oldRevision = ui.onMain { progress?.revision }
+                ui.onMain {
+                    val saved = requireNotNull(view.saveViewport())
+                    saved.putDouble("zoom", 32.0)
+                    view.reset()
+                    view.restoreViewport(saved)
+                    view.setPages(catalog)
+                }
+                ui.await("32x viewport did not become sharp") {
+                    progress?.revision != oldRevision && progress?.sharp != null
+                }
+            }
             ui.onMain {
+                activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                val attributes = activity.window.attributes
+                attributes.screenBrightness = 0.5f
+                activity.window.attributes = attributes
                 initialZoom = requireNotNull(view.readingPosition()).zoom
                 viewportWidth = view.width
                 viewportHeight = view.height
@@ -121,14 +149,37 @@ class SharpnessProbe {
             }
             for (forward in listOf(true, false)) {
                 val samples = JSONArray()
-                repeat(30) {
+                val fling = instrumentation.sharpnessMode == "fling"
+                val count = if (instrumentation.sharpnessMode == "normal") 30 else 10
+                repeat(count) { sampleIndex ->
+                    if (fling) {
+                        val anchorRevision = ui.onMain { progress?.revision }
+                        ui.onMain { view.goToPage(5 + sampleIndex * 2) }
+                        ui.await("Fling anchor not ready") {
+                            progress?.revision != anchorRevision && progress?.sharp != null
+                        }
+                    }
                     val previousRevision = ui.onMain { progress?.revision }
-                    drag(view, forward)
-                    val limit = SystemClock.elapsedRealtimeNanos() + 2_000_000_000L
+                    drag(view, forward, fling)
+                    val waitNanos = if (fling) 8_000_000_000L else 2_000_000_000L
+                    val limit = SystemClock.elapsedRealtimeNanos() + waitNanos
                     var sample: Progress?
+                    var settled: Boolean
                     do {
-                        sample = ui.onMain { progress }
-                        if (sample?.revision != previousRevision && sample?.sharp != null) break
+                        sample = ui.onMain {
+                            assertTrue(
+                                "Sharpness probe left the foreground",
+                                activity.window.decorView.hasWindowFocus() && view.isShown
+                            )
+                            progress
+                        }
+                        settled = !fling || ui.onMain { scrollerFinished(view) }
+                        if (sample?.revision != previousRevision &&
+                            sample?.sharp != null &&
+                            settled
+                        ) {
+                            break
+                        }
                         SystemClock.sleep(10)
                     } while (SystemClock.elapsedRealtimeNanos() < limit)
                     val current = requireNotNull(sample)
@@ -136,7 +187,8 @@ class SharpnessProbe {
                         "Gesture did not change viewport",
                         current.revision != previousRevision
                     )
-                    val latency = current.sharp?.let { (it - current.changed) / 1_000_000.0 }
+                    val latency = current.sharp?.takeIf { settled }
+                        ?.let { (it - current.changed) / 1_000_000.0 }
                     samples.put(
                         JSONObject().put(
                             "firstSharpMs",
@@ -144,6 +196,7 @@ class SharpnessProbe {
                                 ?: JSONObject.NULL
                         ).put("sharp95Ms", latency ?: JSONObject.NULL)
                             .put("timeout", latency == null || latency > 2000.0)
+                            .put("overOneSecond", latency == null || latency > 1000.0)
                             .put("lastSharpFraction", current.fraction)
                     )
                 }
@@ -159,8 +212,10 @@ class SharpnessProbe {
             assertTrue("Cache exceeded 64 MiB", maxCache <= 64 * 1024 * 1024)
             val times = ui.onMain { delivered.toList() }
             return JSONObject().put("fixture", name).put("fixtureSha256", sha).put("run", run)
+                .put("testWindowBrightness", 0.5)
                 .put("width", viewportWidth).put("height", viewportHeight)
                 .put("initialZoom", initialZoom).put("refreshHz", refreshHz)
+                .put("mode", instrumentation.sharpnessMode)
                 .put("scenarios", scenarios).put("maxCacheBytes", maxCache)
                 .put("memoryBefore", memoryBefore).put("memoryAfter", memory())
                 .put("deliveredTiles", times.size)
@@ -194,7 +249,7 @@ class SharpnessProbe {
         }
     }
 
-    private fun drag(view: PdfCanvasView, forward: Boolean) {
+    private fun drag(view: PdfCanvasView, forward: Boolean, fling: Boolean) {
         val down = SystemClock.uptimeMillis()
         val start = view.height * if (forward) 0.85f else 0.15f
         val end = view.height * if (forward) 0.15f else 0.85f
@@ -215,9 +270,16 @@ class SharpnessProbe {
             SystemClock.sleep(16)
             event(MotionEvent.ACTION_MOVE, start + (end - start) * (index + 1) / 6)
         }
-        SystemClock.sleep(150)
+        if (!fling) SystemClock.sleep(150)
         event(MotionEvent.ACTION_MOVE, end)
         event(MotionEvent.ACTION_UP, end)
+    }
+
+    private fun scrollerFinished(view: PdfCanvasView): Boolean {
+        // Observe the same existing scroller on both frozen baseline and final APKs.
+        val field = PdfCanvasView::class.java.getDeclaredField("scroller")
+        field.isAccessible = true
+        return (field.get(view) as OverScroller).isFinished
     }
 
     private fun percentile(values: List<Long>): Double {

@@ -3,6 +3,10 @@ package dev.example.ebookviewer
 import android.app.Activity
 import android.app.Instrumentation
 import android.os.Bundle
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.runner.Description
 import org.junit.runner.JUnitCore
 import org.junit.runner.Request
@@ -11,10 +15,15 @@ import org.junit.runner.notification.RunListener
 
 /** Small JUnit bridge for this fixed P0 suite; no extra application runtime dependencies. */
 class P0Instrumentation : Instrumentation() {
+    private val finished = AtomicBoolean()
+    private val watchdog = Executors.newSingleThreadScheduledExecutor()
+    private var deadline: ScheduledFuture<*>? = null
     private var probe = false
     private var immersiveOnly = false
     private var backgroundOnly = false
     private var displayOnly = false
+    private var textOnly = false
+    private var fontOnly = false
     private var navigationOnly = false
     private var layoutOnly = false
     private var accessOnly = false
@@ -30,6 +39,10 @@ class P0Instrumentation : Instrumentation() {
         private set
     var autoBackground = false
         private set
+    var sharpnessMode = "normal"
+        private set
+    var complexSharpness = false
+        private set
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         probe = arguments?.getString("probe") == "true"
@@ -40,6 +53,8 @@ class P0Instrumentation : Instrumentation() {
                     "immersive",
                     "background",
                     "display",
+                    "text",
+                    "font",
                     "navigation",
                     "layout",
                     "access",
@@ -51,12 +66,19 @@ class P0Instrumentation : Instrumentation() {
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
         displayOnly = suite == "display"
+        textOnly = suite == "text"
+        fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
         layoutOnly = suite == "layout"
         accessOnly = suite == "access"
         lifecycleOnly = suite == "lifecycle"
         sharpnessOnly = suite == "sharpness"
         sharpnessPixelsOnly = suite == "sharpnessPixels"
+        sharpnessMode = arguments?.getString("sharpnessMode") ?: "normal"
+        require(sharpnessMode in listOf("normal", "fling", "zoom32"))
+        require(sharpnessMode == "normal" || sharpnessOnly)
+        complexSharpness = arguments?.getString("complexSharpness") == "true"
+        require(!complexSharpness || sharpnessOnly)
         autoBackground = arguments?.getString("autoBackground") == "true"
         require(!autoBackground || probe)
         accessMethod = arguments?.getString("method")
@@ -71,6 +93,8 @@ class P0Instrumentation : Instrumentation() {
         require(!immersiveOnly || (!probe && restartPhase == null))
         require(!backgroundOnly || (!probe && restartPhase == null))
         require(!displayOnly || (!probe && restartPhase == null))
+        require(!textOnly || (!probe && restartPhase == null))
+        require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
         require(!layoutOnly || (!probe && restartPhase == null))
         require(!accessOnly || (!probe && restartPhase == null))
@@ -83,6 +107,28 @@ class P0Instrumentation : Instrumentation() {
         probeRuns = (arguments?.getString("runs")?.toIntOrNull() ?: 3).also {
             require(it in 1..3)
         }
+        val maximumSeconds = when {
+            probe -> probeSeconds * probeRuns + 120
+            sharpnessOnly -> 1_200
+            else -> 720
+        }
+        val deadlineSeconds = arguments?.getString("deadlineSeconds")?.let {
+            requireNotNull(it.toIntOrNull()).also { value -> require(value in 1..maximumSeconds) }
+        } ?: maximumSeconds
+        // A lost host connection must not leave instrumentation launching more Activities.
+        deadline = watchdog.schedule({
+            complete(
+                Activity.RESULT_CANCELED,
+                Bundle().apply {
+                    putInt("p0Failures", 1)
+                    putBoolean("p0DeadlineExceeded", true)
+                    putString(
+                        REPORT_KEY_STREAMRESULT,
+                        "Instrumentation deadline exceeded; incomplete\n"
+                    )
+                }
+            )
+        }, deadlineSeconds.toLong(), TimeUnit.SECONDS)
         start()
     }
 
@@ -125,7 +171,11 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (sharpnessPixelsOnly) {
+        val result = if (fontOnly) {
+            core.run(LargeFontDeviceTest::class.java)
+        } else if (textOnly) {
+            core.run(PageTextDeviceTest::class.java)
+        } else if (sharpnessPixelsOnly) {
             core.run(SharpnessPixelsDeviceTest::class.java)
         } else if (sharpnessOnly) {
             core.run(SharpnessProbe::class.java)
@@ -162,13 +212,15 @@ class P0Instrumentation : Instrumentation() {
                 ImmersiveDeviceTest::class.java,
                 BackgroundDeviceTest::class.java,
                 DisplayDeviceTest::class.java,
+                PageTextDeviceTest::class.java,
+                LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
                 PageLayoutDeviceTest::class.java,
                 DocumentAccessDeviceTest::class.java,
                 ReaderLifecycleDeviceTest::class.java
             )
         }
-        finish(
+        complete(
             Activity.RESULT_OK,
             Bundle().apply {
                 putInt("p0Failures", result.failureCount)
@@ -179,5 +231,12 @@ class P0Instrumentation : Instrumentation() {
                 )
             }
         )
+    }
+
+    private fun complete(code: Int, result: Bundle) {
+        if (!finished.compareAndSet(false, true)) return
+        deadline?.cancel(false)
+        watchdog.shutdown()
+        finish(code, result)
     }
 }

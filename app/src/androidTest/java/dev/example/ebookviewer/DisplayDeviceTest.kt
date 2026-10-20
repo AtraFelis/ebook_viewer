@@ -238,6 +238,8 @@ class DisplayDeviceTest {
                 return null
             }
             val slider = find(root) ?: return@await false
+            slider.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id)
+            if (!slider.isVisibleToUser) return@await false
             slider.performAction(
                 AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS.id,
                 Bundle().apply {
@@ -269,6 +271,11 @@ class DisplayDeviceTest {
             val root = instrumentation.uiAutomation.rootInActiveWindow ?: return@await false
             if (root.packageName != instrumentation.targetContext.packageName) return@await false
             root.findAccessibilityNodeInfosByText(text).any {
+                if (it.text == text && !it.isVisibleToUser) {
+                    it.performAction(
+                        AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id
+                    )
+                }
                 it.text == text &&
                     it.isVisibleToUser &&
                     it.isClickable &&

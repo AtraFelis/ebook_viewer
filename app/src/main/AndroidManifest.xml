@@ -10,6 +10,11 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/ReaderLight">
+        <service
+            android:name=".PageTextService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":page_text" />
         <!-- API 23–32 ignore the back opt-in and use the Activity's legacy callback. -->
         <activity
             android:name=".MainActivity"
