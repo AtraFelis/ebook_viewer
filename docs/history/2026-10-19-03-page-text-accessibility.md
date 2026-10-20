@@ -96,3 +96,5 @@ watchdog a67f3f2·접근성 수정 0a95883을 같은 PR 브랜치에 일반 push
 - 최종 단위 XML 합산 **44개/실패·오류 0**, Lint XML **0 errors/0 warnings**, ktlint 통과. 각 별도 실행을 하나의 62개 기본 suite로 표현하지 않는다.
 
 모든 invocation 후 앱/테스트를 멈췄고 전역 글꼴 **1.1**을 확인했다. 여유 메모리는 **2,526,968KiB**로 준비 조건 2GiB 이상이지만 **thermal 3**으로 기준 0~1을 벗어났다. 이 상태에서 성능을 시작하거나 합격선을 낮추지 않고 앱 중지 상태로 냉각을 기다린다. 최종 정상/플링/32배율/복잡 자료 비교·프레임·10분 실제 Activity·TalkBack/가독성 개인 수용·사용자 병합은 미완료다.
+
+냉각 중 재조회는 thermal 2였다. `scripts/run-p2-integration-probe.py --label baseline --mode normal`의 준비 guard가 `Thermal status unavailable or above LIGHT; workload not started`로 종료했다. guard는 APK 설치/표본 수집보다 먼저 실행되므로 기준 앱 설치·측정 JSON은 아직 없다. 사용자에게 화면을 끄고 3~5분 쉬게 한 뒤 잠금 해제를 요청했다. 그동안 앱은 중지 상태이며 반복 테스트는 예약하지 않았다. 변경 Markdown의 로컬 링크 153개도 누락 없이 확인했다. 로드맵은 완료한 본문/자동 접근성 검사와 남은 개인 수용·성능·사용자 병합을 구분해 갱신했다.
