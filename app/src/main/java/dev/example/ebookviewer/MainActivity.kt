@@ -42,6 +42,7 @@ class MainActivity : Activity() {
     )
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
+    private lateinit var homePresentation: ReaderHomeView
     private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
     private lateinit var readingWindow: ReadingWindow
@@ -62,7 +63,6 @@ class MainActivity : Activity() {
     private data class PageTarget(val page: Int, val y: Double? = null)
     private var pendingNavigation: PageTarget? = null
     private var reading = false
-    private lateinit var libraryView: LinearLayout
     private lateinit var homeButton: Button
     private val library get() = (application as ReaderApplication).library
     private val settings get() = (application as ReaderApplication).settings
@@ -101,7 +101,10 @@ class MainActivity : Activity() {
         readingWindow = ReadingWindow(window, !appliedDarkTheme, themeBackground())
         displayWindow = DisplayWindow(window)
         status = TextView(this).apply { setText(R.string.ready) }
-        homeStatus = TextView(this).apply { setText(R.string.ready) }
+        homeStatus = TextView(this).apply {
+            setText(R.string.ready)
+            visibility = View.GONE
+        }
         status.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         homeStatus.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         viewer = PdfCanvasView(this) { worker.request(it) }
@@ -143,7 +146,6 @@ class MainActivity : Activity() {
                     if (readerTools.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             }
         }
-        libraryView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         homeButton = Button(this).apply {
             setText(R.string.document_list)
             setOnClickListener { showLibrary() }
@@ -174,41 +176,21 @@ class MainActivity : Activity() {
                 pickDocument()
             }
         }
-        homeScreen = LinearLayout(this).apply {
-            id = R.id.home_screen
-            orientation = LinearLayout.VERTICAL
-            addView(
-                Button(this@MainActivity).apply {
-                    setText(R.string.open_pdf)
-                    setOnClickListener {
-                        reselectRecord = null
-                        pickDocument()
-                    }
-                }
-            )
-            addView(
-                Button(this@MainActivity).apply {
-                    setText(R.string.sample_pdf)
-                    setOnClickListener { openSample() }
-                }
-            )
-            addView(
-                Button(this@MainActivity).apply {
-                    setText(R.string.settings)
-                    setOnClickListener { showSettings() }
-                }
-            )
-            addView(TextView(this@MainActivity).apply { setText(R.string.reader_gesture_hint) })
-            addView(homeStatus)
-            addView(
-                LinearLayout(this@MainActivity).apply {
-                    addView(retryButton, LinearLayout.LayoutParams(0, -2, 1f))
-                    addView(reselectButton, LinearLayout.LayoutParams(0, -2, 1f))
-                }
-            )
-            // One scrolling home surface keeps actions and records reachable at 200% font size.
-            addView(libraryView)
-        }
+        homePresentation = ReaderHomeView(
+            this,
+            homeStatus,
+            retryButton,
+            reselectButton,
+            onSettings = ::showSettings,
+            onPick = {
+                reselectRecord = null
+                pickDocument()
+            },
+            onSample = { openSample() },
+            onOpen = { openDocument(Uri.parse(it.uri)) },
+            onRemove = ::confirmRemoveRecord
+        )
+        homeScreen = homePresentation.view
         readerTools = LinearLayout(this).apply {
             id = R.id.reader_tools
             orientation = LinearLayout.VERTICAL
@@ -630,55 +612,24 @@ class MainActivity : Activity() {
     private fun refreshLibrary() {
         library.execute({ it.list() }) { result ->
             if (isDestroyed || viewer.visibility == View.VISIBLE) return@execute
-            result.onSuccess { records ->
-                libraryView.removeAllViews()
-                fun section(label: Int, entries: List<ReadingRecord>) {
-                    libraryView.addView(TextView(this).apply { setText(label) })
-                    if (entries.isEmpty()) {
-                        libraryView.addView(TextView(this).apply { setText(R.string.no_documents) })
-                    }
-                    for (record in entries) {
-                        libraryView.addView(
-                            Button(this).apply {
-                                isAllCaps = false
-                                val position = record.position
-                                text = if (position == null) {
-                                    record.title
-                                } else {
-                                    getString(
-                                        R.string.reading_entry,
-                                        record.title,
-                                        position.page + 1,
-                                        record.pageCount
-                                    )
-                                }
-                                setOnClickListener { openDocument(Uri.parse(record.uri)) }
-                                setOnLongClickListener {
-                                    AlertDialog.Builder(this@MainActivity)
-                                        .setMessage(R.string.remove_record_message)
-                                        .setPositiveButton(R.string.remove_record) { _, _ ->
-                                            library.execute({ it.remove(record.uri) }) { removed ->
-                                                if (!isDestroyed) {
-                                                    removed.onSuccess { refreshLibrary() }
-                                                        .onFailure {
-                                                            reportError(R.string.save_error)
-                                                        }
-                                                }
-                                            }
-                                        }
-                                        .setNegativeButton(android.R.string.cancel, null)
-                                        .show()
-                                    true
-                                }
-                            }
-                        )
+            result.onSuccess(homePresentation::render)
+                .onFailure { reportError(R.string.library_error) }
+        }
+    }
+
+    private fun confirmRemoveRecord(record: ReadingRecord) {
+        AlertDialog.Builder(this)
+            .setMessage(R.string.remove_record_message)
+            .setPositiveButton(R.string.remove_record) { _, _ ->
+                library.execute({ it.remove(record.uri) }) { removed ->
+                    if (!isDestroyed) {
+                        removed.onSuccess { refreshLibrary() }
+                            .onFailure { reportError(R.string.save_error) }
                     }
                 }
-                section(R.string.continue_reading, records.filter { it.position != null })
-                section(R.string.recent_documents, records)
-                libraryView.addView(TextView(this).apply { setText(R.string.remove_record_hint) })
-            }.onFailure { reportError(R.string.library_error) }
-        }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun scheduleSave() {
@@ -726,6 +677,11 @@ class MainActivity : Activity() {
     private fun setStatus(message: CharSequence) {
         status.text = message
         homeStatus.text = message
+        homeStatus.visibility = if (message == getString(R.string.ready)) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
     }
 
     private fun setStatus(resource: Int) = setStatus(getString(resource))

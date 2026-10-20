@@ -154,7 +154,9 @@ class LargeFontDeviceTest {
 
     private fun checkControls(root: View, limit: Int = Int.MAX_VALUE) {
         val controls = ui.onMain {
-            ui.views(root).filter { it.isShown && (it is Button || it is EditText) }.take(limit)
+            ui.views(root).filter {
+                it.isShown && (it is Button || it is EditText || it.id == R.id.home_record)
+            }.take(limit)
         }
         assertTrue("No actionable controls", controls.isNotEmpty())
         for (control in controls) reveal(control)

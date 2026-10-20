@@ -154,13 +154,16 @@ class LibraryDeviceTest {
 
     private fun selectRecent(activity: Activity, title: String) {
         ui.await("Saved document not shown in list") {
-            ui.views(activity.window.decorView).filterIsInstance<Button>().any {
-                it.text.startsWith(title)
+            ui.views(activity.window.decorView).any {
+                it.id == R.id.home_record && it.contentDescription?.startsWith(title) == true
             }
         }
         instrumentation.runOnMainSync {
-            ui.views(activity.window.decorView).filterIsInstance<Button>()
-                .first { it.text.startsWith(title) }.performClick()
+            ui.views(activity.window.decorView)
+                .first {
+                    it.id == R.id.home_record && it.contentDescription?.startsWith(title) == true
+                }
+                .performClick()
         }
     }
 

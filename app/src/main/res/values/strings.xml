@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="my_documents">내 문서</string>
+    <string name="last_read_document">마지막으로 읽던 문서</string>
+    <string name="manage_documents">문서 관리</string>
+    <string name="finish_managing">관리 마침</string>
+    <string name="resume_document">%1$s 이어 읽기</string>
+    <string name="remove_document_record">%1$s 기록에서 삭제</string>
+    <string name="document_metadata">%1$d / %2$d페이지 · %3$s</string>
+    <string name="home_welcome">읽기를 시작해 볼까요?</string>
+    <string name="home_local_description">기기의 PDF를 열어 보세요. 읽던 위치는 이 기기에 저장돼요.</string>
     <string name="read_page_text">현재 페이지 본문 읽기</string>
     <string name="choose_page_text">페이지 선택</string>
     <string name="reading_tools_action">읽기 도구 열기 또는 닫기</string>
@@ -29,8 +38,8 @@
     <string name="document_ready">준비된 %1$d페이지 · 핀치 확대 / 자유 이동</string>
     <string name="viewer_description">연속 PDF 읽기 영역</string>
     <string name="document_list">문서 목록</string>
-    <string name="continue_reading">읽던 Ebook · 이어 읽기</string>
-    <string name="recent_documents">최근 읽은 PDF</string>
+    <string name="continue_reading">이어 읽기</string>
+    <string name="recent_documents">최근 문서</string>
     <string name="no_documents">아직 읽은 문서가 없습니다.</string>
     <string name="untitled_pdf">PDF 문서</string>
     <string name="reading_entry">%1$s · %2$d / %3$d페이지</string>

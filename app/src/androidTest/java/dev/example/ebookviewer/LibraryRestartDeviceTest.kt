@@ -2,7 +2,6 @@ package dev.example.ebookviewer
 
 import android.net.Uri
 import android.os.Process
-import android.widget.Button
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -56,13 +55,17 @@ class LibraryRestartDeviceTest {
                     expectedFile.inputStream().use(ReadingRecordsCodec::read).single()
                 val expected = requireNotNull(expectedRecord.position)
                 ui.await("Restarted library entry missing") {
-                    ui.views(activity.window.decorView).filterIsInstance<Button>().any {
-                        it.text.startsWith(pdf.name)
+                    ui.views(activity.window.decorView).any {
+                        it.id == R.id.home_record &&
+                            it.contentDescription?.startsWith(pdf.name) == true
                     }
                 }
                 instrumentation.runOnMainSync {
-                    ui.views(activity.window.decorView).filterIsInstance<Button>()
-                        .first { it.text.startsWith(pdf.name) }.performClick()
+                    ui.views(activity.window.decorView)
+                        .first {
+                            it.id == R.id.home_record &&
+                                it.contentDescription?.startsWith(pdf.name) == true
+                        }.performClick()
                 }
                 val view = ui.awaitReady(activity)
                 val restored = ui.onMain {
