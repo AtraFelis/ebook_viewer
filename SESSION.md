@@ -2,7 +2,31 @@
 
 최종 갱신: 2026-10-20 (Asia/Seoul)
 
-## 현재 진행 — P2 완료 문서
+## 현재 진행 — 디자인 홈·입력/설정 적용
+
+최신 리뷰: head `7a0d05c`의 실제 CodeRabbit 리뷰5584970664가 완료됐다(19개 파일 선택·유사 파일4개 건너뜀·지적1개). [페이지 입력의 중복 제목 지적](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324914603)을 채택해 본문의 굵은 ‘페이지 이동’ 라벨만 제거했다. 공통 제목/본문 읽기의 동적 ‘페이지 선택’ 제목·범위 안내·입력/이동 로직은 유지한다. strict 앱·계측 빌드/Lint/ktlint를 34초에 통과했다. 표시 한 줄 삭제여서 단위/기기/성능 검사와 ADB 시작은 반복하지 않았다. 작은 수정이고 포함 리뷰 잔여도0이라 추가 수동 호출은 하지 않는다. 새 수정 head의 원격 CI는 별도 확인 대상이다.
+
+게시 상태: head `7a0d05c`를 push한 뒤 PR #19의 **isDraft=false / OPEN**을 확인했다. [Android CI 39421706642](https://github.com/AtraFelis/ebook_viewer/actions/runs/39421706642)는 **SUCCESS**다. 자동 CodeRabbit는 별10개 미만 기준으로 건너뛰었고, 구현·검증·사용자 수용을 마친 head에만 [수동 요청6290753082](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6290753082)을 한 번 등록했다. 봇 응답6290755075의 Review triggered/PENDING 뒤 실제 완료 결과를 위에 반영했다. 진행 중에는 이 기록을 로컬에 유지했으며 리뷰 완료 후 수정과 함께 게시한다. 병합은 사용자가 한다.
+
+후속 게시: 자동 승인 검토의 사용량 한도로 실행되지 않았던 커밋을 사용자 재개 후 정상 수행했다. 구현 `b17412d`를 같은 PR #19 브랜치에 일반 push했고 [답변4324848346](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324848346)에 수정/검증을 남긴 뒤 기존 primary 색상 스레드의 resolved=true를 확인했다. PR 제목·설명도 홈·설정·입력까지로 갱신했다. 최종 게시 기록을 모아 push한 후 정식 PR로 전환하며, 새 UI 소스의 원격 CI/실제 후속 리뷰는 이전 head의 성공과 구분한다. 추가 수동 리뷰 호출/병합은 하지 않았다.
+
+사용자가 Figma 디자인 적용을 선택했고 `docs/design.md`를 읽고 계획 후 구현하도록 지시했다. Figma MCP는 한도 때문에 사용하지 않는다. Chrome에서 홈/읽기/도구 시안을 직접 확인했고 [적용 계획](docs/plan/design-implementation.md)에 5단계와 단계별 수용 기준을 기록했다. 사용자 디자인 커밋 `ea91122`를 보존한 `codex/design-foundation`에서 origin/main `8d0731b`를 일반 merge했다. PR #18은 사용자 병합 완료이며 **P2는 종료**했다. 아래 P2 진행 문구는 이전 단계의 기록이다.
+
+이번 구현은 light/dark 공통 토큰·홈 카드/기록 관리와 전체 화면 입력·설정 폼이다. 방향·배경색·테마/밝기·문서 배치·페이지 이동·북마크·본문 창에 공통 UI와 스크롤/적응형 하단 조작을 적용했다. SAF/기록 삭제 확인/실제 저장 결과·전체 기록·합성 문서 진입을 유지한다. `docs/design.md`와 디자인 worktree는 수정하지 않는다. 엔진/캐시/저장 형식/런타임 의존성 변경은 없다. 읽기 도구/슬라이더/첫 안내/실패 초안 복구는 다음 단계다.
+
+현재 PC strict 앱/계측 빌드·단위44개/실패0·Lint 오류/경고0·ktlint를 통과했고, 사용자 USB 재연결 후 같은 APK의 관련 기기 **17개/실패0**(display4/font1/navigation4/layout3/immersive5)을 통과했다. font 검사는 100/150/200%×가로/세로와 본문 창을 포함한다. 설치 APK SHA-256 `f51341ea8910a6187c5d882103b8f5032c3c70ae8bede2f071d977bc29eadc2f` 일치와 종료 후 글꼴1.1을 확인했고 앱/계측·ADB를 모두 중지했다(ADB 프로세스0). 사용자는 실제 홈/이어 읽기·새 UI·키보드/오류/적용 버튼 가림과 편의성 확인에 **“모두 정상이고 화면도 괜찮아요”**라고 수용했다. 추가 성능/전체59개 반복은 하지 않았다. 새 TalkBack 음성/최소폭320dp/전체 시안 일치는 아직 별도다.
+
+사용자는 CodeRabbit의 Draft 호출 금지 지시를 정정해 **Draft에서도 필요하면 호출할 수 있으나 구현·검증이 어느 정도 끝난 시점에만 요청하고 잦은 호출을 피하도록** 했다. 최종 규칙을 AGENTS/Git 규칙/계획에 반영했다. 실제 리뷰5582891368은 head2234180의20개 파일/지적1건이었다. 기본 테마 primary 텍스트의 비활성 상태 색상 지적을 타당하다고 판단해 전용 light/dark 선택자로 고쳤고 secondary/Alert 테마는 확대 수정하지 않았다. 새 호출 없이 수정·UI 변경을 함께 검증했다. [구현·리뷰·실제 검사](docs/history/2026-10-20-03-design-settings-and-review.md)를 따른다.
+
+초기 홈 단계에서는 strict 앱/계측 빌드·단위44개·Lint/ktlint만 완료했고 기기 수용은 미실행이었다. USB 분리 요청으로 ADB를 종료한 뒤 후속 사용자 재연결 승인 전까지 시작하지 않았다. 이후 실제 검증·현재 수용은 위 결과로 갱신한다. [초기 명령·미결](docs/history/2026-10-20-02-design-foundation.md)을 보존한다.
+
+구현 `6541ee5`를 일반 push해 [Draft PR #19](https://github.com/AtraFelis/ebook_viewer/pull/19)를 등록/채팅 첨부했다. push/PR Android CI는 실제 실행 중이다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286630224) 한 번에 봇이 [Review triggered](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286632250)로 응답했다. 최초 자동 Draft 건너뜀과 수동 접수를 구분하며 실제 리뷰 완료는 아직 확인하지 않았다. 후속 읽기 설정 `30:219`/표시 설정 `31:371` 시안도 브라우저에서 시각 확인했다. 기기 검증 전 Draft를 유지하며 병합하지 않는다.
+
+### PR #19 앞선 접수 기록 — 2026-10-20
+
+head `2234180`의 [Android CI 39392685917](https://github.com/AtraFelis/ebook_viewer/actions/runs/39392685917)은 성공했다. 실제 코드 리뷰는 아직 없다. 앞선 수동 응답 `6286632250`은 최종적으로 **Action not completed / Head commit changed**로 바뀌었다. 구현 뒤 문서 push가 기존 요청의 head를 바꿨으므로 그 요청의 접수 이력을 리뷰 완료로 세지 않는다. 최신 head에 [재요청 6287191310](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6287191310)을 한 번 등록했고 봇 응답6287193160의 Review triggered를 확인했다. 리뷰 중 head를 다시 바꾸지 않도록 이번 상태 문서는 로컬에 먼저 기록하고 결과 확인 후 모아 게시한다. 다음 구현은 입력·설정 화면, 홈 실제 기기 수용은 별도로 남아 있다.
+
+## 이전 진행 — P2 완료 문서
 
 2026-10-20 사용자 최종 수용 “모두 정상이에요”와 PR #17 사용자 병합을 확인했다. main은 **68ced37**이며 최종 앱/test/host CI·실제 CodeRabbit 리뷰까지 완료했다. 사용자 Figma 변경을 백업/해시 대조·복구용 stash 보존 후 현재 체크아웃에서 main을 ff-only 동기화하고 `codex/p2-completion`으로 완료 문서를 정리한다. [최종 판정·검증·한계](docs/history/2026-10-20-01-p2-completion.md)를 따른다. 기능 개발/검사/개인 수용과 기능 PR 병합은 완료했고 [완료 문서 PR #18](https://github.com/AtraFelis/ebook_viewer/pull/18)을 등록/채팅 첨부했다. 문서 링크162개/누락0·공백/앱 소스 불변을 확인했다. 새 Android CI는 Markdown 전용 제외로 미실행이며 수동 CodeRabbit는 포함 리뷰 한도로 실제 문서 검토 미실행이다. 앱 코드는 PR #17에서 실제 리뷰/CI를 완료했다. 문서 PR 병합 확인 후 P2 종료를 확정하며 이번 변경은 Markdown뿐이고 기기 조작/검사 반복은 없다.
 
@@ -80,6 +104,12 @@ View의 실제 onDraw 가시 면적 95% 선명화와 전달된 타일의 큐/페
 fetch 후 main `0aea06e`와 origin/main 차이 0, PR #10 사용자 병합과 PR #9/#10 실제 리뷰 제출 없음 확인. 기존 디자인 변경(SESSION/CHECKLIST 및 history 01/02)을 보존했다. 이번에는 문서만 갱신하며 앱 구현/빌드/설치/성능 측정은 하지 않았다. [실제 확인·미결 이력](docs/history/2026-10-18-03-p2-planning.md).
 
 착수 계획 당시에는 API 33/SDK 확장·엔진 지원 경로, 구체적인 구성안/승인·ADR, 합성 샘플과 기준 측정/합격선을 준비하는 단계였다. 당시 Context7/공식 API·SDK 35 서명 대조는 API 33 실행 증거가 아니었고 승인 기기 0대여서 확장/실행은 미확인이었다. 이후 실제 연결/실행은 위 ‘P2 착수 실행’ 결과를 따른다. 새 엔진/라이브러리는 도입하지 않았다. 기능 전체·최종 통합 검증·개인 기기 수용·사용자 PR 병합·완료 기록이 끝나야 P2를 종료하며 종료일은 준비 단계 뒤 근거와 함께 제시한다.
+
+## UI/UX 디자인 초안 — 2026-10-18
+
+사용자 요청으로 송채선 팀에 [Ebook Viewer — UI UX Design](https://www.figma.com/design/wFQ8qOUx3YfMy8u0E3t7fM)을 생성했다. 차분한 도구형 톤과 이어 읽기 중심 추천안/플로우를 사용자가 승인한 뒤, 변수 39개·텍스트 스타일 6개·컴포넌트 8종/25변형과 21개 화면·상태 초안을 작성했다. 마지막 버튼 예시 문구와 설정 토글/첫 안내/로딩 화면을 보정·시각 확인했다. [화면 명세와 검증 이력](docs/history/2026-10-18-02-design-draft.md).
+
+편집 가능한 정적 시안이며 사용자 최종 디자인 수용, 클릭 연결 프로토타입, Ready for dev 표시는 미완료다. 앱 코드/의존성과 P2 구현은 변경하지 않았다. 다음은 사용자 시안 검토 결과를 반영한 뒤 구현 범위를 정하는 것이다. [준비 당시 근거](docs/history/2026-10-18-01-design-preparation.md)는 과거 상태로 보존한다.
 
 ## 현재 상태
 

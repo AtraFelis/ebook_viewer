@@ -17,11 +17,13 @@ import android.provider.OpenableColumns
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
+import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import java.io.File
@@ -42,6 +44,7 @@ class MainActivity : Activity() {
     )
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
+    private lateinit var homePresentation: ReaderHomeView
     private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
     private lateinit var readingWindow: ReadingWindow
@@ -62,7 +65,6 @@ class MainActivity : Activity() {
     private data class PageTarget(val page: Int, val y: Double? = null)
     private var pendingNavigation: PageTarget? = null
     private var reading = false
-    private lateinit var libraryView: LinearLayout
     private lateinit var homeButton: Button
     private val library get() = (application as ReaderApplication).library
     private val settings get() = (application as ReaderApplication).settings
@@ -101,7 +103,10 @@ class MainActivity : Activity() {
         readingWindow = ReadingWindow(window, !appliedDarkTheme, themeBackground())
         displayWindow = DisplayWindow(window)
         status = TextView(this).apply { setText(R.string.ready) }
-        homeStatus = TextView(this).apply { setText(R.string.ready) }
+        homeStatus = TextView(this).apply {
+            setText(R.string.ready)
+            visibility = View.GONE
+        }
         status.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         homeStatus.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         viewer = PdfCanvasView(this) { worker.request(it) }
@@ -143,7 +148,6 @@ class MainActivity : Activity() {
                     if (readerTools.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             }
         }
-        libraryView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         homeButton = Button(this).apply {
             setText(R.string.document_list)
             setOnClickListener { showLibrary() }
@@ -174,41 +178,21 @@ class MainActivity : Activity() {
                 pickDocument()
             }
         }
-        homeScreen = LinearLayout(this).apply {
-            id = R.id.home_screen
-            orientation = LinearLayout.VERTICAL
-            addView(
-                Button(this@MainActivity).apply {
-                    setText(R.string.open_pdf)
-                    setOnClickListener {
-                        reselectRecord = null
-                        pickDocument()
-                    }
-                }
-            )
-            addView(
-                Button(this@MainActivity).apply {
-                    setText(R.string.sample_pdf)
-                    setOnClickListener { openSample() }
-                }
-            )
-            addView(
-                Button(this@MainActivity).apply {
-                    setText(R.string.settings)
-                    setOnClickListener { showSettings() }
-                }
-            )
-            addView(TextView(this@MainActivity).apply { setText(R.string.reader_gesture_hint) })
-            addView(homeStatus)
-            addView(
-                LinearLayout(this@MainActivity).apply {
-                    addView(retryButton, LinearLayout.LayoutParams(0, -2, 1f))
-                    addView(reselectButton, LinearLayout.LayoutParams(0, -2, 1f))
-                }
-            )
-            // One scrolling home surface keeps actions and records reachable at 200% font size.
-            addView(libraryView)
-        }
+        homePresentation = ReaderHomeView(
+            this,
+            homeStatus,
+            retryButton,
+            reselectButton,
+            onSettings = ::showSettings,
+            onPick = {
+                reselectRecord = null
+                pickDocument()
+            },
+            onSample = { openSample() },
+            onOpen = { openDocument(Uri.parse(it.uri)) },
+            onRemove = ::confirmRemoveRecord
+        )
+        homeScreen = homePresentation.view
         readerTools = LinearLayout(this).apply {
             id = R.id.reader_tools
             orientation = LinearLayout.VERTICAL
@@ -630,55 +614,24 @@ class MainActivity : Activity() {
     private fun refreshLibrary() {
         library.execute({ it.list() }) { result ->
             if (isDestroyed || viewer.visibility == View.VISIBLE) return@execute
-            result.onSuccess { records ->
-                libraryView.removeAllViews()
-                fun section(label: Int, entries: List<ReadingRecord>) {
-                    libraryView.addView(TextView(this).apply { setText(label) })
-                    if (entries.isEmpty()) {
-                        libraryView.addView(TextView(this).apply { setText(R.string.no_documents) })
-                    }
-                    for (record in entries) {
-                        libraryView.addView(
-                            Button(this).apply {
-                                isAllCaps = false
-                                val position = record.position
-                                text = if (position == null) {
-                                    record.title
-                                } else {
-                                    getString(
-                                        R.string.reading_entry,
-                                        record.title,
-                                        position.page + 1,
-                                        record.pageCount
-                                    )
-                                }
-                                setOnClickListener { openDocument(Uri.parse(record.uri)) }
-                                setOnLongClickListener {
-                                    AlertDialog.Builder(this@MainActivity)
-                                        .setMessage(R.string.remove_record_message)
-                                        .setPositiveButton(R.string.remove_record) { _, _ ->
-                                            library.execute({ it.remove(record.uri) }) { removed ->
-                                                if (!isDestroyed) {
-                                                    removed.onSuccess { refreshLibrary() }
-                                                        .onFailure {
-                                                            reportError(R.string.save_error)
-                                                        }
-                                                }
-                                            }
-                                        }
-                                        .setNegativeButton(android.R.string.cancel, null)
-                                        .show()
-                                    true
-                                }
-                            }
-                        )
+            result.onSuccess(homePresentation::render)
+                .onFailure { reportError(R.string.library_error) }
+        }
+    }
+
+    private fun confirmRemoveRecord(record: ReadingRecord) {
+        AlertDialog.Builder(this)
+            .setMessage(R.string.remove_record_message)
+            .setPositiveButton(R.string.remove_record) { _, _ ->
+                library.execute({ it.remove(record.uri) }) { removed ->
+                    if (!isDestroyed) {
+                        removed.onSuccess { refreshLibrary() }
+                            .onFailure { reportError(R.string.save_error) }
                     }
                 }
-                section(R.string.continue_reading, records.filter { it.position != null })
-                section(R.string.recent_documents, records)
-                libraryView.addView(TextView(this).apply { setText(R.string.remove_record_hint) })
-            }.onFailure { reportError(R.string.library_error) }
-        }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun scheduleSave() {
@@ -726,6 +679,11 @@ class MainActivity : Activity() {
     private fun setStatus(message: CharSequence) {
         status.text = message
         homeStatus.text = message
+        homeStatus.visibility = if (message == getString(R.string.ready)) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
     }
 
     private fun setStatus(resource: Int) = setStatus(getString(resource))
@@ -763,25 +721,25 @@ class MainActivity : Activity() {
         val page = selectedPage ?: viewer.pageForTextReading() ?: return
         if (page !in 0 until expectedPages) return
         val generation = opening
-        val content = TextView(this).apply {
+        val content = ReaderStyle(this).label(R.string.page_text_loading).apply {
             id = R.id.page_text_content
             setText(R.string.page_text_loading)
-            val padding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
             isFocusable = true
         }
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.page_text_title, page + 1))
-            .setView(ScrollView(this).apply { addView(content) })
-            .setNeutralButton(R.string.choose_page_text) { _, _ ->
+        val dialog = readerFormDialog(
+            R.string.read_page_text,
+            readerFormBody(content),
+            negative = R.string.close_settings,
+            neutral = R.string.choose_page_text,
+            onNeutral = {
                 closePageText()
                 val picker = pageJumpDialog(page, expectedPages) { showPageText(it) }
                 picker.setTitle(R.string.choose_page_text)
                 trackNavigationDialog(picker)
             }
-            .setNegativeButton(R.string.close_settings, null)
-            .create()
+        )
+        dialog.setTitle(getString(R.string.page_text_title, page + 1))
         pageTextDialog = dialog
         dialog.setOnDismissListener {
             if (pageTextDialog === dialog) {
@@ -862,9 +820,31 @@ class MainActivity : Activity() {
             if (isDestroyed || generation != opening || navigationDialog != null) return@execute
             result.onSuccess { entries ->
                 val labels = entries.map { getString(R.string.bookmark_page, it.page + 1) }
-                val builder = AlertDialog.Builder(this)
-                    .setTitle(R.string.bookmarks)
-                    .setPositiveButton(R.string.add_bookmark) { _, _ ->
+                val style = ReaderStyle(this)
+                val list = ListView(this).apply {
+                    addFooterView(
+                        style.label(R.string.bookmark_delete_hint, 12f).apply {
+                            setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
+                            setTextColor(style.secondary)
+                        },
+                        null,
+                        false
+                    )
+                    adapter = readerListAdapter(labels)
+                    divider = null
+                }
+                val body = if (entries.isEmpty()) {
+                    readerFormBody(style.label(R.string.no_bookmarks))
+                } else {
+                    list
+                }
+                val dialog = readerFormDialog(
+                    R.string.bookmarks,
+                    body,
+                    positive = R.string.add_bookmark,
+                    negative = R.string.close_settings,
+                    scrollContent = entries.isEmpty(),
+                    onConfirm = { selectedDialog ->
                         bookmarks.execute({
                             it.put(Bookmark(record.uri, position.page, position.y))
                         }) { saved ->
@@ -878,21 +858,17 @@ class MainActivity : Activity() {
                                 }.onFailure { reportError(R.string.bookmarks_error) }
                             }
                         }
+                        selectedDialog.dismiss()
                     }
-                    .setNegativeButton(R.string.close_settings, null)
-                if (entries.isEmpty()) {
-                    builder.setMessage(R.string.no_bookmarks)
-                } else {
-                    builder.setItems(labels.toTypedArray()) { _, index ->
-                        val entry = entries[index]
-                        requestPage(entry.page, entry.y)
-                    }
-                    builder.setView(TextView(this).apply { setText(R.string.bookmark_delete_hint) })
+                )
+                list.setOnItemClickListener { _, _, index, _ ->
+                    val entry = entries.getOrNull(index) ?: return@setOnItemClickListener
+                    dialog.dismiss()
+                    requestPage(entry.page, entry.y)
                 }
-                val dialog = builder.create()
                 trackNavigationDialog(dialog)
-                dialog.listView?.setOnItemLongClickListener { _, _, index, _ ->
-                    val entry = entries[index]
+                list.setOnItemLongClickListener { _, _, index, _ ->
+                    val entry = entries.getOrNull(index) ?: return@setOnItemLongClickListener false
                     dialog.dismiss()
                     val confirmation = AlertDialog.Builder(this)
                         .setMessage(getString(R.string.delete_bookmark_message, entry.page + 1))
@@ -914,11 +890,11 @@ class MainActivity : Activity() {
 
     private fun showSettings() {
         if (settingsDialog != null) return
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.reader_settings_title)
-            .setView(ScrollView(this).apply { addView(settingsControls()) })
-            .setNegativeButton(R.string.close_settings, null)
-            .create()
+        val dialog = readerFormDialog(
+            R.string.reader_settings_title,
+            settingsControls(),
+            negative = R.string.close_settings
+        )
         settingsDialog = dialog
         dialog.setOnDismissListener {
             settingsDialog = null
@@ -940,22 +916,30 @@ class MainActivity : Activity() {
                         getString(R.string.orientation_reverse_portrait),
                         getString(R.string.orientation_reverse_landscape)
                     )
-                val dialog = AlertDialog.Builder(this)
-                    .setTitle(R.string.orientation_settings)
-                    .setSingleChoiceItems(labels, mode.ordinal) { selectedDialog, index ->
-                        selectedDialog.dismiss()
-                        val selected = OrientationMode.entries[index]
-                        settings.save(selected) { saved ->
-                            if (isDestroyed) return@save
-                            saved.onSuccess {
-                                saveReading()
-                                hideTools()
-                                applyOrientation(it)
-                            }.onFailure { reportError(R.string.settings_error) }
-                        }
+                val list = ListView(this).apply {
+                    choiceMode = ListView.CHOICE_MODE_SINGLE
+                    adapter = readerListAdapter(labels.toList(), singleChoice = true)
+                    setItemChecked(mode.ordinal, true)
+                    divider = null
+                }
+                val dialog = readerFormDialog(
+                    R.string.orientation_settings,
+                    list,
+                    negative = R.string.close_settings,
+                    scrollContent = false
+                )
+                list.setOnItemClickListener { _, _, index, _ ->
+                    dialog.dismiss()
+                    val selected = OrientationMode.entries[index]
+                    settings.save(selected) { saved ->
+                        if (isDestroyed) return@save
+                        saved.onSuccess {
+                            saveReading()
+                            hideTools()
+                            applyOrientation(it)
+                        }.onFailure { reportError(R.string.settings_error) }
                     }
-                    .setNegativeButton(R.string.close_settings, null)
-                    .create()
+                }
                 settingsDialog = dialog
                 dialog.setOnDismissListener {
                     settingsDialog = null
@@ -988,6 +972,7 @@ class MainActivity : Activity() {
     }
 
     private fun settingsControls(): LinearLayout {
+        val style = ReaderStyle(this)
         val orientationButton = Button(this).apply {
             setText(R.string.orientation_settings)
             setOnClickListener {
@@ -1028,9 +1013,10 @@ class MainActivity : Activity() {
             }
         }
         var binding = false
-        val checkbox = CheckBox(this).apply {
+        val checkbox = Switch(this).apply {
             setText(R.string.show_page_numbers)
             isChecked = pageNumbersVisible
+            style.styleChoice(this)
             setOnCheckedChangeListener { _, checked ->
                 if (!binding) {
                     isEnabled = false
@@ -1050,15 +1036,47 @@ class MainActivity : Activity() {
                 }
             }
         }
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(displayButton)
-            addView(orientationButton)
-            addView(backgroundButton)
-            addView(checkbox)
-            addView(layoutButton)
-        }
+        listOf(orientationButton, displayButton, layoutButton, backgroundButton)
+            .forEach(style::styleSettingButton)
+        return readerFormBody(
+            style.label(R.string.reading_environment, 14f).apply { setTextColor(style.secondary) },
+            orientationButton,
+            backgroundButton,
+            checkbox,
+            displayButton,
+            style.label(R.string.current_document, 14f).apply { setTextColor(style.secondary) },
+            layoutButton,
+            style.label(R.string.document_settings_hint, 12f).apply {
+                setTextColor(style.secondary)
+            }
+        )
     }
+
+    private fun readerListAdapter(labels: List<String>, singleChoice: Boolean = false) =
+        object : ArrayAdapter<String>(
+            this,
+            if (singleChoice) {
+                android.R.layout.simple_list_item_single_choice
+            } else {
+                android.R.layout.simple_list_item_1
+            },
+            labels
+        ) {
+            override fun getView(
+                position: Int,
+                convertView: View?,
+                parent: android.view.ViewGroup
+            ): View = super.getView(position, convertView, parent).apply {
+                val style = ReaderStyle(this@MainActivity)
+                minimumHeight = style.dp(64)
+                setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
+                (this as TextView).apply {
+                    textSize = 16f
+                    setTextColor(style.text)
+                    isSingleLine = false
+                }
+            }
+        }
 
     private fun dismissSettingsForNextDialog() {
         // Dialog dismiss callbacks are posted. An old callback must not clear the new owner.

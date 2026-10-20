@@ -5,28 +5,28 @@ import android.app.AlertDialog
 import android.text.InputFilter
 import android.text.InputType
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
-import android.widget.ScrollView
-import android.widget.TextView
 import java.util.Locale
 
 fun Activity.pageLayoutDialog(
     current: PageLayoutSettings,
     apply: (PageLayoutSettings) -> Unit
 ): AlertDialog {
+    val style = ReaderStyle(this)
     val choices = RadioGroup(this).apply {
         addView(
             RadioButton(this@pageLayoutDialog).apply {
                 id = R.id.original_page_size
                 setText(R.string.original_page_size)
+                style.styleChoice(this)
             }
         )
         addView(
             RadioButton(this@pageLayoutDialog).apply {
                 id = R.id.uniform_page_width
                 setText(R.string.uniform_page_width)
+                style.styleChoice(this)
             }
         )
         check(
@@ -45,22 +45,18 @@ fun Activity.pageLayoutDialog(
         hint = getString(R.string.page_gap_hint)
         contentDescription = hint
         setText(String.format(Locale.ROOT, "%d", current.gap))
+        style.styleInput(this)
     }
-    val content = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(TextView(this@pageLayoutDialog).apply { setText(R.string.page_layout_description) })
-        addView(choices)
-        addView(TextView(this@pageLayoutDialog).apply { setText(R.string.page_gap_hint) })
-        addView(input)
-    }
-    val dialog = AlertDialog.Builder(this)
-        .setTitle(R.string.page_layout_settings)
-        .setView(ScrollView(this).apply { addView(content) })
-        .setPositiveButton(R.string.apply_settings, null)
-        .setNegativeButton(android.R.string.cancel, null)
-        .create()
-    dialog.setOnShowListener {
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+    return readerFormDialog(
+        R.string.page_layout_settings,
+        readerFormBody(
+            style.label(R.string.page_layout_description),
+            choices,
+            style.label(R.string.page_gap_hint, 14f),
+            input
+        ),
+        positive = R.string.apply_settings,
+        onConfirm = { dialog ->
             val gap = input.text.toString().toIntOrNull()
             if (gap == null || gap !in 0..72) {
                 input.error = getString(R.string.page_gap_hint)
@@ -74,6 +70,5 @@ fun Activity.pageLayoutDialog(
                 dialog.dismiss()
             }
         }
-    }
-    return dialog
+    )
 }

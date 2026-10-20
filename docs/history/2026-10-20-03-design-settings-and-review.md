@@ -1,0 +1,69 @@
+# 디자인 입력·설정 화면과 첫 리뷰 수정
+
+2026-10-20. 현재 `codex/design-foundation`/Draft PR #19에서 공통 스타일·홈에 이어 입력·설정 화면을 적용한다. 사용자 요청으로 이번 두 표현 단계를 같은 Draft에 묶고 읽기 도구/페이지 슬라이더는 후속으로 남긴다. [적용 계획](../plan/design-implementation.md)과 원본 `docs/design.md`를 따른다. 디자인 명세와 사용자 디자인 worktree는 변경하지 않는다.
+
+## CodeRabbit 호출 시점과 실제 리뷰
+
+사용자는 처음 Draft 호출을 제외하라고 했다가, Draft에서도 동작함을 확인하고 **작업·검증이 어느 정도 끝난 시점에만 호출하며 너무 잦은 요청을 하지 않는 것**으로 정정했다. create-rule 스킬의 간결한 지속 규칙 작성 지침을 참고해 기존 canonical AGENTS/Git 규칙에 최종 지시를 통합했다. 별도 중복 규칙 파일은 만들지 않았다. Draft 호출 금지가 최종 규칙인 것은 아니다. PR 생성/작은 수정/상태 기록 push마다 요청하지 않고 관련 변경을 모아 검증한 최신 head에서 필요할 때 요청한다.
+
+PR #19의 실제 리뷰5582891368은 base `8d0731b` → head `2234180`의 20개 파일을 검토하고 지적 **1개**를 게시했다. 최초 head 변경 중단과 이후 수동 재요청의 실제 완료를 구분한다. [지적4323208215](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4323208215)은 Activity 기본 테마 `textColorPrimary`의 단색 때문에 일부 비활성 컨트롤의 글자가 활성 색상으로 남을 수 있다는 내용이다.
+
+현재 ReaderLightBase/ReaderDarkBase, raw 버튼·저장 중 비활성 설정 컨트롤과 자체 ColorStateList가 있는 홈 버튼을 대조해 타당하다고 판단했다. light/dark 전용 primary ColorStateList를 추가하고 기본 테마 두 곳에만 연결했다. 보조 글자색과 ReaderAlert*Base는 확대 수정하지 않았다. 봇이 제안한 별도 CLI/Autofix는 실행하지 않았다. 수동 재요청은 이번 작업에서 추가하지 않는다. 당시 포함 리뷰가 시간당1개/잔여0이라는 봇 안내도 확인했으며 의미 있는 변경을 모아 검증하는 사용자 지시를 우선한다.
+
+## UI 구현
+
+- 기존 Activity/View와 시스템 글꼴을 유지하고 새 의존성 없이 전체 화면 폼 Window를 추가했다. 제목/스크롤 내용/하단 적용·취소 영역을 분리해 원래 PDF View 크기와 줌을 변경하지 않는다.
+- 하단 버튼의 실제 글자 너비가 가용 너비를 넘으면 세로로 배치한다. 키보드/좁고 짧은 화면에서 본문 높이가 부족하면 폼의 하단 조작도 스크롤 흐름에 포함한다. 폼에서 system bar/cutout/IME inset을 처리한다. 실제 글꼴/키보드 검증 결과와 구분한다.
+- 선택 카드, 포커스 경계가 있는 입력칸, 테마/시스템 밝기/화면 유지/자동 배경색/번호 표시의 플랫폼 토글을 적용했다. 배경색 프리셋은 좁은 화면의 큰 글꼴을 위해 2열로 배치한다.
+- 읽기 설정을 모든 문서/현재 문서 그룹으로 나누고 문서가 없을 때 문서별 설정 비활성을 유지했다. 방향 다섯 가지의 선택 즉시 저장, 숫자 페이지 범위/간격/색상 검증, 취소, 북마크 추가/삭제 확인과 실제 저장 결과 처리도 유지한다.
+- 본문 창의 현재 페이지 제목·페이지 선택·텍스트 지우기/취소와 별도 처리 프로세스는 유지한다. 검색/선택·복사/목차/비밀번호 기능을 추가하지 않는다. 표시 설정 저장 실패 시 초안 재시도는 계획의 후속 단계이며 이번 적용만으로 구현 완료라 하지 않는다.
+
+## PC 검사
+
+PowerShell의 `. ./scripts/android-env.ps1` 후 strict 앱/계측 빌드·단위·Lint·ktlint를 실행했다. 초기 줄바꿈/들여쓰기 오류를 수동 수정했고 ktlintFormat은 실행하지 않았다. nullable CharSequence의 잘못된 orEmpty 호출을 수정했다. Lint가 API29 공개 `isLightTheme` 속성을 지적해 경고를 억제하지 않고 앱이 소유하는 boolean 테마 속성으로 바꿨다. 이후 동일 필수 명령은 **BUILD SUCCESSFUL(9초)**이었다. 최종 XML 결과/기기 결과는 아래 후속 기록으로 확정한다.
+
+```powershell
+./gradlew.bat --dependency-verification strict :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug ktlintCheck
+```
+
+## 기기 검증 진행
+
+사용자가 USB 재연결·잠금 해제를 알린 뒤에만 ADB를 다시 실행했다. 개인 문서/로그/화면을 수집하지 않고 공개 합성 자료의 기존 관련 검사를 우선 사용한다. 로컬 전용 host 래퍼는 설치별300초, 계측 자체180초/host210초 상한과 finally 앱/계측 종료를 적용한다. 처음 연결 목록의 PowerShell 파싱 오류로 설치 전 중단됐고, 별도 상태 확인에서 연결 device 1개를 확인해 수정했다. 권한/기기 문제로 단정하지 않았다.
+
+debug 앱·계측 APK를 `install --no-streaming -r -t`로 데이터 보존 설치했고 각각 Success를 확인했다. API33의 승인/잠금 해제 상태에서 동일 APK로 표시 설정 관련 검사를 시작했다. 결과가 확정되기 전 성공으로 표시하지 않는다. 성능 20그룹/장시간 실험은 이번 UI 변경으로 반복하지 않는다. 기기 작업 종료 시 앱/계측과 ADB 서버를 종료한다.
+
+### 최종 실제 결과
+
+같은 설치 APK에서 계측을 한 invocation씩 실행하고 종료 확인 후 다음 검사를 시작했다. `suite=display`4개, `font`1개, `navigation`4개, `layout`3개, `immersive`5개로 합계 **17개/실패0**이었다. 큰 글꼴 검사는100/150/200%×가로/세로의 홈/도구/표시·배치·배경색/본문 창 조작 접근을 확인했다. 테마/밝기·화면 유지/취소·실제 저장, 페이지/북마크·번호 표시·문서별 배치와 가로/세로/역방향에서 줌/앵커 유지가 통과했다. UI 변경 범위에 해당하는 기존 검사이며 전체59개 재실행이나 성능 재측정이 아니다.
+
+최종 PC 단위 XML은44개/실패0/오류0/건너뜀0, Lint 오류0/경고0, ktlint 통과다. 설치된 app의 SHA-256과 로컬 debug APK `f51341ea8910a6187c5d882103b8f5032c3c70ae8bede2f071d977bc29eadc2f`가 일치했다. 종료 후 font_scale=1.1을 확인했고 앱/계측 force-stop과 adb kill-server 후 ADB 프로세스0을 확인했다. 검사 중 설치/프리플라이트 오류는 성공 표본과 구분하며 이후 반복 설치/검사를 예약하지 않는다.
+
+사용자에게 직접 앱을 열어 홈 카드·이어 읽기와 새 설정을 확인하고 키보드/오류/적용 버튼 가림·편의성을 알려 달라고 요청했다. 개인 제목/본문/스크린샷을 요구하지 않는다. 실제 사용자 수용과 TalkBack·최소 폭320dp·시안과 완전한 시각 일치는 아직 확인하지 않았다. 사용자 확인 전에는 Draft를 유지한다. 리뷰 수정과 UI를 같은 브랜치에 일반 push하며 새 호출은 작은 수정마다 하지 않는다.
+
+후속 사용자 답변은 **“모두 정상이고 화면도 괜찮아요”**였다. 질문한 홈 카드/이어 읽기·설정·키보드/오류/적용 버튼 접근과 화면 편의성은 수용 완료로 갱신한다. 이 답변을 새 TalkBack 음성·최소폭320dp·전체 디자인 완료로 확대하지 않는다. 구현/검사/수용을 모아 일반 push하고 PR #19를 정식 전환한다. 이전 primary 색상 지적은 수정 커밋을 근거로 해결 처리한다. 새 UI 코드의 후속 리뷰/원격 CI는 별도로 확인하며 알려진 포함 리뷰 한도에서 반복 요청하지 않는다.
+
+최초 `git add`/commit 시도는 **Automatic approval review failed / usage limit**로 실행 전에 차단됐다. 위험 판정에 따른 거부가 아니라 자동 승인 검토 자체의 한도 오류였으며 명령은 실행되지 않았다. 변경/검사/사용자 수용은 로컬에 보존했다. 사용자가 이어서 진행하도록 지시한 뒤 상태·공백·스테이징 비어 있음을 재확인하고 승인된 방식으로 같은 게시 작업을 재시도한다. 이 검토를 우회하는 다른 게시 경로는 사용하지 않는다.
+
+### 게시 재개 결과
+
+재개 후 같은 승인 경로의 Git 작업이 정상 실행됐다. 문서 로컬 링크81개/누락0·공백 검사와 디자인 원문/엔진/Gradle 불변을 확인하고 `b17412d`로 19개 파일을 커밋했다. 같은 브랜치에 일반 push했고 PR #19는 기존 OPEN/Draft 상태였음을 확인했다. [리뷰 답변4324848346](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324848346)에 수정 범위와 실제 검사 결과를 남기고 GraphQL 결과에서 기존 스레드 `PRRT_kwDOVLKYJM6uQ0RE`의 **isResolved=true**를 확인했다.
+
+PR 제목은 ‘feat(ui): Figma 홈·설정·입력 화면 적용’으로 바꾸고 설명도 최종 구현/실제17개 검사/사용자 수용/남은 범위로 다시 작성했다. 최종 상태 기록을 모아 push한 뒤 정식 PR로 전환한다. 새 UI 코드의 실제 후속 리뷰/CI는 새 head 기준으로 별도 확인한다. 이전20개 파일 리뷰는 head2234180의 결과이며 새 코드가 재리뷰됐다고 주장하지 않는다. 추가 수동 호출/자동 병합은 하지 않는다. 이 게시 재개에서는 앱 코드가 변하지 않아 빌드·기기 검사를 반복하거나 ADB를 시작하지 않았다.
+
+정식 전환 전 마지막 상태 문서 `7a0d05c`를 push하고 `gh pr ready 19`가 성공했다. 실제 isDraft=false/OPEN을 확인했다. 자동 리뷰의 성공 체크는 별10개 미만 저장소에 대한 skip이었고 실제 커버 head는 여전히2234180이었다. 구현/검증/사용자 수용이 끝난 지금이 최종 검토 시점이므로 앞선 ‘추가 호출 없음’ 방침을 자동 skip의 근거에 맞춰 조정해, 최종head7a0d05c에 [6290753082](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6290753082)을 한 번만 요청했다. 봇 응답6290755075의 Review triggered와 CodeRabbit PENDING을 확인했다. 작은 수정/게시 상태마다 호출한 것은 아니며 이후 같은 head는 중복 요청하지 않는다. Android CI39421706642도 당시 IN_PROGRESS였다. 결과 기록은 리뷰가 끝날 때까지 로컬에 모아 두고 head를 바꾸지 않는다.
+
+기존 스레드에는 봇 [답변4324851311](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324851311)이 추가됐다. b17412d의 primary 선택자가 지적을 해결하고 secondary/Alert 테마를 유지한 범위도 적절하다고 확인했다. 봇은 보고된 검사를 직접 재실행하지 않았다고 명시했다. 이 스레드 확인을 최종 head 전체 리뷰로 확대하지 않는다.
+
+최종head7a0d05c의 [Android CI39421706642](https://github.com/AtraFelis/ebook_viewer/actions/runs/39421706642)는 이후 **COMPLETED/SUCCESS**로 확인했다. CodeRabbit는 당시 여전히 PENDING이며 해당 head의 리뷰 본문은 아직 게시되지 않았다. CI/기기 검사 완료와 후속 리뷰 결과를 분리한다.
+
+### 최신 실제 리뷰와 수정
+
+사용자의 ‘리뷰 보고 수정’ 요청 후 실제 CodeRabbit 리뷰5584970664를 확인했다. 대상은7a0d05c(2234180 이후), 파일19개 선택/유사4개 건너뜀이며 actionable 지적은1개다. [4324914603](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324914603)의 중복 제목은 현재 소스에서도 유효했다. `readerFormDialog`가 이미 제목을 표시하고, 본문 읽기의 페이지 선택에서는 `setTitle(choose_page_text)`로 제목을 바꾸지만 본문에 ‘페이지 이동’이 그대로 남았다. `PageJumpDialog.kt`의 굵은 본문 제목 한 줄만 삭제해 중복 표시/낭독과 동적 제목의 불일치를 제거했다. 범위 설명·입력·오류·이동 로직은 그대로다.
+
+PowerShell에서 `. ./scripts/android-env.ps1` 후 아래 명령은 exit0/BUILD SUCCESSFUL·34초(71 tasks:14실행/57up-to-date)였다. Lint는 오류/경고 없는 기존 보고서 결과가 재사용됐고 Kotlin 컴파일은 실제 실행됐다. 단위·기기·TalkBack 음성/성능 검사는 한 줄 표시 제거 범위에 불필요해 반복하지 않았으며 ADB도 시작하지 않았다. 이 결과를 이전17개 기기 검사와 구분한다.
+
+```powershell
+./gradlew.bat --dependency-verification strict :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck
+```
+
+진행 중 리뷰를 중단시키지 않도록 보류한 문서 기록과 수정은 같은 브랜치에 모아 일반 push한다. 기존7a0d05c의 CI 성공을 수정 head의 성공으로 확대하지 않는다. 작은 제목 수정이고 리뷰가 표시한 시간당 포함 리뷰 잔여도0이므로 수동 재리뷰를 다시 호출하지 않는다. 답변/스레드 해결은 수정 게시 후 처리하며 PR 병합은 사용자가 한다.

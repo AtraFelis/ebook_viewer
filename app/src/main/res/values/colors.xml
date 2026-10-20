@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="reader_light_background">#F5F6F8</color>
+    <color name="reader_light_surface">#FFFFFF</color>
+    <color name="reader_light_text">#20252D</color>
+    <color name="reader_light_secondary">#626C79</color>
+    <color name="reader_light_border">#D9DEE5</color>
+    <color name="reader_light_accent">#285BC5</color>
+    <color name="reader_light_pressed">#20499E</color>
+    <color name="reader_light_accent_soft">#EAF0FC</color>
+    <color name="reader_light_on_accent">#FFFFFF</color>
+    <color name="reader_light_disabled">#E5E8EE</color>
+    <color name="reader_light_disabled_text">#747D89</color>
+    <color name="reader_dark_background">#15191F</color>
+    <color name="reader_dark_surface">#20262E</color>
+    <color name="reader_dark_text">#EDF1F7</color>
+    <color name="reader_dark_secondary">#AAB4C2</color>
+    <color name="reader_dark_border">#3A4451</color>
+    <color name="reader_dark_accent">#88ACFF</color>
+    <color name="reader_dark_pressed">#A4BFFF</color>
+    <color name="reader_dark_accent_soft">#26395C</color>
+    <color name="reader_dark_on_accent">#10264B</color>
+    <color name="reader_dark_disabled">#29313C</color>
+    <color name="reader_dark_disabled_text">#798494</color>
+</resources>

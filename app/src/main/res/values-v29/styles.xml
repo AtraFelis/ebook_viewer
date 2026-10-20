@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Force Dark must not invert PDF pixels or override an explicit Light choice. -->
-    <style name="ReaderLight" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:alertDialogTheme">@style/ReaderAlertLight</item>
+    <style name="ReaderLight" parent="ReaderLightBase">
         <item name="android:forceDarkAllowed">false</item>
     </style>
-    <style name="ReaderDark" parent="android:style/Theme.Material.NoActionBar">
-        <item name="android:alertDialogTheme">@style/ReaderAlertDark</item>
+    <style name="ReaderDark" parent="ReaderDarkBase">
         <item name="android:forceDarkAllowed">false</item>
     </style>
-    <style name="ReaderAlertLight" parent="android:style/Theme.Material.Light.Dialog.Alert">
+    <style name="ReaderAlertLight" parent="ReaderAlertLightBase">
         <item name="android:forceDarkAllowed">false</item>
     </style>
-    <style name="ReaderAlertDark" parent="android:style/Theme.Material.Dialog.Alert">
+    <style name="ReaderAlertDark" parent="ReaderAlertDarkBase">
         <item name="android:forceDarkAllowed">false</item>
     </style>
 </resources>
