@@ -117,7 +117,8 @@
 - [x] 실제 본문/TalkBack/큰 글꼴·개인 PDF 읽기/확대/이어 읽기 사용자 수용: debug 복원/테스트 중지 뒤 “모두 정상이에요”. 자기보고이며 자동 6조합과 구분. 최초 다른 navigation 실패 원인은 미확정으로 보존하며 이전 별도 suite를 최종 전체 검사로 합산하지 않음.
 - [x] 최종 app/test/host 소스 CI 성공 및 CodeRabbit 실제 31ebdef→b8b4100 검토 완료·수정 지적0. 유사 문서5개 건너뜀과 이후 기록 Markdown은 코드 검토 범위와 구분.
 - [x] 사용자 PR #17 병합·최종 원격 main 68ced37/최종 CI·실제 리뷰·미결과 완료 근거 기록.
-- [ ] P2 완료 문서 PR 병합 확인·종료 확정.
+- [x] [완료 문서 PR #18](https://github.com/AtraFelis/ebook_viewer/pull/18) 등록/채팅 첨부·문서 링크162개/누락0·공백/앱 소스 불변 검사. 새 Android CI는 Markdown 전용 제외, CodeRabbit 수동 요청은 한도로 실제 문서 리뷰 미실행이며 PR #17 코드 리뷰 완료와 구분.
+- [ ] P2 완료 문서 PR #18 사용자 병합 확인·종료 확정.
 - [x] watchdog a67f3f2·접근성 수정 0a95883 일반 push. 해당 head의 push/PR CI 모두 성공. 31ebdef의 push/PR CI 성공 및 실제 CodeRabbit f8d9265→31ebdef 검토 완료/수정 지적 0건을 확인. 별 정책 자동 건너뜀·이전 한도 응답과 구분.
 - [x] 계측 자체 deadline/완료 한 번 보장, 1초 제한의 실제 incomplete 종료·앱 PID 부재/글꼴 1.1 확인. 검사마다 종료 후 앱/테스트 중지·다음 작업 자동 예약 없음. host parser 기대 형식 실패는 수정/재검증 이력으로 보존.
 - [x] PR #17 구현 c7ea3ed의 push/PR CI 모두 성공·CodeRabbit 실제 31개 파일 검토 완료/수정 요구 없음 확인. 후속 계측 변경의 CI/검토는 별도 확인하며 일반 docstring 비율 권고를 계약상 필수로 바꾸지 않음.

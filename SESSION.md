@@ -4,7 +4,7 @@
 
 ## 현재 진행 — P2 완료 문서
 
-2026-10-20 사용자 최종 수용 “모두 정상이에요”와 PR #17 사용자 병합을 확인했다. main은 **68ced37**이며 최종 앱/test/host CI·실제 CodeRabbit 리뷰까지 완료했다. 사용자 Figma 변경을 백업/해시 대조·복구용 stash 보존 후 현재 체크아웃에서 main을 ff-only 동기화하고 `codex/p2-completion`으로 완료 문서를 정리한다. [최종 판정·검증·한계](docs/history/2026-10-20-01-p2-completion.md)를 따른다. 기능 개발/검사/개인 수용과 기능 PR 병합은 완료했고 문서 PR 병합 확인 후 P2 종료를 확정한다. 이번 변경은 Markdown뿐이며 기기 조작/검사 반복은 없다.
+2026-10-20 사용자 최종 수용 “모두 정상이에요”와 PR #17 사용자 병합을 확인했다. main은 **68ced37**이며 최종 앱/test/host CI·실제 CodeRabbit 리뷰까지 완료했다. 사용자 Figma 변경을 백업/해시 대조·복구용 stash 보존 후 현재 체크아웃에서 main을 ff-only 동기화하고 `codex/p2-completion`으로 완료 문서를 정리한다. [최종 판정·검증·한계](docs/history/2026-10-20-01-p2-completion.md)를 따른다. 기능 개발/검사/개인 수용과 기능 PR 병합은 완료했고 [완료 문서 PR #18](https://github.com/AtraFelis/ebook_viewer/pull/18)을 등록/채팅 첨부했다. 문서 링크162개/누락0·공백/앱 소스 불변을 확인했다. 새 Android CI는 Markdown 전용 제외로 미실행이며 수동 CodeRabbit는 포함 리뷰 한도로 실제 문서 검토 미실행이다. 앱 코드는 PR #17에서 실제 리뷰/CI를 완료했다. 문서 PR 병합 확인 후 P2 종료를 확정하며 이번 변경은 Markdown뿐이고 기기 조작/검사 반복은 없다.
 
 2026-10-19 사용자 결정: 선택/복사 UI를 후속으로 미루고 페이지 단위 텍스트 안전성·TalkBack/큰 글꼴·최종 통합 검증을 진행한다. 검색 보류/목차·비밀번호 제외와 Figma 별도 단계는 유지한다. PR #16 사용자 병합 main 45651e3와 최종 head CI 성공을 확인했다. 실제 CodeRabbit 리뷰는 없었다. 사용자 Figma 변경을 백업/stash 후 현재 체크아웃에서 main ff-only 동기화·`codex/p2-accessibility-safety` 생성·재적용했다. 이전 자동 승인 사용량 한도로 실행되지 않은 Git 명령은 복구 시각 이후 성공했으며 우회하지 않았다.
 
