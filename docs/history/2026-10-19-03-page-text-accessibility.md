@@ -164,3 +164,11 @@ PSS 시작 **205,767KiB**, 종료 **281,302KiB**, 30초 간격 관측 최고 **2
 ## 사용자 최종 기능 수용
 
 사용자는 공개 샘플의 현재 페이지 본문 표시/닫기, TalkBack 음성·초점/큰 글꼴, 평소 PDF 읽기·확대·이어 읽기의 묶음 확인 요청에 **“모두 정상이에요”**라고 답했다. 현재 debug 앱 runtime의 개인 기기 자기보고 수용이며 자동 100/150/200%×가로/세로 6조합 검사와 구분한다. 개인 파일명/본문을 수집하지 않았고 이후 기기는 조작하지 않았다. 기능 구현·자동 통합 검증·현재 기기 사용 수용은 완료됐고, 최종 원격 상태/후속 계측 외부 검토와 사용자 PR 병합·완료 기록은 별도로 남는다.
+
+## 최종 CI·후속 계측 리뷰 완료
+
+사용자 수용 기록 b8b4100의 [PR CI 39385510230](https://github.com/AtraFelis/ebook_viewer/actions/runs/39385510230)는 실제 성공했다. 이전 계측 수정 d915642의 push/PR CI와 함께 현재 app/test/host 소스 검사를 확인한다.
+
+직전 검토 접수에서 한 시간이 지난 뒤 최신 b8b4100에 [수동 요청 6285582815](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6285582815)을 한 번 등록했다. [응답 6285584356](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6285584356)은 Review triggered→Review finished(KST 16:23:32)였고, [최근 리뷰 정보](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6271088510)의 실제 구간은 **31ebdef→b8b4100**, 7개 선택/유사 문서 5개 건너뜀으로 확인됐다. 프레임 계측 DebugFrameProbe와 host run-p2-integration-probe.py가 실제 검토 범위였으며 **No actionable comments/inline 0건**이다. 최신 계측/설치 대기 보완의 외부 검토 미완료를 이번 결과로 해소한다. 이후 변경은 이 사실을 기록한 Markdown뿐이고 앱/계측/host 소스는 그대로다. 사용자 Figma 변경을 제외해 최종 결과만 기록한다.
+
+현재 기능·자동 통합 검사·개인 기기 사용자 수용과 실제 코드 리뷰까지 완료했다. PR #17은 사용자 병합 대상이며 병합 SHA/원격 상태와 최종 완료 문서를 확인하기 전 P2 전체 완료로 선언하지 않는다. 실제 OOM/다른 API·기기/긴 세션 및 원본 DPI/압축별 원인 확정 미검증 한계는 유지한다. 추가 기기 테스트/자동 실행은 없다.
