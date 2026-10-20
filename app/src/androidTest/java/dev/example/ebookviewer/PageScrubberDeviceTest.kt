@@ -90,6 +90,8 @@ class PageScrubberDeviceTest {
             }
         } finally {
             ui.onMain { activity.finish() }
+            // Lifecycle saving must finish queuing before removing this synthetic library record.
+            ui.await("Synthetic document Activity did not close") { activity.isDestroyed }
             val done = CountDownLatch(1)
             library.execute({ it.remove(uri.toString()) }) { done.countDown() }
             assertTrue(done.await(10, TimeUnit.SECONDS))
