@@ -27,7 +27,6 @@ fun Activity.pageJumpDialog(
     return readerFormDialog(
         R.string.go_to_page,
         readerFormBody(
-            style.label(R.string.go_to_page, 18f, true),
             style.label(R.string.go_to_page).apply { text = input.contentDescription },
             input
         ),

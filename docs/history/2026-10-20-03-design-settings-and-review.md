@@ -49,3 +49,21 @@ debug 앱·계측 APK를 `install --no-streaming -r -t`로 데이터 보존 설�
 재개 후 같은 승인 경로의 Git 작업이 정상 실행됐다. 문서 로컬 링크81개/누락0·공백 검사와 디자인 원문/엔진/Gradle 불변을 확인하고 `b17412d`로 19개 파일을 커밋했다. 같은 브랜치에 일반 push했고 PR #19는 기존 OPEN/Draft 상태였음을 확인했다. [리뷰 답변4324848346](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324848346)에 수정 범위와 실제 검사 결과를 남기고 GraphQL 결과에서 기존 스레드 `PRRT_kwDOVLKYJM6uQ0RE`의 **isResolved=true**를 확인했다.
 
 PR 제목은 ‘feat(ui): Figma 홈·설정·입력 화면 적용’으로 바꾸고 설명도 최종 구현/실제17개 검사/사용자 수용/남은 범위로 다시 작성했다. 최종 상태 기록을 모아 push한 뒤 정식 PR로 전환한다. 새 UI 코드의 실제 후속 리뷰/CI는 새 head 기준으로 별도 확인한다. 이전20개 파일 리뷰는 head2234180의 결과이며 새 코드가 재리뷰됐다고 주장하지 않는다. 추가 수동 호출/자동 병합은 하지 않는다. 이 게시 재개에서는 앱 코드가 변하지 않아 빌드·기기 검사를 반복하거나 ADB를 시작하지 않았다.
+
+정식 전환 전 마지막 상태 문서 `7a0d05c`를 push하고 `gh pr ready 19`가 성공했다. 실제 isDraft=false/OPEN을 확인했다. 자동 리뷰의 성공 체크는 별10개 미만 저장소에 대한 skip이었고 실제 커버 head는 여전히2234180이었다. 구현/검증/사용자 수용이 끝난 지금이 최종 검토 시점이므로 앞선 ‘추가 호출 없음’ 방침을 자동 skip의 근거에 맞춰 조정해, 최종head7a0d05c에 [6290753082](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6290753082)을 한 번만 요청했다. 봇 응답6290755075의 Review triggered와 CodeRabbit PENDING을 확인했다. 작은 수정/게시 상태마다 호출한 것은 아니며 이후 같은 head는 중복 요청하지 않는다. Android CI39421706642도 당시 IN_PROGRESS였다. 결과 기록은 리뷰가 끝날 때까지 로컬에 모아 두고 head를 바꾸지 않는다.
+
+기존 스레드에는 봇 [답변4324851311](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324851311)이 추가됐다. b17412d의 primary 선택자가 지적을 해결하고 secondary/Alert 테마를 유지한 범위도 적절하다고 확인했다. 봇은 보고된 검사를 직접 재실행하지 않았다고 명시했다. 이 스레드 확인을 최종 head 전체 리뷰로 확대하지 않는다.
+
+최종head7a0d05c의 [Android CI39421706642](https://github.com/AtraFelis/ebook_viewer/actions/runs/39421706642)는 이후 **COMPLETED/SUCCESS**로 확인했다. CodeRabbit는 당시 여전히 PENDING이며 해당 head의 리뷰 본문은 아직 게시되지 않았다. CI/기기 검사 완료와 후속 리뷰 결과를 분리한다.
+
+### 최신 실제 리뷰와 수정
+
+사용자의 ‘리뷰 보고 수정’ 요청 후 실제 CodeRabbit 리뷰5584970664를 확인했다. 대상은7a0d05c(2234180 이후), 파일19개 선택/유사4개 건너뜀이며 actionable 지적은1개다. [4324914603](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324914603)의 중복 제목은 현재 소스에서도 유효했다. `readerFormDialog`가 이미 제목을 표시하고, 본문 읽기의 페이지 선택에서는 `setTitle(choose_page_text)`로 제목을 바꾸지만 본문에 ‘페이지 이동’이 그대로 남았다. `PageJumpDialog.kt`의 굵은 본문 제목 한 줄만 삭제해 중복 표시/낭독과 동적 제목의 불일치를 제거했다. 범위 설명·입력·오류·이동 로직은 그대로다.
+
+PowerShell에서 `. ./scripts/android-env.ps1` 후 아래 명령은 exit0/BUILD SUCCESSFUL·34초(71 tasks:14실행/57up-to-date)였다. Lint는 오류/경고 없는 기존 보고서 결과가 재사용됐고 Kotlin 컴파일은 실제 실행됐다. 단위·기기·TalkBack 음성/성능 검사는 한 줄 표시 제거 범위에 불필요해 반복하지 않았으며 ADB도 시작하지 않았다. 이 결과를 이전17개 기기 검사와 구분한다.
+
+```powershell
+./gradlew.bat --dependency-verification strict :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck
+```
+
+진행 중 리뷰를 중단시키지 않도록 보류한 문서 기록과 수정은 같은 브랜치에 모아 일반 push한다. 기존7a0d05c의 CI 성공을 수정 head의 성공으로 확대하지 않는다. 작은 제목 수정이고 리뷰가 표시한 시간당 포함 리뷰 잔여도0이므로 수동 재리뷰를 다시 호출하지 않는다. 답변/스레드 해결은 수정 게시 후 처리하며 PR 병합은 사용자가 한다.

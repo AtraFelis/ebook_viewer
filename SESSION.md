@@ -4,6 +4,10 @@
 
 ## 현재 진행 — 디자인 홈·입력/설정 적용
 
+최신 리뷰: head `7a0d05c`의 실제 CodeRabbit 리뷰5584970664가 완료됐다(19개 파일 선택·유사 파일4개 건너뜀·지적1개). [페이지 입력의 중복 제목 지적](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324914603)을 채택해 본문의 굵은 ‘페이지 이동’ 라벨만 제거했다. 공통 제목/본문 읽기의 동적 ‘페이지 선택’ 제목·범위 안내·입력/이동 로직은 유지한다. strict 앱·계측 빌드/Lint/ktlint를 34초에 통과했다. 표시 한 줄 삭제여서 단위/기기/성능 검사와 ADB 시작은 반복하지 않았다. 작은 수정이고 포함 리뷰 잔여도0이라 추가 수동 호출은 하지 않는다. 새 수정 head의 원격 CI는 별도 확인 대상이다.
+
+게시 상태: head `7a0d05c`를 push한 뒤 PR #19의 **isDraft=false / OPEN**을 확인했다. [Android CI 39421706642](https://github.com/AtraFelis/ebook_viewer/actions/runs/39421706642)는 **SUCCESS**다. 자동 CodeRabbit는 별10개 미만 기준으로 건너뛰었고, 구현·검증·사용자 수용을 마친 head에만 [수동 요청6290753082](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6290753082)을 한 번 등록했다. 봇 응답6290755075의 Review triggered/PENDING 뒤 실제 완료 결과를 위에 반영했다. 진행 중에는 이 기록을 로컬에 유지했으며 리뷰 완료 후 수정과 함께 게시한다. 병합은 사용자가 한다.
+
 후속 게시: 자동 승인 검토의 사용량 한도로 실행되지 않았던 커밋을 사용자 재개 후 정상 수행했다. 구현 `b17412d`를 같은 PR #19 브랜치에 일반 push했고 [답변4324848346](https://github.com/AtraFelis/ebook_viewer/pull/19#discussion_r4324848346)에 수정/검증을 남긴 뒤 기존 primary 색상 스레드의 resolved=true를 확인했다. PR 제목·설명도 홈·설정·입력까지로 갱신했다. 최종 게시 기록을 모아 push한 후 정식 PR로 전환하며, 새 UI 소스의 원격 CI/실제 후속 리뷰는 이전 head의 성공과 구분한다. 추가 수동 리뷰 호출/병합은 하지 않았다.
 
 사용자가 Figma 디자인 적용을 선택했고 `docs/design.md`를 읽고 계획 후 구현하도록 지시했다. Figma MCP는 한도 때문에 사용하지 않는다. Chrome에서 홈/읽기/도구 시안을 직접 확인했고 [적용 계획](docs/plan/design-implementation.md)에 5단계와 단계별 수용 기준을 기록했다. 사용자 디자인 커밋 `ea91122`를 보존한 `codex/design-foundation`에서 origin/main `8d0731b`를 일반 merge했다. PR #18은 사용자 병합 완료이며 **P2는 종료**했다. 아래 P2 진행 문구는 이전 단계의 기록이다.
