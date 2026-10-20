@@ -136,7 +136,7 @@ class MainActivity : Activity() {
             scheduleSave()
         }
         viewer.onUserInteraction = { pendingNavigation = null }
-        viewer.onReadPageText = { showPageText() }
+        viewer.onReadPageText = { page -> showPageText(page) }
         viewer.setOnClickListener {
             if (reading) {
                 readerTools.visibility =
@@ -760,7 +760,7 @@ class MainActivity : Activity() {
 
     private fun showPageText(selectedPage: Int? = null) {
         if (!resumed || !reading || !loaded || pageTextDialog != null) return
-        val page = selectedPage ?: viewer.readingPosition()?.page ?: return
+        val page = selectedPage ?: viewer.pageForTextReading() ?: return
         if (page !in 0 until expectedPages) return
         val generation = opening
         val content = TextView(this).apply {

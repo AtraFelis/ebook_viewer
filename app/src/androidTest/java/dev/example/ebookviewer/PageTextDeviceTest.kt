@@ -149,6 +149,7 @@ class PageTextDeviceTest {
                 window?.packageName == context.packageName && accessibility.isEnabled
             }
             instrumentation.waitForIdleSync()
+            val observedPages = ArrayList<Int>()
             val pageEvent = try {
                 instrumentation.uiAutomation.executeAndWaitForEvent(
                     {
@@ -162,15 +163,22 @@ class PageTextDeviceTest {
                         }
                     },
                     { event ->
-                        event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
-                            event.packageName == context.packageName &&
-                            event.fromIndex == before.getInt("page") + 1
+                        val pageEvent = event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
+                            event.packageName == context.packageName
+                        if (pageEvent && observedPages.size < 10) observedPages.add(event.fromIndex)
+                        pageEvent && event.fromIndex == before.getInt("page") + 1
                     },
                     5_000
                 )
             } catch (_: TimeoutException) {
                 // Platform timeout text may include unrelated windows; never log those events.
-                throw AssertionError("Expected PDF page navigation event was not received")
+                val after = ui.state(viewer)
+                throw AssertionError(
+                    "Synthetic PDF page event missing: before=${before.getInt("page")} " +
+                        "after=${after.getInt("page")} zoom=${after.getDouble("zoom")} " +
+                        "size=${ui.onMain { "${viewer.width}x${viewer.height}" }} " +
+                        "observedPages=$observedPages"
+                )
             }
             assertTrue(pageEvent.itemCount > pageEvent.fromIndex)
             ui.onMain {
@@ -182,6 +190,12 @@ class PageTextDeviceTest {
                 )
             }
             assertEquals(before.getDouble("zoom"), ui.state(viewer).getDouble("zoom"), 0.0001)
+            ui.onMain {
+                val event = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_VIEW_SCROLLED)
+                viewer.onInitializeAccessibilityEvent(event)
+                assertEquals(before.getInt("page"), event.fromIndex)
+                event.recycle()
+            }
             ui.onMain { viewer.performAccessibilityAction(R.id.read_page_text, null) }
             ui.await("Public sample text did not reach accessible dialog") {
                 val root = instrumentation.uiAutomation.rootInActiveWindow
@@ -314,6 +328,41 @@ class PageTextDeviceTest {
             val after = ui.state(viewer)
             for (key in listOf("zoom", "centerX", "centerY")) {
                 assertEquals(before.getDouble(key), after.getDouble(key), 0.0001)
+            }
+            click(context.getString(R.string.close_settings))
+            for ((action, page, body) in listOf(
+                Triple(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, 0, "public alpha"),
+                Triple(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, 1, "public beta")
+            )) {
+                ui.onMain {
+                    assertTrue(viewer.performAccessibilityAction(action, null))
+                    val node = viewer.createAccessibilityNodeInfo()
+                    assertEquals(
+                        context.getString(R.string.accessible_page, page + 1, 2),
+                        node.contentDescription
+                    )
+                    assertFalse(
+                        viewer.performAccessibilityAction(
+                            if (page == 0) {
+                                AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+                            } else {
+                                AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
+                            },
+                            null
+                        )
+                    )
+                    if (page == 0) {
+                        assertTrue(
+                            activity.findViewById<android.view.View>(R.id.read_page_text)
+                                .performClick()
+                        )
+                    } else {
+                        assertTrue(viewer.performAccessibilityAction(R.id.read_page_text, null))
+                    }
+                }
+                awaitBody(body)
+                assertEquals(before.getDouble("zoom"), ui.state(viewer).getDouble("zoom"), 0.0001)
+                click(context.getString(R.string.close_settings))
             }
         } finally {
             ui.onMain { activity.finish() }

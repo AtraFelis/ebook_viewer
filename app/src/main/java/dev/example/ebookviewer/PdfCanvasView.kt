@@ -34,6 +34,9 @@ class PdfCanvasView @JvmOverloads constructor(
     private var tapAllowed = true
     private var hadMultiplePointers = false
     private var layout: DocumentLayout? = null
+
+    // At document edges or small zoom, a requested page cannot always be centered geometrically.
+    private var accessiblePage: Int? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private var requested = emptyList<Tile>()
     private var previews = emptyList<Tile>()
@@ -70,7 +73,7 @@ class PdfCanvasView @JvmOverloads constructor(
         setPages(pages)
     }
     var onPositionChanged: (() -> Unit)? = null
-    var onReadPageText: (() -> Unit)? = null
+    var onReadPageText: ((Int) -> Unit)? = null
     var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
     private var outsideColor = DEFAULT_BACKGROUND_COLOR
@@ -158,6 +161,7 @@ class PdfCanvasView @JvmOverloads constructor(
     fun goToPage(page: Int, fractionY: Double? = null): Boolean {
         val document = layout ?: return false
         if (page !in document.pages.indices) return false
+        accessiblePage = null
         scroller.forceFinished(true)
         viewport.moveToPage(document, page, fractionY, width, height)
         constrain()
@@ -251,11 +255,11 @@ class PdfCanvasView @JvmOverloads constructor(
 
     override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
         super.onInitializeAccessibilityNodeInfo(info)
-        val position = readingPosition() ?: return
+        val page = accessiblePageIndex() ?: return
         val count = layout?.pages?.size ?: return
         info.contentDescription = context.getString(
             R.string.accessible_page,
-            position.page + 1,
+            page + 1,
             count
         )
         info.isScrollable = count > 1
@@ -271,31 +275,31 @@ class PdfCanvasView @JvmOverloads constructor(
                 context.getString(R.string.read_page_text)
             )
         )
-        if (position.page + 1 < count) {
+        if (page + 1 < count) {
             info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD)
         }
-        if (position.page > 0) {
+        if (page > 0) {
             info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)
         }
     }
 
     override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean {
-        val position = readingPosition()
+        val page = accessiblePageIndex()
         return when {
-            action == R.id.read_page_text && position != null -> {
-                onReadPageText?.invoke()
+            action == R.id.read_page_text && page != null -> {
+                onReadPageText?.invoke(page)
                 true
             }
-            action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD && position != null ->
-                accessiblePageJump(position.page + 1)
-            action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD && position != null ->
-                accessiblePageJump(position.page - 1)
+            action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD && page != null ->
+                accessiblePageJump(page + 1)
+            action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD && page != null ->
+                accessiblePageJump(page - 1)
             else -> super.performAccessibilityAction(action, arguments)
         }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        val page = readingPosition()?.page
+        val page = accessiblePageIndex()
         return when {
             keyCode == KeyEvent.KEYCODE_PAGE_DOWN && page != null -> accessiblePageJump(page + 1)
             keyCode == KeyEvent.KEYCODE_PAGE_UP && page != null -> accessiblePageJump(page - 1)
@@ -304,7 +308,8 @@ class PdfCanvasView @JvmOverloads constructor(
     }
 
     private fun accessiblePageJump(page: Int): Boolean {
-        if (!goToPage(page)) return false
+        if (!goToPage(page, 0.5)) return false
+        accessiblePage = page
         // Invalidate assistive services' cached page description after an explicit page action.
         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SCROLLED)
         return true
@@ -312,12 +317,18 @@ class PdfCanvasView @JvmOverloads constructor(
 
     override fun onInitializeAccessibilityEvent(event: AccessibilityEvent) {
         super.onInitializeAccessibilityEvent(event)
-        val position = readingPosition() ?: return
+        val page = accessiblePageIndex() ?: return
         event.isScrollable = true
         event.itemCount = layout?.pages?.size ?: 0
-        event.fromIndex = position.page
-        event.toIndex = position.page
+        event.fromIndex = page
+        event.toIndex = page
     }
+
+    private fun accessiblePageIndex(): Int? =
+        accessiblePage?.takeIf { it in (layout?.pages?.indices ?: IntRange.EMPTY) }
+            ?: readingPosition()?.page
+
+    fun pageForTextReading(): Int? = accessiblePageIndex()
 
     fun reset() {
         stopBackgroundAnalysis(clearColors = true)
@@ -325,6 +336,7 @@ class PdfCanvasView @JvmOverloads constructor(
         scroller.forceFinished(true)
         request(emptyList())
         layout = null
+        accessiblePage = null
         pendingPages = null
         cache.evictAll()
         requested = emptyList()
@@ -523,6 +535,7 @@ class PdfCanvasView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                accessiblePage = null
                 onUserInteraction?.invoke()
                 tapAllowed = scroller.isFinished
                 hadMultiplePointers = false

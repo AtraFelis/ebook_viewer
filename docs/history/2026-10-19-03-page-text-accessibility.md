@@ -59,3 +59,27 @@ strict debug 앱/계측 빌드·단위 **44개/실패·오류 0**·Lint **0 erro
 간헐 페이지 이동 검사에는 ACTION_SET_TEXT 요청 뒤 실제 입력 값이 보일 때까지 기다리는 조건과 합성 페이지/줌/centerY/화면 크기 실패 진단을 추가했다. 기존 페이지 69·줌/북마크 복원 assertion은 유지하며 제품 동작은 바꾸지 않는다. 최초 검사에서 계측 줄바꿈 ktlint 오류가 있어 수동 수정한 후 strict 계측 빌드/Lint/ktlint를 통과했다. 동일 앱에 글꼴 suite 1개(6조합)→navigation suite 4개를 순서대로 실행해 각각 실패 0이었다. 최초 실패의 원인은 여전히 미확정이며 입력 대기를 증명된 원인 수정으로 표현하지 않는다. 현재 계측으로 최종 전체 59개와 통과 후 별도 화질/복원·성능 비교를 진행한다.
 
 최종 성능 app `db330d6c71b1203a9277f76dffe89144b3d102207eaac5932a00c3a3ce7064ca`, 공통 profile 계측 `bbec085f92b28afb299b88a9bece02a386a524a563df9a25611ff4dcf4d2ae10`을 strict 빌드해 동결했다. 이전 final/common APK는 해시명 파일로 보존했고 기준 `06423be61af1ea5f52fccd2831fa2921f4ce8a45a5690230a5ea59cc03e0665c`는 변경하지 않았다. 이는 현재 소스의 측정 준비이며 실제 성능 결과/통과는 별도 확인한다.
+
+## 2026-10-20 오후 재개 — 토큰 중단·삭제된 앱·검사 수명
+
+사용자가 토큰 소진 중단과 반복 앱 실행 때문에 앱을 삭제했다고 알렸다. 이전 PC 실행 세션은 존재하지 않고 예전 전체 로그에도 최종 59개 결과가 없었다. p2-integration에는 동결 APK/준비 자료만 있고 실제 측정 JSON은 없었다. 이전 전체 검사는 중단/미완료, 후속 화질·복원·성능은 미실행으로 유지한다.
+
+14:11 KST 점검에서 본 앱은 없고 테스트 패키지만 남아 있었다. 이전 host 테스트 프로세스나 본 앱 PID는 확인되지 않았다. 설치 manifest에는 부팅 receiver·주기 실행 작업·화면을 여는 service가 없다. 테스트가 Activity를 반복 실행하는 구조는 확인했으나 중단 시점의 실제 반복 원인은 확정하지 않는다. API 33 한 대 승인·잠금 해제·시스템 글꼴 1.1·thermal 0, 초기 여유 메모리 약 1.9GiB였다. 사용자에게 앱 정리를 요청했고 완료 답변을 받았다. 성능 시작 전 기존 2GiB 조건을 다시 확인한다.
+
+같은 debug 앱 `35c52b4b40124d038cb19ddcc90fed167a38db92d23ce134d23daa96412bb881`와 f8d9265 계측 `1999e68943d2aae3ac6835b0cd4824149b9fa07fa6545428e14f8fdeffbc4fa7`을 재설치했다. 삭제 전 앱 private 기록/설정 복구를 주장하지 않는다. 공개 합성 자료만 사용하는 기본 59개를 한 번만 실행하며, 로컬 host 래퍼는 실시간 결과 저장·720초 제한·finally의 앱/테스트 force-stop 및 시스템 글꼴 복원 fallback을 갖는다. 다음 작업은 자동 연결하지 않는다. 아직 실행 중인 결과를 통과로 세지 않는다.
+
+f8d9265의 [push CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39285297203)·[PR CI](https://github.com/AtraFelis/ebook_viewer/actions/runs/39285300340)는 모두 성공했다. 해당 head의 CodeRabbit 자동 리뷰는 별 10개 미만 정책으로 건너뛰었으며 성공 체크를 새 리뷰 완료로 세지 않는다. [수동 재검토](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6283920655)를 한 번 요청했다. PR #17 앱 첨부도 이번에는 성공했다.
+
+host 연결 소실에도 기기 계측을 끝내도록 P0Instrumentation에 독립 scheduled executor deadline과 완료 한 번 보장을 추가한다. 일반 검사는 720초, 선명도는 1200초, 프레임/장시간은 요청 초×회수+120초이며 `deadlineSeconds`는 이 값을 줄이는 것만 허용한다. 초과 시 RESULT_CANCELED/실패 1/incomplete로 finish하고 성공 요약을 내지 않는다. Context7 `/websites/developer_android_reference`와 [공식 Instrumentation.finish](https://developer.android.com/reference/android/app/Instrumentation#finish(int,%20android.os.Bundle))에서 계측 종료가 대상 프로세스를 종료함을 확인했다. 앱 런타임/자동 시작 동작 변경은 아니다. 첫 빌드는 줄바꿈 ktlint 실패, 두 번째는 profile 선택으로 debug 계측 task가 사라지는 구성 오류였고, 타입별 별도 Gradle 호출로 다시 검사한다. 기기에서 실제 짧은 deadline 종료를 후속 검증한다.
+
+## 재개 후 실제 실패와 원인 확정·수정
+
+재개한 기본 suite는 `59개/실패 1개`, 439.3초에 종료했다. 페이지 이동·북마크는 통과했으며 실패는 PageTextDeviceTest의 접근성 페이지 이벤트였다. host finally에서 앱/테스트를 멈췄고 다음 작업은 실행하지 않았다. 실패 진단을 추가한 본문 suite 10개도 같은 항목 1개가 실패했다. 공개 합성 수치가 **before=1, after=3, zoom=1.35, size=1080×2308, observedPages=[3]**이었다(페이지 값은 0-based 인덱스). 이벤트 미수신/연결 지연이 아니라, 인덱스 2(표시 3쪽)로 top 정렬 이동한 뒤 화면 중앙이 인덱스 3(표시 4쪽)에 놓여 기대 번호와 달라진 것이 확인됐다. 최초 다른 navigation 실패의 원인까지 이 결과로 확정하지 않는다.
+
+접근성/키보드 이동을 중앙 기준으로 바꾸고, clamp/전체 문서가 보이는 작은 배율에서는 요청 논리 페이지를 노드·이벤트·앞/뒤 이동·본문에 함께 사용한다. 터치/일반 이동/reset은 이를 비운다. 일반 스크롤/줌·읽기 기록/북마크 형식·렌더 엔진/캐시와 새 의존성은 바꾸지 않는다. 기존 작은 2페이지 검사에 논리 앞뒤 이동/경계 거부/도구 버튼과 접근성 action 각각의 올바른 Alpha·Beta 본문/줌 불변을 추가하고, 기존 이벤트·페이지·줌 assertion도 유지했다.
+
+watchdog debug/profile 계측 strict 빌드/Lint/ktlint는 타입별 호출로 통과했다. `-e suite navigation -e deadlineSeconds 1`을 실행했을 때 약 2.1초에 `Instrumentation deadline exceeded; incomplete`로 끝나고 앱 PID 부재/글꼴 1.1을 확인했다. 최초 host parser는 am의 stream 출력에서 숨겨지는 Bundle bool을 기대해 실패했고, 실제 incomplete 메시지·15초 미만 종료·성공 요약 부재를 확인하도록 바로잡아 재검증했다. 앱 timeout이 성공으로 위장된 것은 아니다.
+
+접근성 수정의 첫 strict 실행은 주석 앞 빈 줄 ktlint 오류였고 수동 수정 뒤 debug 앱/계측 빌드·단위 **44개/실패 0**·Lint/ktlint를 통과했다. 이어 본문 전용 **10개/실패 0**, 27.5초 종료·앱/테스트 force-stop을 확인했다. 해당 debug APK 쌍은 ignored `accessibility-page-cursor-apks.json`으로 연결하며 전체 59개는 현재 별도 확인 중이다.
+
+수정된 최종 profile app **5e968f60ab7a7dd536ef6c524f66445b6f367927b71a6e8252f595bb5df5cbfc**/공통 계측 **834c353ffa9e983474fa09fb3b0d133fbaff7906432bd2962a7b58089e16688a**을 strict 빌드해 동결했다. 이전 세대는 SHA명으로 보존했고 baseline `06423be6…`은 그대로다. 실제 성능 수집/통과는 아직 아니다. f8d9265의 [CodeRabbit 재검토 완료](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6283922091)는 계측 변경 5개 파일(문서 4개 유사 변경 건너뜀)에서 수정 요구 없음이었다. 이 후속 watchdog/접근성 수정에 대한 검토와 혼동하지 않는다.
