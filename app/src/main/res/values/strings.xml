@@ -89,6 +89,7 @@
     <string name="color_paper">종이색</string>
     <string name="show_page_numbers">읽는 동안 페이지 번호 표시</string>
     <string name="current_page">%1$d / %2$d</string>
+    <string name="page_scrub_preview">현재 %1$d / %2$d · 이동할 %3$d</string>
     <string name="go_to_page">페이지 이동</string>
     <string name="page_number_hint">1~%1$d 사이의 페이지 번호를 입력하세요.</string>
     <string name="page_number_value">%1$d</string>

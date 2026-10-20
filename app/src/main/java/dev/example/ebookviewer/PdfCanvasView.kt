@@ -169,6 +169,11 @@ class PdfCanvasView @JvmOverloads constructor(
         return true
     }
 
+    /** Freeze the anchor before previewing a page without changing position or issuing tile work. */
+    fun stopScrolling() {
+        scroller.forceFinished(true)
+    }
+
     private val cache = object : LruCache<Tile, Bitmap>(64 * 1024 * 1024) {
         override fun sizeOf(key: Tile, value: Bitmap): Int = value.allocationByteCount
     }

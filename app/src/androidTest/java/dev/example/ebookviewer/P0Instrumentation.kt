@@ -23,6 +23,7 @@ class P0Instrumentation : Instrumentation() {
     private var backgroundOnly = false
     private var displayOnly = false
     private var settingsOnly = false
+    private var sliderOnly = false
     private var textOnly = false
     private var fontOnly = false
     private var navigationOnly = false
@@ -55,6 +56,7 @@ class P0Instrumentation : Instrumentation() {
                     "background",
                     "display",
                     "settings",
+                    "slider",
                     "text",
                     "font",
                     "navigation",
@@ -69,6 +71,7 @@ class P0Instrumentation : Instrumentation() {
         backgroundOnly = suite == "background"
         displayOnly = suite == "display"
         settingsOnly = suite == "settings"
+        sliderOnly = suite == "slider"
         textOnly = suite == "text"
         fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
@@ -97,6 +100,7 @@ class P0Instrumentation : Instrumentation() {
         require(!backgroundOnly || (!probe && restartPhase == null))
         require(!displayOnly || (!probe && restartPhase == null))
         require(!settingsOnly || (!probe && restartPhase == null))
+        require(!sliderOnly || (!probe && restartPhase == null))
         require(!textOnly || (!probe && restartPhase == null))
         require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
@@ -175,7 +179,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (settingsOnly) {
+        val result = if (sliderOnly) {
+            core.run(PageScrubberDeviceTest::class.java)
+        } else if (settingsOnly) {
             core.run(SettingsNavigationDeviceTest::class.java)
         } else if (fontOnly) {
             core.run(LargeFontDeviceTest::class.java)
@@ -219,6 +225,7 @@ class P0Instrumentation : Instrumentation() {
                 BackgroundDeviceTest::class.java,
                 DisplayDeviceTest::class.java,
                 SettingsNavigationDeviceTest::class.java,
+                PageScrubberDeviceTest::class.java,
                 PageTextDeviceTest::class.java,
                 LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,

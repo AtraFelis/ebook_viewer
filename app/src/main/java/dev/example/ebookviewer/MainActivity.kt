@@ -15,6 +15,7 @@ import android.os.OperationCanceledException
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.widget.ArrayAdapter
@@ -125,7 +126,9 @@ class MainActivity : Activity() {
                 applyPendingNavigation()
                 updatePageIndicator()
                 setStatus(
-                    if (durableAccess) {
+                    if (pendingNavigation != null) {
+                        getString(R.string.page_preparing)
+                    } else if (durableAccess) {
                         getString(R.string.document_ready, it.size)
                     } else {
                         getString(R.string.temporary_access, it.size)
@@ -144,7 +147,11 @@ class MainActivity : Activity() {
             updatePageIndicator()
             scheduleSave()
         }
-        viewer.onUserInteraction = { pendingNavigation = null }
+        viewer.onUserInteraction = {
+            toolsPresentation.scrubber.cancelPreview()
+            pendingNavigation = null
+            updatePageIndicator()
+        }
         viewer.onReadPageText = { page -> showPageText(page) }
         viewer.setOnClickListener {
             if (reading) {
@@ -199,7 +206,9 @@ class MainActivity : Activity() {
             onPage = ::showPageJump,
             onBookmarks = ::showBookmarks,
             onReadText = { showPageText() },
-            onDismiss = ::hideTools
+            onDismiss = ::hideTools,
+            onScrubBegin = viewer::stopScrolling,
+            onScrubPage = { requestPage(it, keepTools = true) }
         )
         readerTools = toolsPresentation.view
         pageJumpButton = toolsPresentation.page
@@ -664,6 +673,7 @@ class MainActivity : Activity() {
     }
 
     private fun hideTools() {
+        toolsPresentation.scrubber.cancelPreview()
         readerTools.visibility = View.GONE
         viewer.dismissToolsOnOutsideTap = false
         readingWindow.apply(reading)
@@ -686,11 +696,16 @@ class MainActivity : Activity() {
         if (position != null) {
             val text = getString(R.string.current_page, position.page + 1, expectedPages)
             if (pageIndicator.text != text) pageIndicator.text = text
-            toolsPresentation.pageCount.text = text
-        } else {
-            toolsPresentation.pageCount.setText(R.string.loading)
         }
-        pageJumpButton.isEnabled = loaded && position != null
+        toolsPresentation.updatePages(
+            position?.page,
+            expectedPages,
+            loaded && pendingNavigation == null
+        )
+        pageJumpButton.isEnabled = loaded &&
+            position != null &&
+            expectedPages > 1 &&
+            pendingNavigation == null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
         if (::readPageButton.isInitialized) readPageButton.isEnabled = loaded && position != null
         documentLayoutSetting?.isEnabled = loaded && reading
@@ -750,19 +765,28 @@ class MainActivity : Activity() {
     }
 
     private fun showPageJump() {
-        if (!loaded || navigationDialog != null) return
+        if (!loaded ||
+            expectedPages <= 1 ||
+            pendingNavigation != null ||
+            navigationDialog != null
+        ) {
+            return
+        }
         val current = viewer.readingPosition() ?: return
         trackNavigationDialog(pageJumpDialog(current.page, expectedPages) { requestPage(it) })
     }
 
-    private fun requestPage(page: Int, y: Double? = null) {
+    private fun requestPage(page: Int, y: Double? = null, keepTools: Boolean = false) {
+        if (pendingNavigation != null) return
+        if (keepTools && page == viewer.readingPosition()?.page) return
         if (page !in 0 until expectedPages) {
             reportError(R.string.page_unavailable)
             return
         }
         pendingNavigation = PageTarget(page, y)
-        hideTools()
+        if (!keepTools) hideTools()
         applyPendingNavigation()
+        updatePageIndicator()
         if (pendingNavigation != null) {
             setStatus(R.string.page_preparing)
             Toast.makeText(this, R.string.page_preparing, Toast.LENGTH_SHORT).show()
@@ -779,6 +803,7 @@ class MainActivity : Activity() {
             cancelSave()
             saveReading()
         }
+        updatePageIndicator()
     }
 
     private fun trackNavigationDialog(dialog: AlertDialog) {
@@ -1173,14 +1198,26 @@ class MainActivity : Activity() {
     private fun handleBack() {
         when {
             settingsDialog != null -> settingsDialog?.dismiss()
+            reading && toolsPresentation.scrubber.cancelPreview() -> Unit
             reading && readerTools.visibility == View.VISIBLE -> hideTools()
             reading -> showLibrary()
             else -> finish()
         }
     }
 
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        // A second pointer may be routed to a sibling by ViewGroup's split touch dispatch.
+        if (event.pointerCount > 1 && ::toolsPresentation.isInitialized) {
+            toolsPresentation.scrubber.cancelPreview()
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && ::toolsPresentation.isInitialized) {
+            toolsPresentation.scrubber.cancelPreview()
+        }
         if (hasFocus && ::readingWindow.isInitialized) readingWindow.apply(reading)
     }
 
@@ -1196,6 +1233,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        toolsPresentation.scrubber.cancelPreview()
         closePageText()
         resumed = false
         updateDisplayWindow()
@@ -1232,6 +1270,7 @@ class MainActivity : Activity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        toolsPresentation.scrubber.cancelPreview()
         outState.putString("displayTheme", displaySettings.theme.name)
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)

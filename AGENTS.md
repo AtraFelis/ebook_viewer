@@ -27,13 +27,15 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·호환 44개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·호환·슬라이더 상태 48개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
 | 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 최종 기본 59개/실패 0(453.3초). 별도 화질 1개·프로세스 복원 seed/verify 각 1개 통과. 접근성 인덱스 건너뜀 수정·계측 자체 deadline 종료 확인. 최초 다른 페이지 이동 실패 원인은 미확정으로 보존. 실제 OOM/다른 API 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 
 현재 P2는 사용자 결정으로 문서 검색·목차·비밀번호 PDF 읽기를 필수에서 제외한다. 검색은 후속 보류/비활성화이며 진단 코드와 원인 미확정 이력은 Draft PR #12에 보존한다. 선명도 개선은 main 기반 독립 브랜치에서 기존 PdfRenderer로 진행한다. 2026-10-19 사용자 결정으로 선택/복사 UI도 후속으로 미룬다. 현재 페이지 본문 읽기·TalkBack/큰 글꼴과 해당 native 안전 검증·최종 통합 검증은 유지한다. [현재 계획](docs/plan/p2-scope-and-completion.md)을 따른다.
+
+2026-10-20 사용자 범위 변경: 이후 개발과 디자인 완료 조건에서 TalkBack 전용 기능·음성/초점·제스처 검증을 제외한다. 페이지 슬라이더에도 TalkBack 전용 조절을 추가하지 않는다. 기존 구현과 과거 P2 검증 이력은 보존하며, 큰 글꼴·일반 터치 조작·현재 페이지 본문 읽기는 유지한다.
 
 ## 코드 스타일
 

@@ -20,6 +20,7 @@
     <item name="reader_header" type="id" />
     <item name="reader_footer" type="id" />
     <item name="reader_page_count" type="id" />
+    <item name="page_scrubber" type="id" />
     <item name="background_color_input" type="id" />
     <item name="background_automatic" type="id" />
     <item name="page_number_input" type="id" />
