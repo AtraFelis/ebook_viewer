@@ -44,3 +44,9 @@ PR/CI/CodeRabbit 실제 결과는 게시 후 별도로 기록한다. 기기 검�
 구현 `6541ee5`를 일반 push하고 main 대상 [Draft PR #19](https://github.com/AtraFelis/ebook_viewer/pull/19)를 등록/채팅 첨부했다. 사용자 디자인 원문은 수정하지 않은 채 선행 커밋을 포함한다. push CI `39392412408`과 PR CI `39392435377`이 실제 IN_PROGRESS로 실행됐다. [수동 요청 6286630224](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286630224)에 봇이 [6286632250](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286632250)에서 **Review triggered**로 응답했다. 최초 자동 Draft skip과 이번 수동 접수를 구분한다. 실제 리뷰 결과는 아직 확인하지 않았으며 중복 요청/Autofix/자동 병합은 사용하지 않는다.
 
 기다리는 동안 후속 읽기 설정 `30:219`와 표시 설정 `31:371`을 같은 브라우저의 프로토타입 클릭으로 시각 확인했다. 이번 PR에서 폼 재배치를 구현한 것은 아니다. 기기 수용 전 Draft를 유지하고 원격 결과·리뷰 지적은 다음 확인 시 이어간다. 게시 상태 기록은 Markdown뿐이며 이 때문에 앱/기기 검사를 반복하지 않는다.
+
+### 최신 상태 확인
+
+사용자의 다음 작업 질문에 원격을 재조회했다. 문서 head `2234180`의 [Android CI 39392685917](https://github.com/AtraFelis/ebook_viewer/actions/runs/39392685917)은 성공했으며 PR은 OPEN/Draft다. CodeRabbit 체크는 SUCCESS지만 reviews/inline comments는 비어 있다. 봇 응답 `6286632250`을 직접 읽으니 **Action not completed / Head commit changed**였다. 앞선 Review triggered는 당시 접수였고, 뒤의 상태 기록 push로 요청 head가 바뀌어 실제 리뷰는 끝나지 않았다.
+
+최신 head에 [수동 재요청 6287191310](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6287191310)을 한 번 등록했고 봇 응답6287193160의 **Review triggered**를 확인했다. 같은 head의 중복 요청은 하지 않는다. 이번 문서 기록은 리뷰를 다시 중단하지 않도록 로컬에 유지하고 실제 결과 확인 후 모아 커밋/push한다. 앱 코드/ADB는 변경하거나 실행하지 않았다. 다음 구현은 기존 입력·설정 화면의 디자인 적용이며 홈 기기 검증과 PR 수용은 여전히 별도다.

@@ -8,6 +8,8 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import android.view.Gravity
 import android.widget.Button
+import android.widget.CompoundButton
+import android.widget.EditText
 import android.widget.TextView
 import kotlin.math.roundToInt
 
@@ -24,7 +26,8 @@ internal class ReaderStyle(private val context: Context) {
             R.attr.readerPressed,
             R.attr.readerOnAccent,
             R.attr.readerDisabled,
-            R.attr.readerDisabledText
+            R.attr.readerDisabledText,
+            android.R.attr.colorBackground
         )
     ).let { values ->
         try {
@@ -39,6 +42,14 @@ internal class ReaderStyle(private val context: Context) {
     val border get() = colors[3]
     val accentSoft get() = colors[4]
     val accent get() = colors[5]
+    val background get() = colors[10]
+    val isLight = context.obtainStyledAttributes(intArrayOf(R.attr.readerLightTheme)).let {
+        try {
+            it.getBoolean(0, true)
+        } finally {
+            it.recycle()
+        }
+    }
 
     fun dp(value: Int): Int = (value * context.resources.displayMetrics.density).roundToInt()
 
@@ -94,6 +105,66 @@ internal class ReaderStyle(private val context: Context) {
             background = RippleDrawable(ColorStateList.valueOf(colors[6]), fills, shape(-1))
             stateListAnimator = null
             elevation = 0f
+        }
+    }
+
+    fun styleChoice(button: CompoundButton) {
+        val selected = intArrayOf(android.R.attr.state_checked)
+        button.apply {
+            textSize = 16f
+            minHeight = dp(48)
+            minimumHeight = dp(48)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setTextColor(
+                ColorStateList(
+                    arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()),
+                    intArrayOf(colors[9], this@ReaderStyle.text)
+                )
+            )
+            backgroundTintList = null
+            background = StateListDrawable().apply {
+                addState(selected, shape(accentSoft, 8))
+                addState(intArrayOf(), shape(surface, 8))
+            }
+        }
+    }
+
+    fun styleInput(input: EditText) {
+        input.apply {
+            textSize = 16f
+            setTextColor(this@ReaderStyle.text)
+            setHintTextColor(secondary)
+            minHeight = dp(48)
+            minimumHeight = dp(48)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            backgroundTintList = null
+            background = StateListDrawable().apply {
+                addState(
+                    intArrayOf(android.R.attr.state_focused),
+                    shape(surface, 8).apply { setStroke(dp(2), accent) }
+                )
+                addState(intArrayOf(), shape(surface, 8).apply { setStroke(dp(1), border) })
+            }
+        }
+    }
+
+    fun styleSettingButton(button: Button) {
+        styleButton(button)
+        button.apply {
+            textSize = 16f
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            setTextColor(
+                ColorStateList(
+                    arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()),
+                    intArrayOf(colors[9], this@ReaderStyle.text)
+                )
+            )
+            background = RippleDrawable(
+                ColorStateList.valueOf(accentSoft),
+                shape(surface),
+                shape(-1)
+            )
         }
     }
 }

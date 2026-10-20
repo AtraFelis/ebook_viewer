@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <attr name="readerLightTheme" format="boolean" />
     <attr name="readerSurface" format="color" />
     <attr name="readerText" format="color" />
     <attr name="readerSecondaryText" format="color" />

@@ -6,22 +6,21 @@ import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
 import android.view.View
-import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
+import android.widget.Switch
 import java.util.Locale
 
 fun Activity.backgroundSettingsDialog(
     current: BackgroundSettings,
     save: (BackgroundSettings) -> Unit
 ): AlertDialog {
-    val automatic = CheckBox(this).apply {
+    val style = ReaderStyle(this)
+    val automatic = Switch(this).apply {
         id = R.id.background_automatic
         setText(R.string.background_automatic)
         isChecked = current.automatic
+        style.styleChoice(this)
     }
     val input = EditText(this).apply {
         id = R.id.background_color_input
@@ -30,6 +29,7 @@ fun Activity.backgroundSettingsDialog(
         contentDescription = getString(R.string.background_color_hint)
         filters = arrayOf(InputFilter.LengthFilter(7))
         setText(String.format(Locale.ROOT, "#%06X", current.customColor and 0xffffff))
+        style.styleInput(this)
     }
     val swatch = View(this).apply {
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -44,44 +44,43 @@ fun Activity.backgroundSettingsDialog(
         override fun afterTextChanged(text: Editable?) = Unit
     })
     val presets = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
+        orientation = LinearLayout.VERTICAL
         val colors = listOf(
             R.string.color_white to "#FFFFFF",
             R.string.color_black to "#000000",
             R.string.color_gray to "#444444",
             R.string.color_paper to "#F4ECD8"
         )
-        for ((label, color) in colors) {
-            val button = Button(this@backgroundSettingsDialog).apply {
-                setText(label)
-                setOnClickListener { input.setText(color) }
-            }
-            addView(button, LinearLayout.LayoutParams(0, -2, 1f))
+        colors.chunked(2).forEach { rowColors ->
+            addView(
+                LinearLayout(this@backgroundSettingsDialog).apply {
+                    rowColors.forEachIndexed { index, (label, color) ->
+                        addView(
+                            style.button(label) { input.setText(color) },
+                            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                                topMargin = style.dp(8)
+                                leftMargin = if (index == 0) 0 else style.dp(8)
+                            }
+                        )
+                    }
+                }
+            )
         }
     }
-    val content = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        val padding = (16 * resources.displayMetrics.density).toInt()
-        setPadding(padding, 0, padding, padding)
-        addView(
-            TextView(this@backgroundSettingsDialog).apply {
-                setText(R.string.background_description)
-            }
-        )
-        addView(automatic)
-        addView(input)
-        val swatchHeight = (32 * resources.displayMetrics.density).toInt()
-        addView(swatch, LinearLayout.LayoutParams(-1, swatchHeight))
-        addView(presets)
-    }
-    val dialog = AlertDialog.Builder(this)
-        .setTitle(R.string.background_settings)
-        .setView(ScrollView(this).apply { addView(content) })
-        .setPositiveButton(R.string.apply_settings, null)
-        .setNegativeButton(android.R.string.cancel, null)
-        .create()
-    dialog.setOnShowListener {
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+    return readerFormDialog(
+        R.string.background_settings,
+        readerFormBody(
+            style.label(R.string.background_description),
+            automatic,
+            style.label(R.string.background_color_hint, 14f),
+            input,
+            LinearLayout(this).apply {
+                addView(swatch, LinearLayout.LayoutParams(-1, style.dp(32)))
+            },
+            presets
+        ),
+        positive = R.string.apply_settings,
+        onConfirm = { dialog ->
             val color = selectedColor()
             if (color == null) {
                 input.error = getString(R.string.background_invalid_color)
@@ -90,6 +89,5 @@ fun Activity.backgroundSettingsDialog(
                 dialog.dismiss()
             }
         }
-    }
-    return dialog
+    )
 }

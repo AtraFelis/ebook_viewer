@@ -2,18 +2,17 @@ package dev.example.ebookviewer
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
-import android.widget.ScrollView
 import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.Switch
 
 fun Activity.displaySettingsDialog(
     current: DisplaySettings,
     save: (DisplaySettings) -> Unit
 ): AlertDialog {
+    val style = ReaderStyle(this)
     val choices = listOf(
         Triple(R.id.theme_system, R.string.theme_system, ReaderTheme.SYSTEM),
         Triple(R.id.theme_light, R.string.theme_light, ReaderTheme.LIGHT),
@@ -25,12 +24,14 @@ fun Activity.displaySettingsDialog(
                 RadioButton(this@displaySettingsDialog).apply {
                     id = viewId
                     setText(label)
-                }
+                    style.styleChoice(this)
+                },
+                LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = style.dp(8) }
             )
         }
         check(choices.single { it.third == current.theme }.first)
     }
-    val brightnessLabel = TextView(this).apply {
+    val brightnessLabel = style.label(R.string.reading_brightness, 14f).apply {
         id = R.id.brightness_label
         text = getString(R.string.brightness_percent, current.brightnessPercent)
     }
@@ -40,6 +41,7 @@ fun Activity.displaySettingsDialog(
         progress = current.brightnessPercent - 1
         contentDescription = getString(R.string.reading_brightness)
         isEnabled = !current.systemBrightness
+        minimumHeight = style.dp(48)
         setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
                 brightnessLabel.text = getString(R.string.brightness_percent, progress + 1)
@@ -48,37 +50,33 @@ fun Activity.displaySettingsDialog(
             override fun onStopTrackingTouch(bar: SeekBar?) = Unit
         })
     }
-    val systemBrightness = CheckBox(this).apply {
+    val systemBrightness = Switch(this).apply {
         id = R.id.system_brightness
         setText(R.string.system_brightness)
         isChecked = current.systemBrightness
+        style.styleChoice(this)
         setOnCheckedChangeListener { _, checked -> brightness.isEnabled = !checked }
     }
-    val keepScreenOn = CheckBox(this).apply {
+    val keepScreenOn = Switch(this).apply {
         id = R.id.keep_screen_on
         setText(R.string.keep_screen_on)
         isChecked = current.keepScreenOn
+        style.styleChoice(this)
     }
-    val content = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        val padding = (16 * resources.displayMetrics.density).toInt()
-        setPadding(padding, 0, padding, padding)
-        addView(TextView(this@displaySettingsDialog).apply { setText(R.string.app_theme) })
-        addView(theme)
-        addView(
-            TextView(this@displaySettingsDialog).apply {
-                setText(R.string.display_description)
-            }
-        )
-        addView(systemBrightness)
-        addView(brightnessLabel)
-        addView(brightness)
-        addView(keepScreenOn)
-    }
-    return AlertDialog.Builder(this)
-        .setTitle(R.string.display_settings)
-        .setView(ScrollView(this).apply { addView(content) })
-        .setPositiveButton(R.string.apply_settings) { _, _ ->
+    return readerFormDialog(
+        R.string.display_settings,
+        readerFormBody(
+            style.label(R.string.app_theme, 18f, true),
+            theme,
+            style.label(R.string.display_description, 12f).apply { setTextColor(style.secondary) },
+            style.label(R.string.reading_brightness, 18f, true),
+            systemBrightness,
+            brightnessLabel,
+            brightness,
+            keepScreenOn
+        ),
+        positive = R.string.apply_settings,
+        onConfirm = { dialog ->
             save(
                 DisplaySettings(
                     choices.single { it.first == theme.checkedRadioButtonId }.third,
@@ -87,7 +85,7 @@ fun Activity.displaySettingsDialog(
                     keepScreenOn.isChecked
                 )
             )
+            dialog.dismiss()
         }
-        .setNegativeButton(android.R.string.cancel, null)
-        .create()
+    )
 }

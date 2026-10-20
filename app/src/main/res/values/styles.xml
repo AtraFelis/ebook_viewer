@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="ReaderLightBase" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="readerLightTheme">true</item>
         <item name="android:alertDialogTheme">@style/ReaderAlertLight</item>
         <item name="android:colorBackground">@color/reader_light_background</item>
         <item name="android:windowBackground">@color/reader_light_background</item>
         <item name="android:colorAccent">@color/reader_light_accent</item>
-        <item name="android:textColorPrimary">@color/reader_light_text</item>
+        <item name="android:textColorPrimary">@color/reader_light_text_primary</item>
         <item name="android:textColorSecondary">@color/reader_light_secondary</item>
         <item name="readerSurface">@color/reader_light_surface</item>
         <item name="readerText">@color/reader_light_text</item>
@@ -18,11 +19,12 @@
         <item name="readerDisabledText">@color/reader_light_disabled_text</item>
     </style>
     <style name="ReaderDarkBase" parent="android:style/Theme.Material.NoActionBar">
+        <item name="readerLightTheme">false</item>
         <item name="android:alertDialogTheme">@style/ReaderAlertDark</item>
         <item name="android:colorBackground">@color/reader_dark_background</item>
         <item name="android:windowBackground">@color/reader_dark_background</item>
         <item name="android:colorAccent">@color/reader_dark_accent</item>
-        <item name="android:textColorPrimary">@color/reader_dark_text</item>
+        <item name="android:textColorPrimary">@color/reader_dark_text_primary</item>
         <item name="android:textColorSecondary">@color/reader_dark_secondary</item>
         <item name="readerSurface">@color/reader_dark_surface</item>
         <item name="readerText">@color/reader_dark_text</item>
@@ -36,6 +38,14 @@
     </style>
     <style name="ReaderLight" parent="ReaderLightBase" />
     <style name="ReaderDark" parent="ReaderDarkBase" />
+    <style name="ReaderFormLight" parent="ReaderLight">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+    <style name="ReaderFormDark" parent="ReaderDark">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
     <style name="ReaderAlertLightBase" parent="android:style/Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">@color/reader_light_accent</item>
         <item name="android:colorBackground">@color/reader_light_surface</item>

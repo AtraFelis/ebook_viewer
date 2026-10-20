@@ -2,15 +2,23 @@
 
 최종 갱신: 2026-10-20 (Asia/Seoul)
 
-## 현재 진행 — 디자인 적용 1차
+## 현재 진행 — 디자인 홈·입력/설정 적용
 
 사용자가 Figma 디자인 적용을 선택했고 `docs/design.md`를 읽고 계획 후 구현하도록 지시했다. Figma MCP는 한도 때문에 사용하지 않는다. Chrome에서 홈/읽기/도구 시안을 직접 확인했고 [적용 계획](docs/plan/design-implementation.md)에 5단계와 단계별 수용 기준을 기록했다. 사용자 디자인 커밋 `ea91122`를 보존한 `codex/design-foundation`에서 origin/main `8d0731b`를 일반 merge했다. PR #18은 사용자 병합 완료이며 **P2는 종료**했다. 아래 P2 진행 문구는 이전 단계의 기록이다.
 
-이번 구현은 light/dark 공통 토큰·버튼/카드와 홈의 이어 읽기·진행 표시·최근 목록·빈 상태·명시적 기록 관리다. SAF/기록 삭제 확인/실제 저장 결과·전체 기록·합성 문서 진입을 유지한다. `docs/design.md`와 디자인 worktree는 수정하지 않는다. 엔진/캐시/저장 형식/런타임 의존성 변경은 없다. 입력·설정 화면 재배치, 읽기 도구/슬라이더/첫 안내/실패 초안 복구는 다음 단계다.
+이번 구현은 light/dark 공통 토큰·홈 카드/기록 관리와 전체 화면 입력·설정 폼이다. 방향·배경색·테마/밝기·문서 배치·페이지 이동·북마크·본문 창에 공통 UI와 스크롤/적응형 하단 조작을 적용했다. SAF/기록 삭제 확인/실제 저장 결과·전체 기록·합성 문서 진입을 유지한다. `docs/design.md`와 디자인 worktree는 수정하지 않는다. 엔진/캐시/저장 형식/런타임 의존성 변경은 없다. 읽기 도구/슬라이더/첫 안내/실패 초안 복구는 다음 단계다.
 
-strict 앱/계측 빌드·단위 44개(실패/건너뜀 0)·Lint 오류/경고 0·ktlint를 통과했다. 홈 레코드가 새 카드로 바뀐 데 맞춰 기존 복원/글꼴 검사의 선택 대상을 갱신하며 인수 조건은 유지한다. 기기 실행/앱 화면 시각 확인/200%·TalkBack 수용은 미실행이다. 사용자 USB 분리 요청으로 ADB 서버를 종료하고 프로세스 0/5037 listener 0을 확인했다. 기기 검증 전까지 ADB를 다시 시작하지 않는다. [실제 명령·미결](docs/history/2026-10-20-02-design-foundation.md)을 따른다.
+현재 PC strict 앱/계측 빌드·단위44개/실패0·Lint 오류/경고0·ktlint를 통과했고, 사용자 USB 재연결 후 같은 APK의 관련 기기 **17개/실패0**(display4/font1/navigation4/layout3/immersive5)을 통과했다. font 검사는 100/150/200%×가로/세로와 본문 창을 포함한다. 설치 APK SHA-256 `f51341ea8910a6187c5d882103b8f5032c3c70ae8bede2f071d977bc29eadc2f` 일치와 종료 후 글꼴1.1을 확인했고 앱/계측·ADB를 모두 중지했다(ADB 프로세스0). 사용자는 실제 홈/이어 읽기·새 UI·키보드/오류/적용 버튼 가림과 편의성 확인에 **“모두 정상이고 화면도 괜찮아요”**라고 수용했다. 추가 성능/전체59개 반복은 하지 않았다. 새 TalkBack 음성/최소폭320dp/전체 시안 일치는 아직 별도다.
+
+사용자는 CodeRabbit의 Draft 호출 금지 지시를 정정해 **Draft에서도 필요하면 호출할 수 있으나 구현·검증이 어느 정도 끝난 시점에만 요청하고 잦은 호출을 피하도록** 했다. 최종 규칙을 AGENTS/Git 규칙/계획에 반영했다. 실제 리뷰5582891368은 head2234180의20개 파일/지적1건이었다. 기본 테마 primary 텍스트의 비활성 상태 색상 지적을 타당하다고 판단해 전용 light/dark 선택자로 고쳤고 secondary/Alert 테마는 확대 수정하지 않았다. 새 호출 없이 수정·UI 변경을 함께 검증했다. [구현·리뷰·실제 검사](docs/history/2026-10-20-03-design-settings-and-review.md)를 따른다.
+
+초기 홈 단계에서는 strict 앱/계측 빌드·단위44개·Lint/ktlint만 완료했고 기기 수용은 미실행이었다. USB 분리 요청으로 ADB를 종료한 뒤 후속 사용자 재연결 승인 전까지 시작하지 않았다. 이후 실제 검증·현재 수용은 위 결과로 갱신한다. [초기 명령·미결](docs/history/2026-10-20-02-design-foundation.md)을 보존한다.
 
 구현 `6541ee5`를 일반 push해 [Draft PR #19](https://github.com/AtraFelis/ebook_viewer/pull/19)를 등록/채팅 첨부했다. push/PR Android CI는 실제 실행 중이다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286630224) 한 번에 봇이 [Review triggered](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286632250)로 응답했다. 최초 자동 Draft 건너뜀과 수동 접수를 구분하며 실제 리뷰 완료는 아직 확인하지 않았다. 후속 읽기 설정 `30:219`/표시 설정 `31:371` 시안도 브라우저에서 시각 확인했다. 기기 검증 전 Draft를 유지하며 병합하지 않는다.
+
+### PR #19 앞선 접수 기록 — 2026-10-20
+
+head `2234180`의 [Android CI 39392685917](https://github.com/AtraFelis/ebook_viewer/actions/runs/39392685917)은 성공했다. 실제 코드 리뷰는 아직 없다. 앞선 수동 응답 `6286632250`은 최종적으로 **Action not completed / Head commit changed**로 바뀌었다. 구현 뒤 문서 push가 기존 요청의 head를 바꿨으므로 그 요청의 접수 이력을 리뷰 완료로 세지 않는다. 최신 head에 [재요청 6287191310](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6287191310)을 한 번 등록했고 봇 응답6287193160의 Review triggered를 확인했다. 리뷰 중 head를 다시 바꾸지 않도록 이번 상태 문서는 로컬에 먼저 기록하고 결과 확인 후 모아 게시한다. 다음 구현은 입력·설정 화면, 홈 실제 기기 수용은 별도로 남아 있다.
 
 ## 이전 진행 — P2 완료 문서
 

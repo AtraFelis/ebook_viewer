@@ -12,6 +12,7 @@ fun Activity.pageJumpDialog(
     pageCount: Int,
     navigate: (Int) -> Unit
 ): AlertDialog {
+    val style = ReaderStyle(this)
     val input = EditText(this).apply {
         id = R.id.page_number_input
         inputType = InputType.TYPE_CLASS_NUMBER
@@ -21,16 +22,17 @@ fun Activity.pageJumpDialog(
         setText(String.format(Locale.ROOT, getString(R.string.page_number_value), currentPage + 1))
         selectAll()
         contentDescription = getString(R.string.page_number_hint, pageCount)
+        style.styleInput(this)
     }
-    val dialog = AlertDialog.Builder(this)
-        .setTitle(R.string.go_to_page)
-        .setMessage(getString(R.string.page_number_hint, pageCount))
-        .setView(input)
-        .setPositiveButton(R.string.navigate, null)
-        .setNegativeButton(android.R.string.cancel, null)
-        .create()
-    dialog.setOnShowListener {
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+    return readerFormDialog(
+        R.string.go_to_page,
+        readerFormBody(
+            style.label(R.string.go_to_page, 18f, true),
+            style.label(R.string.go_to_page).apply { text = input.contentDescription },
+            input
+        ),
+        positive = R.string.navigate,
+        onConfirm = { dialog ->
             val page = input.text.toString().toIntOrNull()
             if (page == null || page !in 1..pageCount) {
                 input.error = getString(R.string.page_number_hint, pageCount)
@@ -39,6 +41,5 @@ fun Activity.pageJumpDialog(
                 dialog.dismiss()
             }
         }
-    }
-    return dialog
+    )
 }

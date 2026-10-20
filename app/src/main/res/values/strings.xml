@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="reading_environment">읽기 환경 · 모든 문서</string>
+    <string name="current_document">현재 문서</string>
+    <string name="document_settings_hint">페이지 크기와 간격은 문서를 연 뒤 바꿀 수 있어요. PDF 내용과 사용자 줌은 유지해요.</string>
     <string name="my_documents">내 문서</string>
     <string name="last_read_document">마지막으로 읽던 문서</string>
     <string name="manage_documents">문서 관리</string>
