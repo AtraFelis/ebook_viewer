@@ -41,3 +41,21 @@ PR #20의 이전 head1214f64 원격 CI39428703554/39428695825는 모두 SUCCESS�
 글자 잘림 원인을 보편 Android와 혼동하지 않도록 공식 API35 SDK의 `simple_list_item_single_choice.xml`도 대조했다. API35는 height=wrap_content/minHeight 속성이지만, 현재 API33 기기의 `/system/framework/framework-res.apk`를 로컬로 읽어 aapt2 xmltree로 확인한 실제 동일 레이아웃은 **layout_height=?0x01010387**이었다. aapt2 resources에서 그 속성이 **attr/listPreferredItemHeightSmall**임을 확인했다. 따라서 고정 높이 설명은 현재 기기 리소스에 해당하며 모든 Android 버전의 보편 속성으로 확대하지 않는다. 개인 앱/PDF/화면을 수집한 것이 아니고 읽은 시스템 APK는 ignored local-artifacts에만 있으며 Git/외부 서비스에 올리지 않는다.
 
 종료 시 설치 APK와 로컬 최종 해시 일치, font_scale1.1·앱/계측 force-stop·ADB kill-server·ADB 프로세스0을 확인했다. 사용자에게 수정 후 상위 복귀/전환/방향 글자를 재확인하도록 요청했다. 현재 직접 수용은 대기 중이며 자동 검사와 분리한다. 수정·검증을 묶어 같은 Draft PR에 일반 push하며 원격 CI/실제 리뷰는 새 head에서 확인한다.
+
+### 게시와 사용자 수용
+
+공백/문서 링크80개·누락0을 확인하고12개 파일을7715e31로 커밋해 기존 PR #20 브랜치에 일반 push했다. PR 제목/설명을 읽기 도구 개편과 설정 화면 왕복·최종14개 검사·수용 미결로 갱신했다. 새 CI39432525983/39432517916은 당시 IN_PROGRESS였다. 이전 요청의8분 안내 이후26분 이상이 지났고 의미 있는 수정/검증을 마쳤으므로 새 head에 [6292251554](https://github.com/AtraFelis/ebook_viewer/pull/20#issuecomment-6292251554)로 CodeRabbit를 한 번 요청했다. 진행 중 head를 바꾸는 상태 문서 push와 반복 호출은 하지 않는다.
+
+이후 사용자 답변은 **“세 가지 모두 정상”**이었다. 질문한 상위 설정 복귀/전환 노출·깜빡임/방향 글자의 실제 기기 사용감은 재수용 완료다. 이를 새 TalkBack 음성·모든 해상도/조합 또는 전체 디자인 종료로 확대하지 않는다. 수정 head 원격 CI/리뷰와 PR 정식 전환·사용자 병합은 별도이며 이번 게시 후 상태/수용 기록은 로컬에 모아 둔다.
+
+실제 응답[6292253699](https://github.com/AtraFelis/ebook_viewer/pull/20#issuecomment-6292253699)의 **Action performed / Review triggered**와 CodeRabbit PENDING을 확인했다. 이번에는 요청만 등록된 상태가 아니라 실제 접수됐다. 리뷰 결과가 나오기 전 완료로 세거나 head를 바꾸지 않는다.
+
+### 실제 후속 리뷰와 경합 수정
+
+사용자의 리뷰 확인/수정 요청 후7715e31의 CI39432525983/39432517916 모두 SUCCESS와 실제 리뷰5585939549를 확인했다.19개 파일을 검토했고 actionable 지적은1개다. [4325698309](https://github.com/AtraFelis/ebook_viewer/pull/20#discussion_r4325698309)는 초기 페이지 번호 로드가 저장 중 Switch를 이전 값으로 덮을 수 있다는 경합이다. 저장 콜백은 실제 값/페이지 표시를 갱신하지만 Switch를 다시 binding하지 않아 표시가 저장 값과 어긋날 수 있으므로 채택했다.
+
+`bindPageNumberSetting`에서 checkbox.isEnabled인 경우만 초기 값을 적용하도록 최소 수정했다. 새 회귀는 앱의 실제 repository executor를 CountDownLatch barrier로 잠시 대기시켜 사용자가 바꾼 값의 저장을 보류하고, 실제 binding callback에 이전 값을 전달한다. 대기 중 선택/비활성 상태 유지 → 큐 해제 후 실제 저장 → 재열기 값 일치와 사용자 원래 설정 복원을 검증한다. 임의 sleep/production hook/새 의존성 없이 재현하며 barrier는 최대10초/finally 해제한다. settings suite는2→3개, 전체 예상은63→64개이며 전체 실행 완료를 의미하지 않는다.
+
+strict 앱/계측 빌드·단위44개/실패0/오류0/건너뜀0·Lint 오류/경고0(Information6개)·ktlint는11초/exit0이었다. 초기 새 검사 코드의 긴 한 줄은 수동 보정했고 formatter는 사용하지 않았다. 변경이 작아 전체14개/성능 검사를 반복하지 않고 관련 settings3개만 재검사한다. 이전 사용자 수용은 유지하고 개인 PDF/화면을 수집하지 않는다. 추가된 `docs/design.md`14줄은 별도 세션/사용자 변경으로 보존하고 이번 PR 게시에서 제외한다. 포함 리뷰 잔여0과 최소 수정 범위를 고려해 재검토 요청을 다시 보내지 않는다.
+
+최종 `./local-artifacts/design-device.ps1 -Mode suite -Suite settings`는 **3개/실패0**이었다. 새 경합 재현과 기존 홈/본문의 상위 복귀·회전/번호 표시 복원을 포함한다. 기기180초/host210초 상한과 finally force-stop은 그대로다. 재열기/실제 저장 값 일치 후 사용자 원래 번호 표시 설정도 finally에서 복원했다. 설치 app/로컬 SHA-256 `bf596a0e7204cc27405e6cbda9e50af9c4be03d4cd3e5b60423ff07bac124164` 일치, font_scale1.1·앱/계측·ADB 종료와 프로세스0을 확인했다. 새 수정 head 원격 CI는7715e31의 성공과 별개다.

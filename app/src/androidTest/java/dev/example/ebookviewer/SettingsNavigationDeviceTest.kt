@@ -9,6 +9,7 @@ import android.view.ViewTreeObserver
 import android.widget.Button
 import android.widget.EditText
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -22,6 +23,60 @@ class SettingsNavigationDeviceTest {
     private val ui get() = DeviceGestures(instrumentation)
     private val repository get() =
         (instrumentation.targetContext.applicationContext as ReaderApplication).settings
+
+    @Test
+    fun lateInitialLoadKeepsPendingPageNumberChoiceUntilSaveCompletes() {
+        val original = setting(repository::loadPageNumbers)
+        val activity = ui.launch()
+        val release = CountDownLatch(1)
+        try {
+            val parent = openRoot(activity)
+            // Drain startup loads, then hold the real save queue to reproduce a late UI binding.
+            setting(repository::loadPageNumbers)
+            val field = ReaderSettingsRepository::class.java.getDeclaredField("executor")
+            field.isAccessible = true
+            val queue = field.get(repository) as ExecutorService
+            val entered = CountDownLatch(1)
+            queue.execute {
+                entered.countDown()
+                release.await(10, TimeUnit.SECONDS)
+            }
+            assertTrue("Settings queue did not reach barrier", entered.await(5, TimeUnit.SECONDS))
+            val choice = ui.onMain {
+                ui.views(requireNotNull(parent.window).decorView)
+                    .filterIsInstance<android.widget.Switch>().single()
+            }
+            ui.onMain {
+                choice.isChecked = !original
+                assertFalse("Save must still be pending", choice.isEnabled)
+                val bindingField = MainActivity::class.java
+                    .getDeclaredField("bindPageNumberSetting")
+                bindingField.isAccessible = true
+                @Suppress("UNCHECKED_CAST")
+                val initialBinding = bindingField.get(activity) as (Boolean) -> Unit
+                initialBinding(original)
+                assertEquals("Late load overwrote user choice", !original, choice.isChecked)
+                assertFalse(choice.isEnabled)
+            }
+            release.countDown()
+            ui.await("Saved switch did not preserve user choice") {
+                choice.isEnabled && choice.isChecked == !original
+            }
+            assertEquals(!original, setting(repository::loadPageNumbers))
+            ui.onMain { parent.dismiss() }
+            ui.await("Settings did not close") { current(activity) == null }
+            val reopened = openRoot(activity)
+            ui.onMain {
+                val savedChoice = ui.views(requireNotNull(reopened.window).decorView)
+                    .filterIsInstance<android.widget.Switch>().single()
+                assertEquals(!original, savedChoice.isChecked)
+            }
+        } finally {
+            release.countDown()
+            ui.onMain { activity.finish() }
+            setting { repository.savePageNumbers(original, it) }
+        }
+    }
 
     @Test
     fun homeKeepsOpaqueParentAttachedAcrossSubsettingsAndBack() {

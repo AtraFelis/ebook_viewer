@@ -1007,9 +1007,11 @@ class MainActivity : Activity() {
         }
         // A restored settings Window can appear before its asynchronous preference load completes.
         bindPageNumberSetting = { checked ->
-            binding = true
-            checkbox.isChecked = checked
-            binding = false
+            if (checkbox.isEnabled) {
+                binding = true
+                checkbox.isChecked = checked
+                binding = false
+            }
         }
         listOf(orientationButton, displayButton, layoutButton, backgroundButton)
             .forEach(style::styleSettingButton)
