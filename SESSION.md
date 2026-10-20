@@ -81,6 +81,12 @@ fetch 후 main `0aea06e`와 origin/main 차이 0, PR #10 사용자 병합과 PR 
 
 착수 계획 당시에는 API 33/SDK 확장·엔진 지원 경로, 구체적인 구성안/승인·ADR, 합성 샘플과 기준 측정/합격선을 준비하는 단계였다. 당시 Context7/공식 API·SDK 35 서명 대조는 API 33 실행 증거가 아니었고 승인 기기 0대여서 확장/실행은 미확인이었다. 이후 실제 연결/실행은 위 ‘P2 착수 실행’ 결과를 따른다. 새 엔진/라이브러리는 도입하지 않았다. 기능 전체·최종 통합 검증·개인 기기 수용·사용자 PR 병합·완료 기록이 끝나야 P2를 종료하며 종료일은 준비 단계 뒤 근거와 함께 제시한다.
 
+## UI/UX 디자인 초안 — 2026-10-18
+
+사용자 요청으로 송채선 팀에 [Ebook Viewer — UI UX Design](https://www.figma.com/design/wFQ8qOUx3YfMy8u0E3t7fM)을 생성했다. 차분한 도구형 톤과 이어 읽기 중심 추천안/플로우를 사용자가 승인한 뒤, 변수 39개·텍스트 스타일 6개·컴포넌트 8종/25변형과 21개 화면·상태 초안을 작성했다. 마지막 버튼 예시 문구와 설정 토글/첫 안내/로딩 화면을 보정·시각 확인했다. [화면 명세와 검증 이력](docs/history/2026-10-18-02-design-draft.md).
+
+편집 가능한 정적 시안이며 사용자 최종 디자인 수용, 클릭 연결 프로토타입, Ready for dev 표시는 미완료다. 앱 코드/의존성과 P2 구현은 변경하지 않았다. 다음은 사용자 시안 검토 결과를 반영한 뒤 구현 범위를 정하는 것이다. [준비 당시 근거](docs/history/2026-10-18-01-design-preparation.md)는 과거 상태로 보존한다.
+
 ## 현재 상태
 
 2026-10-17, 개인용 SM-N981N(API 33) 대상의 **P1 핵심 MVP를 완료**했다. 사용자 병합한 [PR #9](https://github.com/AtraFelis/ebook_viewer/pull/9)의 최종 head `cefc265`와 origin/main 병합 `6400b85`를 확인했다. 최종 head의 [Windows CI 39029124087](https://github.com/AtraFelis/ebook_viewer/actions/runs/39029124087)는 성공했다. 현재 체크아웃의 깨끗한 상태에서 main 기반 `codex/p1-completion`을 만들고 완료 판정·후속 범위만 정리한다. [완료 근거·명령·제한](docs/history/2026-10-17-12-p1-completion.md).
