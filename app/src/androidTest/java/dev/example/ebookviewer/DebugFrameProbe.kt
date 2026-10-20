@@ -107,13 +107,18 @@ class DebugFrameProbe {
                     val backgroundSetter = PdfCanvasView::class.java.methods.singleOrNull {
                         it.name == "setBackgroundSettings"
                     }
-                    // Frozen P1 has no automatic mode and may reject the newer settings schema.
-                    // Preserve those bytes; its manual fallback is the documented baseline mode.
-                    if (backgroundSetter != null) {
+                    val supportsAutomaticBackground = BackgroundSettings::class.java.methods.any {
+                        it.name == "getAutomatic" && it.parameterCount == 0
+                    }
+                    report.put("supportsAutomaticBackground", supportsAutomaticBackground)
+                    // P1 already has the manual setter but rejects the newer settings schema.
+                    // Detect the mode itself and preserve those bytes for the manual baseline.
+                    if (supportsAutomaticBackground) {
                         assertTrue(
                             "Initial background settings load failed",
                             backgroundLoadSucceeded
                         )
+                        assertTrue("Automatic background setter missing", backgroundSetter != null)
                     } else {
                         assertTrue("Automatic mode is missing", !instrumentation.autoBackground)
                     }
@@ -139,10 +144,12 @@ class DebugFrameProbe {
                         (layoutField.get(view) as? DocumentLayout)?.pages?.size == fixturePageCount
                     }
                     instrumentation.runOnMainSync {
-                        backgroundSetter?.invoke(
-                            view,
-                            BackgroundSettings(automatic = instrumentation.autoBackground)
-                        )
+                        if (supportsAutomaticBackground) {
+                            requireNotNull(backgroundSetter).invoke(
+                                view,
+                                BackgroundSettings(automatic = instrumentation.autoBackground)
+                            )
+                        }
                     }
                     val firstVisibleMs = SystemClock.elapsedRealtime() - openStart
                     ui.pinch(view)

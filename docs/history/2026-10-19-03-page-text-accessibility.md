@@ -114,3 +114,33 @@ PR 최신 head 867c53b의 실제 [PR CI 39376473079](https://github.com/AtraFeli
 final normal도 9회/540표본·timeout 0으로 완료했다. 동일 test SHA/font/자료 hash·viewport·배율·주사율·창 밝기·충전 상태를 대조했고 양쪽 thermal 전후 0~1이었다. 기준→최종 pooled p95(ms)는 vector 첫 방향 **1331.400→811.342**, 역방향 **1430.140→726.838**; gray **149.166→99.506**, **132.827→82.516**; RGB **516.135→249.090**, **432.595→216.119**로 6그룹 모두 사전 목표를 충족했다. 각 방향 n=90이며 null 표본 제거 없이 집계했고 cache≤64MiB였다. 이 결과는 normal 컴포넌트 계측만의 통과이며 나머지 플링/최대 배율/복잡 자료·실제 Activity 프레임/10분·개인 수용 완료로 확대하지 않는다. 원자료 `baseline-normal.json`, `final-normal.json`, 계산 `summary.json`은 ignored local-artifacts/p2-integration에 보존한다.
 
 이후 `--label baseline --mode fling`은 ADB operation failed로 중단됐고 실패 처리의 force-stop도 같은 연결 오류로 실패했다. JSON/플링 원자료는 생성되지 않았다. 재조회에서는 같은 기기가 승인 상태로 복구돼 앱/계측을 각각 force-stop하고 본 앱 PID 부재를 확인했다. 연결 실패의 내부 원인은 미확정이다. thermal 2로 상승한 상태여서 재시도하지 않고 냉각을 기다린다. normal 완료 표본/판정은 변경하지 않는다.
+
+후속 사용자 냉각 완료 답변 뒤 재시도도 thermal 2 준비 guard로 측정 전에 종료됐다. 추가 대기 후 thermal 1/SKIN 37.7°C로 내려왔지만 Dozing/keyguard showing=true라 잠금 해제를 다시 요청했다. 이 동안 앱과 테스트는 중지 상태이고 플링 표본은 아직 없다. 측정 준비 guard 실패를 성능 실패 표본이나 앱 충돌로 세지 않는다.
+
+## 플링 기준 완료와 재검토 실제 접수
+
+사용자 재잠금 해제 후 baseline fling은 KST 15:11:16~15:20:54, **9회/180표본**, thermal 1→0·충전 status 2·font 1.1로 정상 종료했다. 각 자료×방향 n=30이며 vector의 1초 초과는 첫 방향 5/30·역방향 3/30, gray/RGB는 양 방향 모두 0/30이다. timeout은 모든 그룹 0이다. 최종과의 비교는 아직 완료하지 않았다. final 설치 직후 메모리 guard로 시작 전 중단됐다가 2,533,616KiB·thermal 0·Awake/잠금 해제를 확인하고 재설치 없이 final fling을 시작했다.
+
+31ebdef의 [push CI 39378567969](https://github.com/AtraFelis/ebook_viewer/actions/runs/39378567969)와 [PR CI 39378572513](https://github.com/AtraFelis/ebook_viewer/actions/runs/39378572513)는 모두 성공했다. 실제 직전 리뷰부터 한 시간 뒤 새 head에서 [수동 요청 6284729400](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6284729400)을 한 번 보냈고 [6284730602](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6284730602)의 `Review triggered` 실제 접수를 확인했다. 최근 리뷰 요약에는 아직 이전 f8d9265 구간이 남아 있어 최신 코드 검토 완료로 세지 않는다. 중복 요청하지 않는다. 체크리스트의 과거 ‘기준선 미실행’/자동 배경색 미완료/기능 회귀 미완료 중복 항목은 실제 완료 근거에 맞게 정정하되 최종 성능·개인 수용/병합 항목은 미체크로 유지한다.
+
+후속 확인에서 CodeRabbit 6284730602가 `Review finished`로 바뀌었고, 6271088510의 recent review 구간도 **f8d9265→31ebdef**로 갱신됐다(KST 15:24:43). 12개 파일 선택 중 유사 문서 6개를 건너뛰었으며 실제 앱 MainActivity/PdfCanvasView·본문 테스트/계측 deadline·통합 절차/host guard는 검토 범위에 포함됐다. `No actionable comments`/inline 0건으로 최신 접근성/계측 수정의 실제 외부 검토 완료를 확인했다. 이후 문서 기록 변경을 해당 코드 검토와 구분하고 불필요한 같은 head 요청은 하지 않는다.
+
+final fling도 9회/180표본·timeout 0으로 완료했다. 같은 조건(자료/공통 test SHA·화면/배율/주사율/밝기·충전/font, 전후 thermal≤1) 비교에서 자료×방향 6그룹 모두 1초 초과 비율이 증가하지 않았다. vector는 첫 방향 **5/30→0/30**, 역방향 **3/30→0/30**이고 gray/RGB는 양쪽·양 방향 **0/30→0/30**이다. 최종 pooled p95는 플링 중 이미 준비된 타일의 마지막 viewport draw가 많아 약 0.4~0.8ms이며, 물리 화면 표시/모든 플링의 무지연이나 일반 스크롤 개선율로 해석하지 않는다. 각 방향 n=30/3회 조건, null 미제거와 모든 그룹 cache≤64MiB를 확인했다. 원자료 baseline/final-fling.json 및 summary.json에 보존하고 다음 최대 배율 조건을 시작했다.
+
+최대 배율 비교는 기준/최종 각각 9회/180표본(자료×방향 n=30), 조건 일치/전후 thermal≤1·cache≤64MiB로 완료했다. 모든 그룹에서 양쪽 1초 초과/timeout **0**으로 사전 비증가 조건을 충족한다. p95(ms)는 vector 첫 방향 **830.571→264.669**, 역방향 **797.118→266.149**; gray **63.770→49.283**, **49.801→41.470**; RGB **149.931→83.040**, **197.714→95.324**다. 내부 32px/PDF point 배율이며 너비 맞춤 대비 32배/임의 PDF의 물리 화면 지연으로 표현하지 않는다. 이후 baseline normal --complex의 단일 측정을 시작했다.
+
+첫 complex 준비는 기준 APK `adb install --no-streaming -r -t`의 host 90초 제한으로 실패했다. JSON/계측 raw 보고서는 없고 설치 hash 재조회는 기존 final 5e968f60…였다. 기기는 승인/awake·여유 2,531,364KiB, 본 앱 PID는 없었다. 설치 실패의 내부 원인은 미확정이며 앱 렌더 충돌/성능 표본으로 세지 않는다. 동일 준비를 한 번 재시도하고 제한을 늘리거나 체크섬·기준을 우회하지 않는다.
+
+두 번째 설치도 PC 응답은 90초 timeout이었으나 후속 APK SHA는 기준 06423be6…로 확인됐다. 재설치 없이 실행한 첫 complex 계측은 약 8초에 `Process crashed`로 끝났다. Exit-info의 해당 PID 10761/KST 15:43:56 항목은 **USER REQUESTED/FORCE STOP, description=`stop dev.example.ebookviewer.p0 due to installPackageLI`**였다. package lastUpdateTime도 15:43:56으로 일치했다. PC 설치 timeout 후 남은 기기 설치가 뒤늦게 교체하며 계측을 종료한 근거이며 이 사건을 native PDF 렌더 충돌로 세지 않는다. 실제 baseline 설치/갱신 시각 안정화를 확인하고 같은 APK로 계측만 재개한다. 실패 raw는 `baseline-normal-complex-install-replaced.txt`로 보존한다. 설치 횟수를 추가하거나 제한을 우회하지 않는다.
+
+동일 마지막 설치 시각(15:43:56)과 실제 계측 PID 12217을 확인해 complex를 설치 없이 재개했다. 다음 실행부터 host 설치 응답 대기를 **90→300초**로 늘리고 설치/측정 시작을 즉시 출력하도록 했다. 실제 90초 뒤에도 package replacement가 진행된 이력에 대한 호스트 도구 보완이며, 기기 watchdog·계측 timeout·메모리/발열·합격선 변경은 없다. 설치 timeout 뒤 반복 설치를 큐에 넣지 않고 실제 APK/lastUpdate 안정화를 확인하는 절차를 통합 문서에 추가했다. Python AST 구문 검사를 통과했고 다음 final 설치에서 실제 완료 응답/계측 시작을 확인한다.
+
+complex 최종도 3회/180표본으로 완료해 기준과 자료 SHA·test SHA·화면/배율/주사율·창 밝기/font/충전 일치와 양쪽 thermal 전후≤1을 확인했다. 방향별 n=90의 pooled p95(ms)는 **265.812→149.363**, **232.648→132.496**이며 500ms 목표 이내다. 양쪽 1초 초과/timeout 0, cache≤64MiB였다. 따라서 normal 6그룹·fling 6그룹·zoom32 6그룹·complex 2그룹의 **20그룹 모두 사전 수치/조건 목표를 충족**했다. raw JSON/요약은 ignored p2-integration에 보존한다. 새 300초 설치 대기·단계 출력 도구에서도 실제 final 설치 완료 응답→준비 guard→계측 시작/완료를 확인했다. 다음은 실제 MainActivity 프레임 baseline/final 각 30초×3회와 final 600초×1회이며 아직 미완료다.
+
+## 프레임 계측의 구형 배경 설정 호환 보완
+
+첫 baseline frames는 `Initial background settings load failed`, runs=[]/실패 1로 종료됐다. 기준 앱에도 P1 수동용 `setBackgroundSettings`가 있으므로 setter 존재만으로 자동 모드를 판별한 계측 오류였다. 기존 v2 데이터는 구형 기준에서 읽기 실패/수동 기본 대체를 유지해야 하며 임의로 지우거나 변환하지 않는다. 실제 `BackgroundSettings.getAutomatic` 지원 여부를 확인하고, 지원 시 기존 로드 성공/설정 setter assertion과 자동 설정 적용을 유지한다. 미지원 기준에서는 자동 false를 assertion하고 새 생성자를 호출하지 않는 수동 대체 경로를 사용한다. 보고서에도 supportsAutomaticBackground를 기록한다. 앱 본체·SharpnessProbe/합격선은 바꾸지 않았다.
+
+`:app:assembleProfileAndroidTest :app:lintDebug ktlintCheck -Pp0TestBuildType=profile --dependency-verification strict --console=plain`은 성공했다. 원래 공통 계측 834c353f…를 전체 SHA명 APK로 보존하고, 새 프레임용 공통 계측 **c128cef795dd616f85c4d29c253d991396231336d0efc46d9f46ee876201d2f8**을 동결했다(frame-compat-apks.json). baseline/final 앱 hash는 06423be6…/5e968f60… 그대로다. 이미 완료한 선명도 비교는 양쪽 공통 834c…로 유효하며, 프레임/long은 양쪽 새 c128…로 검증한다. 이번 변경은 프레임 호환 경로만이라 기존 기능 59개/선명도 4조건을 반복하지 않는다. 실패 raw는 baseline-frames-background-compat-failed.txt로 보존하고 수정 baseline frames를 재개했다.
+
+수정 공통 c128…로 baseline frames **30초×3회 정상 완료**, supportsAutomaticBackground=false/autoBackground=false를 실제 보고서에서 확인했다. 전후 thermal 0·font 1.1·충전 status 2, p95 5.571~5.989ms/p99 6.364~6.749ms·droppedReports 0·cache≤64MiB다. 빠른 제스처 직후 고해상도 타일/페이지 커버가 미준비인 표본은 원자료에 보존하며 완전 무공백/무지연으로 보고하지 않는다. 같은 c128…를 유지한 최종 앱 자동 배경색 true 프레임을 시작했다.

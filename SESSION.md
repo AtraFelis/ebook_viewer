@@ -10,9 +10,11 @@
 
 기기 검사는 한 invocation씩 종료를 확인하며 다음 작업을 자동 연결하지 않는다. PC 래퍼 timeout/finally와 계측 자체 일반 720초/선명도 1200초/프레임 요청 시간+여유의 deadline을 적용했다. 실제 1초 제한에서 약 2.1초에 incomplete로 종료하고 앱 PID 부재·글꼴 1.1을 확인했다. 현재 소스 strict debug/profile 빌드·단위 44개·Lint/ktlint는 통과했다. 이전 앱 삭제 전 private 기록/설정 복구를 주장하지 않는다.
 
-본문 창의 페이지 선택은 짧은 문서를 모두 표시해도 PDF 줌/위치 변경 없이 다른 페이지를 읽는다. native 서비스의 6초·192MiB RSS 관측·여유 메모리·16,000자 제한은 유지하며 순간 peak/OOM hard limit 보장은 아니다. 실제 결과/미결은 [실행 이력](docs/history/2026-10-19-03-page-text-accessibility.md)에 기록한다. 선택 UI·검색·새 런타임 의존성/도구 변경은 없다. 성능·개인 접근성 수용 및 P2 완료는 아직 아니다. 냉각·잠금 해제 뒤 baseline normal은 540표본/timeout 0·thermal 전후 1로 완료했다. 최종 앱 설치 직후에는 여유 메모리 2GiB guard가 측정을 거부했으며, 회복(2,206,248KiB)/thermal 1·Awake/잠금 해제를 확인하고 재설치 없이 final normal을 시작했다. 동일 조건의 final normal도 540표본/timeout 0으로 완료했고 자료×방향 6그룹 모두 기존 목표를 충족했다(vector p95 1,331→811ms/1,430→727ms, gray 149→100/133→83ms, RGB 516→249/433→216ms). 플링 비교부터 순차 진행 중이며 최종 통합 전체 통과는 아직 아니다.
+본문 창의 페이지 선택은 짧은 문서를 모두 표시해도 PDF 줌/위치 변경 없이 다른 페이지를 읽는다. native 서비스의 6초·192MiB RSS 관측·여유 메모리·16,000자 제한은 유지하며 순간 peak/OOM hard limit 보장은 아니다. 실제 결과/미결은 [실행 이력](docs/history/2026-10-19-03-page-text-accessibility.md)에 기록한다. 선택 UI·검색·새 런타임 의존성/도구 버전 변경은 없다.
 
-현재 [PR #17](https://github.com/AtraFelis/ebook_viewer/pull/17)은 열려 있고 앱 첨부도 성공했다. c7ea3ed 및 계측 보완 f8d9265의 push/PR CI는 모두 성공했고, CodeRabbit 실제 31개 파일/후속 코드 1개 파일 검토도 각각 수정 요구 없이 완료됐다. 별도 docstring 80% 권고는 저장소 이유/제약 주석 규칙의 필수 기준이 아니어서 일괄 생성하지 않는다. 이 후속 접근성/계측 deadline 수정의 원격 검사와 혼동하지 않는다. 최종 성능 비교·10분 연속 검사·실제 TalkBack/가독성 사용자 확인과 사용자 병합은 남아 있다.
+최종 선명도 비교는 **normal/플링/최대 배율/복잡 RGB 자료의 20그룹 모두 사전 목표 충족**이다. 동일 frozen baseline/final APK와 공통 계측·동일 자료/화면/배율/주사율/창 밝기/font/충전 조건, thermal 전후 0~1·cache≤64MiB에서 확인했다. normal 기준/최종 각 540표본, 플링·최대 배율·복잡 자료는 각 조건/앱 180표본이며 timeout은 모두 0이다. 실제 MainActivity의 프레임 비교·10분 연속 검사와 개인 TalkBack/큰 글꼴/본문·평소 PDF 수용/사용자 병합은 남아 있다. 준비 중 ADB 연결/메모리/잠금·설치 timeout 실패를 성능 표본과 구분해 이력에 보존한다. 설치 timeout 뒤 남은 package 교체가 계측을 종료한 원인은 exit-info로 확인했고, PC 설치 대기만 90→300초/단계 출력으로 보완했다. 기기/성능 deadline이나 합격선은 그대로다. P2 전체 완료는 아직 아니다.
+
+현재 [PR #17](https://github.com/AtraFelis/ebook_viewer/pull/17)은 열려 있고 앱 첨부도 성공했다. c7ea3ed 및 계측 보완 f8d9265의 push/PR CI는 모두 성공했고, CodeRabbit 실제 31개 파일/후속 코드 1개 파일 검토도 각각 수정 요구 없이 완료됐다. 별도 docstring 80% 권고는 저장소 이유/제약 주석 규칙의 필수 기준이 아니어서 일괄 생성하지 않는다. 후속 접근성/계측 deadline 수정과 Awake 준비 검사를 포함한 31ebdef의 push/PR CI도 모두 성공했다. CodeRabbit 수동 재요청은 한 차례 한도 거부 뒤, 새 head의 실제 f8d9265→31ebdef 검토가 완료돼 수정 지적 0건을 확인했다(12개 선택/유사 문서 6개 건너뜀). 최종 성능 비교·10분 연속 검사·실제 TalkBack/가독성 사용자 확인과 사용자 병합은 남아 있다.
 
 이전 PR CI 대기 조회/취소/재실행의 상태 불일치 이력은 보존한다. 이후 attempt 1의 원래 push/PR 실행이 성공으로 확인돼 재실행은 필요하지 않다. 대기 표시의 내부 원인은 미확정이며 성공을 취소·재실행 효과로 주장하지 않는다. 로컬 최종 기능/성능·접근성 수용은 계속 필요하다.
 

@@ -74,7 +74,10 @@ def main():
                            call(prefix + ["shell", "pm", "path", name]))
         actual = call(prefix + ["shell", "sha256sum", paths[0]]).split()[0] if len(paths) == 1 else None
         if actual != expected:
-            call(prefix + ["install", "--no-streaming", "-r", "-t", str(path)], 90)
+            print(f"Installing {args.label if name == PACKAGE else 'common test'} APK; data preserved", flush=True)
+            # Package commits outlived the former 90s client deadline on this device.
+            # Do not launch instrumentation while a slow replacement is still pending.
+            call(prefix + ["install", "--no-streaming", "-r", "-t", str(path)], 300)
         paths = re.findall(r"(?m)^package:(/data/app/[A-Za-z0-9_~+=./-]+/base\.apk)\s*$",
                            call(prefix + ["shell", "pm", "path", name]))
         if len(paths) != 1 or call(prefix + ["shell", "sha256sum", paths[0]]).split()[0] != expected:
@@ -95,6 +98,7 @@ def main():
         if args.complex:
             arguments += ["-e", "complexSharpness", "true"]
     arguments += [PACKAGE + ".test/dev.example.ebookviewer.P0Instrumentation"]
+    print(f"Measurement started: {key}", flush=True)
     try:
         result = call(prefix + arguments, 780 if args.mode == "long" else 1200)
     except RuntimeError:

@@ -16,7 +16,7 @@ PowerShell에서 `. ./scripts/android-env.ps1` 후 strict `:app:assembleDebug :a
 
 기존 승인 도구와 호스트 Python/Pillow/pypdf로 `scripts/generate-sharpness-fixtures.py`, `scripts/generate-p2-complex-fixture.py`를 실행한다. Android 런타임 의존성 추가가 아니다. profile 앱/계측은 `:app:assembleProfile :app:assembleProfileAndroidTest -Pp0TestBuildType=profile --dependency-verification strict`로 준비한다.
 
-이전 최적화 전 측정용 APK와 최종 profile 앱 및 하나의 공통 profile 계측을 ignored `local-artifacts/p2-integration/{baseline-app,final-app,common-test}.apk`에 동결한다. 기존 APK/보고서를 덮어쓰지 않고 세대별 백업과 SHA를 남긴다. `scripts/run-p2-integration-probe.py`는 설치 APK SHA와 비디버그 보고 필드를 확인한다. 시작 전 승인 기기 한 대/잠금 해제/여유 2GiB 이상/thermal NONE 또는 LIGHT를 요구하며 조건 미달을 통과로 세지 않는다. 2GiB는 측정 준비 조건이고 앱 본문 기능의 512MiB 이상 여유 검사와 별도다.
+이전 최적화 전 측정용 APK와 최종 profile 앱 및 하나의 공통 profile 계측을 ignored `local-artifacts/p2-integration/{baseline-app,final-app,common-test}.apk`에 동결한다. 기존 APK/보고서를 덮어쓰지 않고 세대별 백업과 SHA를 남긴다. 계측만 보완한 세대가 생기면 같은 비교 조건의 기준/최종에는 반드시 동일 계측 SHA를 사용하며, 이전 조건의 양쪽 완료 보고서는 원래 공통 계측으로 보존한다. 프레임 계측은 P1에도 존재하는 수동 setter와 자동 모드 지원을 구분하고 보고서 supportsAutomaticBackground로 확인한다. `scripts/run-p2-integration-probe.py`는 설치 APK SHA와 비디버그 보고 필드를 확인한다. 시작 전 승인 기기 한 대/잠금 해제/여유 2GiB 이상/thermal NONE 또는 LIGHT를 요구하며 조건 미달을 통과로 세지 않는다. 설치와 측정 시작은 별도 출력한다. APK 설치 응답은 최대 300초 기다린다. 이 기기에서 90초 client timeout 뒤에도 설치 교체가 진행돼 계측을 종료한 실제 이력이 있기 때문이다. 설치 timeout 뒤 곧바로 다시 설치/계측하지 않고 실제 APK SHA와 마지막 설치 시각 안정화를 확인한다. 설치 완료 뒤에도 메모리·awake/잠금·thermal guard를 다시 통과해야 하며 측정/기기 deadline은 늘리지 않는다. 2GiB는 측정 준비 조건이고 앱 본문 기능의 512MiB 이상 여유 검사와 별도다.
 
 비교 창은 밝기 0.5·화면 유지로 고정하고 전역 밝기/시간 제한은 변경하지 않는다. 메타데이터 갱신 완료 후 측정하며 도중 전경/가시성을 잃으면 실패한다. font scale·화면 크기/주사율·입력 SHA·열/충전 상태를 기록하고 다르면 같은 조건의 합격 비교로 판단하지 않는다.
 
