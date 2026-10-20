@@ -10,6 +10,8 @@ PowerShell에서 `. ./scripts/android-env.ps1` 후 strict `:app:assembleDebug :a
 
 글꼴 suite는 100/150/200%×가로/세로를 실제 기기 configuration에서 확인하고 원래 앱 방향/시스템 배율을 finally로 복원한다. master smoke도 시스템 배율 복원 fallback을 가진다. 버튼/입력의 전체 bounds가 스크롤로 노출되는지 확인하며, 실사용 TalkBack 초점/음성·개인 가독성 수용을 대체하지 않는다. 접근성 이벤트 검사 전에 UiAutomation 연결/앱 AccessibilityManager 활성화를 기다린다. 플랫폼 이벤트 timeout은 다른 앱 화면의 텍스트를 포함할 수 있어 메시지를 그대로 기록하지 않는다.
 
+기기 검사는 한 invocation씩 실행하고 종료를 확인한 뒤 다음 검사를 시작한다. 긴 연속 재설치/검사 묶음을 미리 예약하지 않는다. host 쪽도 timeout/finally에서 테스트 앱을 멈추고 시스템 글꼴 원래 값을 복원한다. 계측 자체는 host 연결 소실에 대비해 일반 720초/선명도 1200초/프레임·장시간 요청 초×회수+120초의 독립 deadline을 둔다. `-e deadlineSeconds N`은 해당 한도를 줄일 때만 허용하며, timeout은 incomplete/실패로 기록하고 앱을 다시 열지 않는다. 기기가 꺼짐/연결 소실·프로세스 강제 종료 때문에 finally가 실행되지 않았다면 시스템 글꼴·앱 방향 등의 복원을 별도 확인한다. 이 제한이 미실행 검사를 통과로 바꾸지는 않는다.
+
 ## 성능 준비
 
 기존 승인 도구와 호스트 Python/Pillow/pypdf로 `scripts/generate-sharpness-fixtures.py`, `scripts/generate-p2-complex-fixture.py`를 실행한다. Android 런타임 의존성 추가가 아니다. profile 앱/계측은 `:app:assembleProfile :app:assembleProfileAndroidTest -Pp0TestBuildType=profile --dependency-verification strict`로 준비한다.
