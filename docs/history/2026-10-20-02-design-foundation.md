@@ -38,3 +38,9 @@ PowerShell에서 `. ./scripts/android-env.ps1` 후 다음을 실행했다. 첫 G
 PR/CI/CodeRabbit 실제 결과는 게시 후 별도로 기록한다. 기기 검증 전에는 Draft로 둔다. 사용자만 병합한다.
 
 기존 LibraryRestart/큰 글꼴 검사의 카드 선택자 보완 후 같은 strict 명령을 다시 실행해 **BUILD SUCCESSFUL(4초)**을 확인했다. 단위는 변경 없어 up-to-date이며 직전 실제 실행의 44개 결과를 유지한다. 변경 문서 5개의 로컬 링크 **101개/누락0**과 `git diff --check`도 통과했다. 이는 기기 검사 실행을 뜻하지 않는다.
+
+## PR 게시와 수동 리뷰 접수
+
+구현 `6541ee5`를 일반 push하고 main 대상 [Draft PR #19](https://github.com/AtraFelis/ebook_viewer/pull/19)를 등록/채팅 첨부했다. 사용자 디자인 원문은 수정하지 않은 채 선행 커밋을 포함한다. push CI `39392412408`과 PR CI `39392435377`이 실제 IN_PROGRESS로 실행됐다. [수동 요청 6286630224](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286630224)에 봇이 [6286632250](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286632250)에서 **Review triggered**로 응답했다. 최초 자동 Draft skip과 이번 수동 접수를 구분한다. 실제 리뷰 결과는 아직 확인하지 않았으며 중복 요청/Autofix/자동 병합은 사용하지 않는다.
+
+기다리는 동안 후속 읽기 설정 `30:219`와 표시 설정 `31:371`을 같은 브라우저의 프로토타입 클릭으로 시각 확인했다. 이번 PR에서 폼 재배치를 구현한 것은 아니다. 기기 수용 전 Draft를 유지하고 원격 결과·리뷰 지적은 다음 확인 시 이어간다. 게시 상태 기록은 Markdown뿐이며 이 때문에 앱/기기 검사를 반복하지 않는다.

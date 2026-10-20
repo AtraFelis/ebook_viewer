@@ -10,6 +10,8 @@
 
 strict 앱/계측 빌드·단위 44개(실패/건너뜀 0)·Lint 오류/경고 0·ktlint를 통과했다. 홈 레코드가 새 카드로 바뀐 데 맞춰 기존 복원/글꼴 검사의 선택 대상을 갱신하며 인수 조건은 유지한다. 기기 실행/앱 화면 시각 확인/200%·TalkBack 수용은 미실행이다. 사용자 USB 분리 요청으로 ADB 서버를 종료하고 프로세스 0/5037 listener 0을 확인했다. 기기 검증 전까지 ADB를 다시 시작하지 않는다. [실제 명령·미결](docs/history/2026-10-20-02-design-foundation.md)을 따른다.
 
+구현 `6541ee5`를 일반 push해 [Draft PR #19](https://github.com/AtraFelis/ebook_viewer/pull/19)를 등록/채팅 첨부했다. push/PR Android CI는 실제 실행 중이다. [CodeRabbit 수동 요청](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286630224) 한 번에 봇이 [Review triggered](https://github.com/AtraFelis/ebook_viewer/pull/19#issuecomment-6286632250)로 응답했다. 최초 자동 Draft 건너뜀과 수동 접수를 구분하며 실제 리뷰 완료는 아직 확인하지 않았다. 후속 읽기 설정 `30:219`/표시 설정 `31:371` 시안도 브라우저에서 시각 확인했다. 기기 검증 전 Draft를 유지하며 병합하지 않는다.
+
 ## 이전 진행 — P2 완료 문서
 
 2026-10-20 사용자 최종 수용 “모두 정상이에요”와 PR #17 사용자 병합을 확인했다. main은 **68ced37**이며 최종 앱/test/host CI·실제 CodeRabbit 리뷰까지 완료했다. 사용자 Figma 변경을 백업/해시 대조·복구용 stash 보존 후 현재 체크아웃에서 main을 ff-only 동기화하고 `codex/p2-completion`으로 완료 문서를 정리한다. [최종 판정·검증·한계](docs/history/2026-10-20-01-p2-completion.md)를 따른다. 기능 개발/검사/개인 수용과 기능 PR 병합은 완료했고 [완료 문서 PR #18](https://github.com/AtraFelis/ebook_viewer/pull/18)을 등록/채팅 첨부했다. 문서 링크162개/누락0·공백/앱 소스 불변을 확인했다. 새 Android CI는 Markdown 전용 제외로 미실행이며 수동 CodeRabbit는 포함 리뷰 한도로 실제 문서 검토 미실행이다. 앱 코드는 PR #17에서 실제 리뷰/CI를 완료했다. 문서 PR 병합 확인 후 P2 종료를 확정하며 이번 변경은 Markdown뿐이고 기기 조작/검사 반복은 없다.
