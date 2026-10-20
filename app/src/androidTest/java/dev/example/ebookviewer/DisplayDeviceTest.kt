@@ -9,6 +9,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.util.AtomicFile
+import android.view.View
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
@@ -108,9 +109,7 @@ class DisplayDeviceTest {
             assertAnchor(before, ui.state(view))
             ui.tap(view)
             ui.onMain {
-                ui.views(activity.window.decorView).filterIsInstance<Button>()
-                    .single { it.isShown && it.text == activity.getString(R.string.document_list) }
-                    .performClick()
+                activity.findViewById<View>(R.id.reader_home).performClick()
             }
             assertWindow(activity, -1f, false)
             ui.sample(activity)

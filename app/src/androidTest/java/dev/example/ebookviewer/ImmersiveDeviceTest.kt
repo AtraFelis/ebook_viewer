@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.SystemClock
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.accessibility.AccessibilityNodeInfo
@@ -22,6 +23,113 @@ import org.junit.Test
 class ImmersiveDeviceTest {
     private val instrumentation get() = PdfRendererDeviceTest.instrumentation
     private val ui get() = DeviceGestures(instrumentation)
+
+    @Test
+    fun outsideTapReachesPdfThroughOverlayAndDoesNotReopenHiddenTools() {
+        val activity = ui.launch()
+        try {
+            val view = ui.sample(activity)
+            ui.pinch(view)
+            val root = ui.onMain { view.parent as View }
+            val before = ui.state(view)
+            val dimensions = ui.onMain { view.width to view.height }
+            ui.tap(root)
+            assertTools(activity, true)
+            val y = blankY(activity, root)
+            val bitmap = ui.onMain {
+                android.graphics.Bitmap.createBitmap(
+                    root.width,
+                    root.height,
+                    android.graphics.Bitmap.Config.ARGB_8888
+                ).also { root.draw(android.graphics.Canvas(it)) }
+            }
+            try {
+                // Only this synthetic PDF screen is captured, never the user's library or document.
+                File(activity.cacheDir, "design-tools-synthetic.png").outputStream().use {
+                    assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it))
+                }
+            } finally {
+                bitmap.recycle()
+            }
+            ui.tap(root, 0.1f, y)
+            assertTools(activity, false)
+            assertAnchor(before, ui.state(view))
+            assertEquals(dimensions, ui.onMain { view.width to view.height })
+            ui.tap(root, 0.1f, y)
+            assertTools(activity, false)
+            ui.tap(root)
+            assertTools(activity, true)
+            ui.onMain { activity.findViewById<View>(R.id.reader_home).performClick() }
+            ui.await("Home icon did not return to library") {
+                activity.findViewById<View>(R.id.home_screen).isShown
+            }
+        } finally {
+            ui.onMain { activity.finish() }
+        }
+    }
+
+    @Test
+    fun overlayAllowsPdfGesturesAndOnlyBlankSingleTapClosesTools() {
+        val activity = ui.launch()
+        try {
+            val view = ui.sample(activity)
+            val root = ui.onMain { view.parent as View }
+            ui.tap(root)
+            assertTools(activity, true)
+            val before = ui.state(view)
+            // The real root dispatch path must pass the two-pointer gesture through its empty middle.
+            ui.pinch(root)
+            assertTrue(ui.state(view).getDouble("zoom") > before.getDouble("zoom"))
+            assertTools(activity, true)
+            val afterPinch = ui.state(view)
+            val y = blankY(activity, root) * root.height
+            val down = SystemClock.uptimeMillis()
+            val step = 16 * activity.resources.displayMetrics.density
+            for ((index, action) in listOf(
+                MotionEvent.ACTION_DOWN,
+                MotionEvent.ACTION_MOVE,
+                MotionEvent.ACTION_MOVE,
+                MotionEvent.ACTION_MOVE,
+                MotionEvent.ACTION_MOVE,
+                MotionEvent.ACTION_UP
+            ).withIndex()) {
+                val event = MotionEvent.obtain(
+                    down,
+                    SystemClock.uptimeMillis(),
+                    action,
+                    root.width * 0.5f,
+                    y - index.coerceAtMost(4) * step,
+                    0
+                )
+                ui.onMain { root.dispatchTouchEvent(event) }
+                event.recycle()
+                SystemClock.sleep(100)
+            }
+            assertTools(activity, true)
+            val afterScroll = ui.state(view)
+            assertTrue(
+                "Scroll did not move PDF: ${afterPinch.getDouble("centerY")} " +
+                    "to ${afterScroll.getDouble("centerY")}",
+                afterScroll.getDouble("centerY") > afterPinch.getDouble("centerY")
+            )
+            val header = activity.findViewById<View>(R.id.reader_header)
+            val rect = android.graphics.Rect()
+            ui.onMain { header.getGlobalVisibleRect(rect) }
+            ui.tap(root, 0.95f, (rect.centerY() - root.top) / root.height.toFloat())
+            assertTools(activity, false)
+            ui.assertCacheBound(view)
+        } finally {
+            ui.onMain { activity.finish() }
+        }
+    }
+
+    private fun blankY(activity: Activity, root: View): Float = ui.onMain {
+        val header = activity.findViewById<View>(R.id.reader_header)
+        val footerScroll = activity.findViewById<View>(R.id.reader_footer).parent as View
+        val tools = activity.findViewById<View>(R.id.reader_tools)
+        assertTrue("Overlay has no document gap", footerScroll.top > header.bottom)
+        (tools.top + (header.bottom + footerScroll.top) / 2f) / root.height
+    }
 
     @Test
     fun centralTapOverlaysToolsWithoutResizingOrMovingPdf() {

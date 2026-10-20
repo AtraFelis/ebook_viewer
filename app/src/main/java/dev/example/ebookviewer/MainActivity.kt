@@ -47,6 +47,7 @@ class MainActivity : Activity() {
     private lateinit var homePresentation: ReaderHomeView
     private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
+    private lateinit var toolsPresentation: ReaderToolsView
     private lateinit var readingWindow: ReadingWindow
     private lateinit var displayWindow: DisplayWindow
     private var displaySettings = DisplaySettings()
@@ -65,7 +66,6 @@ class MainActivity : Activity() {
     private data class PageTarget(val page: Int, val y: Double? = null)
     private var pendingNavigation: PageTarget? = null
     private var reading = false
-    private lateinit var homeButton: Button
     private val library get() = (application as ReaderApplication).library
     private val settings get() = (application as ReaderApplication).settings
     private val bookmarks get() = (application as ReaderApplication).bookmarks
@@ -144,14 +144,8 @@ class MainActivity : Activity() {
         viewer.onReadPageText = { page -> showPageText(page) }
         viewer.setOnClickListener {
             if (reading) {
-                readerTools.visibility =
-                    if (readerTools.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+                if (readerTools.visibility == View.VISIBLE) hideTools() else showTools()
             }
-        }
-        homeButton = Button(this).apply {
-            setText(R.string.document_list)
-            setOnClickListener { showLibrary() }
-            visibility = View.GONE
         }
         retryButton = Button(this).apply {
             setText(R.string.retry_document)
@@ -193,54 +187,20 @@ class MainActivity : Activity() {
             onRemove = ::confirmRemoveRecord
         )
         homeScreen = homePresentation.view
-        readerTools = LinearLayout(this).apply {
-            id = R.id.reader_tools
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(themeBackground())
-            visibility = View.GONE
-            addView(status)
-            addView(
-                LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    addView(
-                        Button(this@MainActivity).apply {
-                            setText(R.string.settings)
-                            setOnClickListener { showSettings() }
-                        },
-                        LinearLayout.LayoutParams(0, -2, 1f)
-                    )
-                    addView(homeButton, LinearLayout.LayoutParams(0, -2, 1f))
-                    addView(
-                        Button(this@MainActivity).apply {
-                            setText(R.string.resume_reading)
-                            setOnClickListener { hideTools() }
-                        },
-                        LinearLayout.LayoutParams(0, -2, 1f)
-                    )
-                }
-            )
-        }
-        pageJumpButton = Button(this).apply {
-            setText(R.string.go_to_page)
-            setOnClickListener { showPageJump() }
-        }
-        bookmarksButton = Button(this).apply {
-            setText(R.string.bookmarks)
-            setOnClickListener { showBookmarks() }
-        }
-        readerTools.addView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                addView(pageJumpButton, LinearLayout.LayoutParams(0, -2, 1f))
-                addView(bookmarksButton, LinearLayout.LayoutParams(0, -2, 1f))
-            }
+        toolsPresentation = ReaderToolsView(
+            this,
+            status,
+            onHome = ::showLibrary,
+            onSettings = ::showSettings,
+            onPage = ::showPageJump,
+            onBookmarks = ::showBookmarks,
+            onReadText = { showPageText() },
+            onDismiss = ::hideTools
         )
-        readPageButton = Button(this).apply {
-            id = R.id.read_page_text
-            setText(R.string.read_page_text)
-            setOnClickListener { showPageText() }
-        }
-        readerTools.addView(readPageButton)
+        readerTools = toolsPresentation.view
+        pageJumpButton = toolsPresentation.page
+        bookmarksButton = toolsPresentation.bookmarks
+        readPageButton = toolsPresentation.readText
         pageIndicator = TextView(this).apply {
             id = R.id.page_indicator
             setTextColor(Color.WHITE)
@@ -256,10 +216,7 @@ class MainActivity : Activity() {
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
             addView(homeScroll, FrameLayout.LayoutParams(-1, -1))
             addView(pageIndicator, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END))
-            addView(
-                ScrollView(this@MainActivity).apply { addView(readerTools) },
-                FrameLayout.LayoutParams(-1, -2, Gravity.TOP)
-            )
+            addView(readerTools, FrameLayout.LayoutParams(-1, -1))
             setOnApplyWindowInsetsListener { _, insets ->
                 // Only physical cutouts reserve PDF space; transient system bars never resize it.
                 if (Build.VERSION.SDK_INT >= 28) {
@@ -284,7 +241,7 @@ class MainActivity : Activity() {
                     if (Build.VERSION.SDK_INT <
                         30
                     ) {
-                        readerTools.setPadding(margins[0], margins[1], margins[2], 0)
+                        readerTools.setPadding(margins[0], margins[1], margins[2], margins[3])
                     }
                 }
                 if (Build.VERSION.SDK_INT >= 30) {
@@ -292,7 +249,7 @@ class MainActivity : Activity() {
                         WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
                     )
                     homeScreen.setPadding(safe.left, safe.top, safe.right, safe.bottom)
-                    readerTools.setPadding(safe.left, safe.top, safe.right, 0)
+                    readerTools.setPadding(safe.left, safe.top, safe.right, safe.bottom)
                     val numberLayout = pageIndicator.layoutParams as FrameLayout.LayoutParams
                     numberLayout.setMargins(safe.left, 0, safe.right, safe.bottom)
                     pageIndicator.layoutParams = numberLayout
@@ -441,6 +398,7 @@ class MainActivity : Activity() {
             if (isDestroyed || generation != opening) return@execute
             result.onSuccess { record ->
                 activeRecord = record
+                toolsPresentation.setTitle(record.title)
                 viewer.setPageLayoutSettings(record.pageLayout)
                 if (viewport !=
                     null
@@ -496,7 +454,10 @@ class MainActivity : Activity() {
                     main.post {
                         if (!isDestroyed && generation == opening) {
                             durableAccess = durable
-                            if (title != null) activeRecord = activeRecord?.copy(title = title)
+                            if (title != null) {
+                                activeRecord = activeRecord?.copy(title = title)
+                                toolsPresentation.setTitle(title)
+                            }
                         }
                     }
                     val descriptor = resolver.openFileDescriptor(uri, "r", request.signal)
@@ -539,9 +500,12 @@ class MainActivity : Activity() {
         homeScreen.visibility = View.GONE
         homeScroll.visibility = View.GONE
         viewer.visibility = View.VISIBLE
-        homeButton.visibility = View.VISIBLE
+        toolsPresentation.setTitle(
+            activeRecord?.title
+                ?: getString(if (synthetic) R.string.sample_pdf else R.string.untitled_pdf)
+        )
         hideTools()
-        readerTools.visibility = View.VISIBLE
+        showTools()
         updatePageIndicator()
     }
 
@@ -563,10 +527,9 @@ class MainActivity : Activity() {
         viewer.reset()
         viewer.restoreViewport(null)
         viewer.visibility = View.GONE
-        homeButton.visibility = View.GONE
         homeScreen.visibility = View.VISIBLE
         homeScroll.visibility = View.VISIBLE
-        readerTools.visibility = View.GONE
+        hideTools()
         readingWindow.apply(false)
         setStatus(R.string.ready)
         updatePageIndicator()
@@ -695,7 +658,13 @@ class MainActivity : Activity() {
 
     private fun hideTools() {
         readerTools.visibility = View.GONE
+        viewer.dismissToolsOnOutsideTap = false
         readingWindow.apply(reading)
+    }
+
+    private fun showTools() {
+        readerTools.visibility = View.VISIBLE
+        viewer.dismissToolsOnOutsideTap = true
     }
 
     private fun updatePageIndicator() {
@@ -710,6 +679,9 @@ class MainActivity : Activity() {
         if (position != null) {
             val text = getString(R.string.current_page, position.page + 1, expectedPages)
             if (pageIndicator.text != text) pageIndicator.text = text
+            toolsPresentation.pageCount.text = text
+        } else {
+            toolsPresentation.pageCount.setText(R.string.loading)
         }
         pageJumpButton.isEnabled = loaded && position != null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null

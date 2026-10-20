@@ -112,7 +112,7 @@ class DeviceGestures(
         return requireNotNull(result)
     }
 
-    fun tap(view: PdfCanvasView, xFraction: Float = 0.5f, yFraction: Float = 0.5f) {
+    fun tap(view: View, xFraction: Float = 0.5f, yFraction: Float = 0.5f) {
         val down = SystemClock.uptimeMillis()
         for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
             val event = MotionEvent.obtain(
@@ -151,7 +151,7 @@ class DeviceGestures(
         event(MotionEvent.ACTION_UP, end)
     }
 
-    fun pinch(view: PdfCanvasView, outward: Boolean = true) {
+    fun pinch(view: View, outward: Boolean = true) {
         val down = SystemClock.uptimeMillis()
         val cx = view.width / 2f
         val cy = view.height / 2f
