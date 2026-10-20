@@ -22,6 +22,7 @@ class P0Instrumentation : Instrumentation() {
     private var immersiveOnly = false
     private var backgroundOnly = false
     private var displayOnly = false
+    private var settingsOnly = false
     private var textOnly = false
     private var fontOnly = false
     private var navigationOnly = false
@@ -53,6 +54,7 @@ class P0Instrumentation : Instrumentation() {
                     "immersive",
                     "background",
                     "display",
+                    "settings",
                     "text",
                     "font",
                     "navigation",
@@ -66,6 +68,7 @@ class P0Instrumentation : Instrumentation() {
         immersiveOnly = suite == "immersive"
         backgroundOnly = suite == "background"
         displayOnly = suite == "display"
+        settingsOnly = suite == "settings"
         textOnly = suite == "text"
         fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
@@ -93,6 +96,7 @@ class P0Instrumentation : Instrumentation() {
         require(!immersiveOnly || (!probe && restartPhase == null))
         require(!backgroundOnly || (!probe && restartPhase == null))
         require(!displayOnly || (!probe && restartPhase == null))
+        require(!settingsOnly || (!probe && restartPhase == null))
         require(!textOnly || (!probe && restartPhase == null))
         require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
@@ -171,7 +175,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (fontOnly) {
+        val result = if (settingsOnly) {
+            core.run(SettingsNavigationDeviceTest::class.java)
+        } else if (fontOnly) {
             core.run(LargeFontDeviceTest::class.java)
         } else if (textOnly) {
             core.run(PageTextDeviceTest::class.java)
@@ -212,6 +218,7 @@ class P0Instrumentation : Instrumentation() {
                 ImmersiveDeviceTest::class.java,
                 BackgroundDeviceTest::class.java,
                 DisplayDeviceTest::class.java,
+                SettingsNavigationDeviceTest::class.java,
                 PageTextDeviceTest::class.java,
                 LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,

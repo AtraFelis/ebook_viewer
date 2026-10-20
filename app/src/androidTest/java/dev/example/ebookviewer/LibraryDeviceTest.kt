@@ -3,7 +3,6 @@ package dev.example.ebookviewer
 import android.app.Activity
 import android.net.Uri
 import android.util.AtomicFile
-import android.widget.Button
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -124,8 +123,7 @@ class LibraryDeviceTest {
             ui.pinch(view)
             repeat(4) { ui.drag(view, true) }
             instrumentation.runOnMainSync {
-                ui.views(activity.window.decorView).filterIsInstance<Button>()
-                    .single { it.text == activity.getString(R.string.document_list) }.performClick()
+                activity.findViewById<android.view.View>(R.id.reader_home).performClick()
             }
             val previous = records(activity).single { it.uri == Uri.fromFile(file).toString() }
             assertTrue(file.delete())

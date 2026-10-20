@@ -9,6 +9,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.util.AtomicFile
+import android.view.View
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
@@ -108,9 +109,7 @@ class DisplayDeviceTest {
             assertAnchor(before, ui.state(view))
             ui.tap(view)
             ui.onMain {
-                ui.views(activity.window.decorView).filterIsInstance<Button>()
-                    .single { it.isShown && it.text == activity.getString(R.string.document_list) }
-                    .performClick()
+                activity.findViewById<View>(R.id.reader_home).performClick()
             }
             assertWindow(activity, -1f, false)
             ui.sample(activity)
@@ -155,9 +154,10 @@ class DisplayDeviceTest {
                 ui.await("Theme did not settle") {
                     activity = (monitor.lastActivity ?: activity)
                     !activity.isDestroyed &&
-                        activity.hasWindowFocus() &&
+                        settingsRoot(activity)?.window?.decorView?.hasWindowFocus() == true &&
                         isDark(activity) == expectedDark
                 }
+                click(activity.getString(R.string.close_settings))
                 view = ui.awaitReady(activity)
                 assertAnchor(before, ui.state(view))
                 assertEquals(Color.MAGENTA, view.outsideBackgroundColor())
@@ -264,6 +264,12 @@ class DisplayDeviceTest {
                 root.findAccessibilityNodeInfosByText(activity.getString(R.string.theme_system))
                     .any { it.isVisibleToUser }
         }
+    }
+
+    private fun settingsRoot(activity: Activity): android.app.AlertDialog? {
+        val field = MainActivity::class.java.getDeclaredField("settingsHomeDialog")
+        field.isAccessible = true
+        return field.get(activity) as android.app.AlertDialog?
     }
 
     private fun click(text: String) {

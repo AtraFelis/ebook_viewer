@@ -76,6 +76,7 @@ class PdfCanvasView @JvmOverloads constructor(
     var onReadPageText: ((Int) -> Unit)? = null
     var onUserInteraction: (() -> Unit)? = null
     var onBackgroundColorChanged: ((Int) -> Unit)? = null
+    var dismissToolsOnOutsideTap = false
     private var outsideColor = DEFAULT_BACKGROUND_COLOR
     private var backgroundSettings = BackgroundSettings()
     private val backgroundColors = LinkedHashMap<Int, Int>()
@@ -237,8 +238,13 @@ class PdfCanvasView @JvmOverloads constructor(
                 override fun onSingleTapUp(event: MotionEvent): Boolean {
                     pendingClick = tapAllowed &&
                         !hadMultiplePointers &&
-                        event.x in width / 3f..width * 2f / 3f &&
-                        event.y in height / 3f..height * 2f / 3f
+                        (
+                            dismissToolsOnOutsideTap ||
+                                (
+                                    event.x in width / 3f..width * 2f / 3f &&
+                                        event.y in height / 3f..height * 2f / 3f
+                                    )
+                            )
                     return true
                 }
             }
