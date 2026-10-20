@@ -9,6 +9,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.CheckedTextView
 import android.widget.EditText
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -100,6 +101,7 @@ class LargeFontDeviceTest {
         val tools = activity.findViewById<View>(R.id.reader_tools)
         checkControls(tools)
         val menus = listOf(
+            R.string.orientation_settings,
             R.string.display_settings,
             R.string.page_layout_settings,
             R.string.background_settings
@@ -132,6 +134,11 @@ class LargeFontDeviceTest {
             }
             checkControls(requireNotNull(requireNotNull(dialog).window).decorView)
             ui.onMain { requireNotNull(dialog).dismiss() }
+            ui.await("Subsettings did not return to parent") {
+                settingsDialog(activity) === previous
+            }
+            ui.onMain { requireNotNull(previous).dismiss() }
+            instrumentation.waitForIdleSync()
             ui.onMain { viewer.performClick() }
         }
         ui.onMain { viewer.performAccessibilityAction(R.id.read_page_text, null) }
@@ -158,6 +165,7 @@ class LargeFontDeviceTest {
                 it.isShown &&
                     (
                         it is Button ||
+                            it is CheckedTextView ||
                             it is EditText ||
                             it.id == R.id.home_record ||
                             it.id == R.id.reader_home
@@ -166,6 +174,15 @@ class LargeFontDeviceTest {
         }
         assertTrue("No actionable controls", controls.isNotEmpty())
         for (control in controls) reveal(control)
+        for (row in controls.filterIsInstance<CheckedTextView>()) {
+            ui.onMain {
+                val textHeight = row.height - row.compoundPaddingTop - row.compoundPaddingBottom
+                assertTrue(
+                    "Orientation text clipped",
+                    textHeight >= requireNotNull(row.layout).height
+                )
+            }
+        }
     }
 
     private fun reveal(view: View) {

@@ -154,9 +154,10 @@ class DisplayDeviceTest {
                 ui.await("Theme did not settle") {
                     activity = (monitor.lastActivity ?: activity)
                     !activity.isDestroyed &&
-                        activity.hasWindowFocus() &&
+                        settingsRoot(activity)?.window?.decorView?.hasWindowFocus() == true &&
                         isDark(activity) == expectedDark
                 }
+                click(activity.getString(R.string.close_settings))
                 view = ui.awaitReady(activity)
                 assertAnchor(before, ui.state(view))
                 assertEquals(Color.MAGENTA, view.outsideBackgroundColor())
@@ -263,6 +264,12 @@ class DisplayDeviceTest {
                 root.findAccessibilityNodeInfosByText(activity.getString(R.string.theme_system))
                     .any { it.isVisibleToUser }
         }
+    }
+
+    private fun settingsRoot(activity: Activity): android.app.AlertDialog? {
+        val field = MainActivity::class.java.getDeclaredField("settingsHomeDialog")
+        field.isAccessible = true
+        return field.get(activity) as android.app.AlertDialog?
     }
 
     private fun click(text: String) {

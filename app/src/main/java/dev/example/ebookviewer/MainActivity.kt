@@ -55,6 +55,10 @@ class MainActivity : Activity() {
     private var resumed = false
     private lateinit var root: FrameLayout
     private var settingsDialog: AlertDialog? = null
+    private var settingsHomeDialog: AlertDialog? = null
+    private var settingsChildLoading = false
+    private var documentLayoutSetting: Button? = null
+    private var bindPageNumberSetting: ((Boolean) -> Unit)? = null
     private var navigationDialog: AlertDialog? = null
     private var pageTextDialog: AlertDialog? = null
     private lateinit var pageTextClient: PageTextClient
@@ -297,6 +301,7 @@ class MainActivity : Activity() {
             if (isDestroyed) return@loadPageNumbers
             result.onSuccess {
                 pageNumbersVisible = it
+                bindPageNumberSetting?.invoke(it)
                 updatePageIndicator()
             }.onFailure { reportError(R.string.settings_error) }
         }
@@ -327,6 +332,7 @@ class MainActivity : Activity() {
                 }
             )
         }
+        if (savedInstanceState?.getBoolean("settingsOpen") == true) showSettings()
     }
 
     @Suppress("DEPRECATION")
@@ -510,6 +516,7 @@ class MainActivity : Activity() {
     }
 
     private fun showLibrary() {
+        closeSettings()
         closePageText()
         saveReading()
         clearFailedOpen()
@@ -686,6 +693,7 @@ class MainActivity : Activity() {
         pageJumpButton.isEnabled = loaded && position != null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
         if (::readPageButton.isInitialized) readPageButton.isEnabled = loaded && position != null
+        documentLayoutSetting?.isEnabled = loaded && reading
     }
 
     private fun showPageText(selectedPage: Int? = null) {
@@ -861,24 +869,29 @@ class MainActivity : Activity() {
     }
 
     private fun showSettings() {
-        if (settingsDialog != null) return
+        if (settingsDialog != null || isDestroyed || isFinishing) return
         val dialog = readerFormDialog(
             R.string.reader_settings_title,
             settingsControls(),
             negative = R.string.close_settings
         )
         settingsDialog = dialog
+        settingsHomeDialog = dialog
         dialog.setOnDismissListener {
-            settingsDialog = null
-            hideTools()
+            if (settingsHomeDialog === dialog) {
+                closeSettings()
+                hideTools()
+            }
         }
+        dialog.window?.setWindowAnimations(0)
         dialog.show()
     }
 
     private fun showOrientationSettings() {
-        if (settingsDialog != null) return
+        val parent = beginSettingsChild() ?: return
         settings.load { result ->
-            if (isDestroyed || settingsDialog != null) return@load
+            if (!isSettingsParent(parent)) return@load
+            settingsChildLoading = false
             result.onSuccess { mode ->
                 val labels =
                     arrayOf(
@@ -907,24 +920,20 @@ class MainActivity : Activity() {
                         if (isDestroyed) return@save
                         saved.onSuccess {
                             saveReading()
-                            hideTools()
                             applyOrientation(it)
                         }.onFailure { reportError(R.string.settings_error) }
                     }
                 }
-                settingsDialog = dialog
-                dialog.setOnDismissListener {
-                    settingsDialog = null
-                    hideTools()
-                }
-                dialog.show()
+                showSettingsChild(parent, dialog)
             }.onFailure { reportError(R.string.settings_error) }
         }
     }
 
     private fun showBackgroundSettings() {
+        val parent = beginSettingsChild() ?: return
         settings.loadBackground { result ->
-            if (isDestroyed || settingsDialog != null) return@loadBackground
+            if (!isSettingsParent(parent)) return@loadBackground
+            settingsChildLoading = false
             result.onSuccess { current ->
                 val dialog = backgroundSettingsDialog(current) { selected ->
                     settings.saveBackground(selected) { saved ->
@@ -933,12 +942,7 @@ class MainActivity : Activity() {
                             .onFailure { reportError(R.string.settings_error) }
                     }
                 }
-                settingsDialog = dialog
-                dialog.setOnDismissListener {
-                    settingsDialog = null
-                    hideTools()
-                }
-                dialog.show()
+                showSettingsChild(parent, dialog)
             }.onFailure { reportError(R.string.settings_error) }
         }
     }
@@ -948,14 +952,12 @@ class MainActivity : Activity() {
         val orientationButton = Button(this).apply {
             setText(R.string.orientation_settings)
             setOnClickListener {
-                dismissSettingsForNextDialog()
                 showOrientationSettings()
             }
         }
         val displayButton = Button(this).apply {
             setText(R.string.display_settings)
             setOnClickListener {
-                dismissSettingsForNextDialog()
                 showDisplaySettings()
             }
         }
@@ -963,24 +965,19 @@ class MainActivity : Activity() {
             setText(R.string.page_layout_settings)
             isEnabled = loaded && reading
             setOnClickListener {
-                dismissSettingsForNextDialog()
+                val parent = beginSettingsChild() ?: return@setOnClickListener
                 val dialog = pageLayoutDialog(viewer.pageLayoutSettings()) {
                     viewer.setPageLayoutSettings(it)
                     cancelSave()
                     saveReading()
                 }
-                settingsDialog = dialog
-                dialog.setOnDismissListener {
-                    settingsDialog = null
-                    hideTools()
-                }
-                dialog.show()
+                showSettingsChild(parent, dialog)
             }
         }
+        documentLayoutSetting = layoutButton
         val backgroundButton = Button(this).apply {
             setText(R.string.background_settings)
             setOnClickListener {
-                dismissSettingsForNextDialog()
                 showBackgroundSettings()
             }
         }
@@ -1007,6 +1004,12 @@ class MainActivity : Activity() {
                     }
                 }
             }
+        }
+        // A restored settings Window can appear before its asynchronous preference load completes.
+        bindPageNumberSetting = { checked ->
+            binding = true
+            checkbox.isChecked = checked
+            binding = false
         }
         listOf(orientationButton, displayButton, layoutButton, backgroundButton)
             .forEach(style::styleSettingButton)
@@ -1041,22 +1044,55 @@ class MainActivity : Activity() {
             ): View = super.getView(position, convertView, parent).apply {
                 val style = ReaderStyle(this@MainActivity)
                 minimumHeight = style.dp(64)
+                // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
+                layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
                 setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
                 (this as TextView).apply {
                     textSize = 16f
                     setTextColor(style.text)
                     isSingleLine = false
+                    includeFontPadding = true
                 }
             }
         }
 
-    private fun dismissSettingsForNextDialog() {
-        // Dialog dismiss callbacks are posted. An old callback must not clear the new owner.
-        val previous = settingsDialog
+    private fun beginSettingsChild(): AlertDialog? {
+        val parent = settingsHomeDialog ?: return null
+        if (settingsDialog !== parent || settingsChildLoading) return null
+        if (!isSettingsParent(parent)) return null
+        settingsChildLoading = true
+        return parent
+    }
+
+    private fun isSettingsParent(parent: AlertDialog): Boolean =
+        !isDestroyed && !isFinishing && settingsHomeDialog === parent && parent.isShowing
+
+    private fun showSettingsChild(parent: AlertDialog, dialog: AlertDialog) {
+        if (!isSettingsParent(parent)) return
+        settingsChildLoading = false
+        settingsDialog = dialog
+        // Keep the opaque parent Window attached during asynchronous loading and child transitions.
+        dialog.setOnDismissListener {
+            if (settingsDialog === dialog) settingsDialog = settingsHomeDialog
+        }
+        dialog.window?.setWindowAnimations(0)
+        dialog.show()
+    }
+
+    private fun closeSettings() {
+        val child = settingsDialog
+        val parent = settingsHomeDialog
         settingsDialog = null
-        previous?.setOnDismissListener(null)
-        previous?.dismiss()
-        hideTools()
+        settingsHomeDialog = null
+        settingsChildLoading = false
+        documentLayoutSetting = null
+        bindPageNumberSetting = null
+        child?.setOnDismissListener(null)
+        child?.dismiss()
+        if (parent !== child) {
+            parent?.setOnDismissListener(null)
+            parent?.dismiss()
+        }
     }
 
     private fun applyOrientation(mode: OrientationMode) {
@@ -1071,8 +1107,10 @@ class MainActivity : Activity() {
     }
 
     private fun showDisplaySettings() {
+        val parent = beginSettingsChild() ?: return
         settings.loadDisplay { result ->
-            if (isDestroyed || isFinishing || settingsDialog != null) return@loadDisplay
+            if (!isSettingsParent(parent)) return@loadDisplay
+            settingsChildLoading = false
             result.onSuccess { current ->
                 val dialog = displaySettingsDialog(current) { selected ->
                     settings.saveDisplay(selected) { saved ->
@@ -1081,12 +1119,7 @@ class MainActivity : Activity() {
                             .onFailure { reportError(R.string.settings_error) }
                     }
                 }
-                settingsDialog = dialog
-                dialog.setOnDismissListener {
-                    settingsDialog = null
-                    hideTools()
-                }
-                dialog.show()
+                showSettingsChild(parent, dialog)
             }.onFailure { reportError(R.string.settings_error) }
         }
     }
@@ -1137,6 +1170,7 @@ class MainActivity : Activity() {
 
     private fun handleBack() {
         when {
+            settingsDialog != null -> settingsDialog?.dismiss()
             reading && readerTools.visibility == View.VISIBLE -> hideTools()
             reading -> showLibrary()
             else -> finish()
@@ -1186,9 +1220,7 @@ class MainActivity : Activity() {
         updateDisplayWindow()
         navigationDialog?.dismiss()
         navigationDialog = null
-        settingsDialog?.setOnDismissListener(null)
-        settingsDialog?.dismiss()
-        settingsDialog = null
+        closeSettings()
         cancelSave()
         opening++
         viewer.setRenderingEnabled(false)
@@ -1199,6 +1231,8 @@ class MainActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("displayTheme", displaySettings.theme.name)
+        // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
+        outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         saveReading()
         pendingNavigation?.let {
             outState.putInt("pendingPage", it.page)

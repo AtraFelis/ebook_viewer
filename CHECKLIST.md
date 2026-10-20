@@ -24,6 +24,10 @@
 - [x] 읽기 도구/반응형 구현: 상단 제목·벡터 뒤로가기/하단 조작·빈 곳 단일 탭 닫기. PDF 뷰포트/줌 보존과 스크롤/핀치 통과, 기존 본문 읽기 유지.
 - [x] 읽기 도구 strict 앱/계측 빌드·단위44개·Lint 오류/경고0·ktlint와 API33 관련12개(immersive7/font1/navigation4) 통과. 최초 새 스크롤 검사1개 실패는 입력/비교 조건 보정 후 같은 앱에서 재검사 통과로 구분. 합성 다크 화면 시각 확인·설치 APK 일치·글꼴1.1·앱/계측/ADB 종료.
 - [ ] 읽기 도구 사용자 수용·새 head의 원격 CI/실제 CodeRabbit 결과. TalkBack 음성·최소폭320dp/긴 제목 조합은 최종 통합 확인과 구분.
+- [x] 사용자 피드백3건 수정: 세부 설정의 상위 복귀/부모 Window 유지·전환 노출 방지/회전·테마 재생성·번호 표시 값 복원/방향 행 WRAP_CONTENT. strict PC 검사 및 최종 API33 관련14개(settings2/font1/display4/immersive7) 통과. 실제 기기 고정 행 리소스 확인·글꼴1.1/설치 APK 일치·앱/계측·ADB 종료. 최초 Back 검사1개 실패는 포커스 확보 후 같은 앱에서 통과한 경과와 구분.
+- [ ] 피드백3건의 수정 앱 재수용, 새 수정 head 원격 CI/실제 리뷰. 자동 검사의 통과를 사용자 체감 수용으로 바꾸지 않음.
+- [x] 구현1214f64 일반 push·[Draft PR #20](https://github.com/AtraFelis/ebook_viewer/pull/20) 등록/첨부, 검증 후 CodeRabbit 수동 요청1회. 자동 Draft skip을 실제 리뷰 완료로 세지 않음.
+- [ ] PR #20 실제 CodeRabbit 검토: 수동 응답6291717359는 rate limited/실행 안 됨. 포함 리뷰8분 후 안내를 기록하고 중복 호출하지 않음. CI 두 실행은 당시 진행 중.
 - [ ] 디자인 후속: 페이지 슬라이더 → 첫 안내/실패 초안 복구/최종 수용. 전체 디자인 완료 아님.
 
 - [x] 2026-10-18 UI/UX 준비: Figma Design 파일 생성과 프로젝트 컨벤션 확인([이력](docs/history/2026-10-18-01-design-preparation.md)).

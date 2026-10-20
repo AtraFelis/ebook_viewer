@@ -41,3 +41,9 @@ API33 기기1개 승인·잠금 해제/화면 켜짐을 확인했다. 식별자�
 종료 시 font_scale1.1, 설치 APK SHA-256과 로컬 `8fd46e16ba11647393bb8c878af791eef095d18430268f3e7798e9cb63f67da4` 일치를 확인했다. 첫 APK 확인은 Android 설치 경로의 정상 `~` 문자를 허용하지 않은 host 검증으로 중단됐다. 해당 문자 검증을 고치고 finally로 앱/계측·ADB 종료를 보장한 후 일치/ADB 프로세스0을 확인했다. 기기/검사 실패로 세지 않는다.
 
 사용자에게 새 상단 제목/뒤로가기·하단 도구·빈 곳 닫기·스크롤/확대의 직접 사용감을 확인하도록 요청했다. 현재 답변 대기이며 새 TalkBack 음성·최소폭320dp/긴 제목 조합까지 통과했다고 선언하지 않는다. 구현/검증을 모아 Draft PR로 게시하고 필요한 실제 CodeRabbit 검토를 한 번 요청한다. 병합은 사용자가 하며 전체 디자인 완료가 아니다. 다음은 별도 페이지 슬라이더, 이후 첫 안내/실패 초안·최종 통합이다.
+
+### 게시
+
+공백·변경 문서의로컬 링크79개/누락0을 확인하고16개 파일을1214f64로 커밋해 origin/codex/design-reader-tools에 일반 push했다. [Draft PR #20](https://github.com/AtraFelis/ebook_viewer/pull/20)을 생성/채팅 첨부했고 head 일치를 확인했다. 원격 Android CI39428703554/39428695825는 당시 IN_PROGRESS였다. CodeRabbit 자동 체크는 Draft PR not reviewed라는 skip이었고 실제 리뷰 완료가 아니다. 구현/검증이 마무리된 head에 [수동 요청6291715178](https://github.com/AtraFelis/ebook_viewer/pull/20#issuecomment-6291715178)을 한 번 등록했다. 실제 접수/결과를 확인하고 상태만을 위한 push로 진행 중 head를 바꾸지 않는다. 이 게시 후 기록은 로컬에 모아 보존한다.
+
+실제 응답[6291717359](https://github.com/AtraFelis/ebook_viewer/pull/20#issuecomment-6291717359)은 **Action not completed / Review rate limited**다. 요약6291707279는 다음 포함 리뷰8분 후라고 안내했다. 요청은 등록됐지만 실제16개 파일 리뷰는 미실행이며 성공 체크를 완료로 세지 않는다. 한도 중 즉시 재호출하거나 유료 결제/설정 변경을 하지 않는다. 최종 조회에서 CI 두 실행은 IN_PROGRESS였고 새 사용자 수용 답변은 아직 없다. 이 상태 기록3개 문서는 다음 결과와 모으도록 로컬에 보존하며 앱/계측·ADB를 재시작하지 않는다.

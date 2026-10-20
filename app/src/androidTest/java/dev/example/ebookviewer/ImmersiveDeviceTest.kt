@@ -439,7 +439,10 @@ class ImmersiveDeviceTest {
             val ready =
                 !latest.isDestroyed &&
                     !latest.isFinishing &&
-                    decor.hasWindowFocus() &&
+                    (
+                        decor.hasWindowFocus() ||
+                            settingsRoot(latest)?.window?.decorView?.hasWindowFocus() == true
+                        ) &&
                     aspectMatches &&
                     (!recreate || latest !== initial) &&
                     latest.requestedOrientation == requested &&
@@ -448,7 +451,18 @@ class ImmersiveDeviceTest {
             previous = latest
             ready && SystemClock.uptimeMillis() - stableSince >= 250
         }
+        // Selection now returns to settings; close that parent before checking the reading Window.
+        ui.onMain {
+            settingsRoot(latest)?.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick()
+        }
+        ui.await("Reader focus did not return after closing settings") { latest.hasWindowFocus() }
         return latest
+    }
+
+    private fun settingsRoot(activity: Activity): android.app.AlertDialog? {
+        val field = MainActivity::class.java.getDeclaredField("settingsHomeDialog")
+        field.isAccessible = true
+        return field.get(activity) as android.app.AlertDialog?
     }
 
     private fun assertImmersive(activity: Activity) {
