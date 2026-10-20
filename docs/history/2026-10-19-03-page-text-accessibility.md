@@ -144,3 +144,19 @@ complex 최종도 3회/180표본으로 완료해 기준과 자료 SHA·test SHA�
 `:app:assembleProfileAndroidTest :app:lintDebug ktlintCheck -Pp0TestBuildType=profile --dependency-verification strict --console=plain`은 성공했다. 원래 공통 계측 834c353f…를 전체 SHA명 APK로 보존하고, 새 프레임용 공통 계측 **c128cef795dd616f85c4d29c253d991396231336d0efc46d9f46ee876201d2f8**을 동결했다(frame-compat-apks.json). baseline/final 앱 hash는 06423be6…/5e968f60… 그대로다. 이미 완료한 선명도 비교는 양쪽 공통 834c…로 유효하며, 프레임/long은 양쪽 새 c128…로 검증한다. 이번 변경은 프레임 호환 경로만이라 기존 기능 59개/선명도 4조건을 반복하지 않는다. 실패 raw는 baseline-frames-background-compat-failed.txt로 보존하고 수정 baseline frames를 재개했다.
 
 수정 공통 c128…로 baseline frames **30초×3회 정상 완료**, supportsAutomaticBackground=false/autoBackground=false를 실제 보고서에서 확인했다. 전후 thermal 0·font 1.1·충전 status 2, p95 5.571~5.989ms/p99 6.364~6.749ms·droppedReports 0·cache≤64MiB다. 빠른 제스처 직후 고해상도 타일/페이지 커버가 미준비인 표본은 원자료에 보존하며 완전 무공백/무지연으로 보고하지 않는다. 같은 c128…를 유지한 최종 앱 자동 배경색 true 프레임을 시작했다.
+
+프레임 최종도 30초×3회 정상 완료했다. 양쪽 공통 c128…/동일 fixture SHA·주사율/밝기 0.5/font 1.1·충전 status 2·thermal 전후 0을 대조했다. 기준 supportsAutomaticBackground=false/autoBackground=false, 최종 true/true가 실제 보고서에 확인돼 이전 수동 fallback/최종 자동 켜짐 차이를 명시한다. p95(ms) 기준 **5.571~5.989**→최종 **6.148~6.287**, p99 **6.364~6.749**→**7.062~7.804**로 일부 비용은 증가했으나 16.7/33.3ms 목표 이내다. 양쪽 droppedReports 0·cache≤64MiB다. FD는 기준 141→135/144→138/144→138, 최종 140→135/143→138/143→138로 관측 구간 종료 수의 누적 증가가 없다.
+
+제스처 직후 페이지 커버 미준비는 기준 **25/325**, 최종 **22/320** 표본이고 고해상도 타일 미준비도 원자료에 남긴다. 모두 매 제스처 직후 renderState 표본이며 물리 화면의 공백 프레임 수/완전 무공백을 뜻하지 않는다. PSS 시작/종료 차이는 캐시 가열을 포함하므로 이 30초 표본만으로 누수 부재/순간 peak 상한을 주장하지 않는다. 최종 실제 Activity 600초×1회를 재설치 없이 시작했고 결과는 별도 기록한다. 계측/host 수정 d915642를 같은 PR 브랜치로 일반 push했다.
+
+## 최종 10분 결과·debug 복원·개인 수용 대기
+
+최종 profile 5e968f60…/공통 c128…/자동 배경색 true의 실제 Activity는 **600,341ms·35,540프레임·2,129제스처**를 완료했다(KST 15:57:56~16:08:15, 준비 포함). thermal 전후 0·충전 status 2·font 1.1·창 밝기 0.5/60Hz였다. p95 **6.540959ms**, p99 **8.583033ms**, 50ms 초과 0/주사율 예산 초과 5, droppedReports 0·최대 cache **67,107,576byte≤64MiB**, FD **140→137**이다. 해당 연속 실행이 앱 충돌/전경 상실로 중단되지 않았음을 확인했다. 메모리와 빠른 이동 중 미준비 표본은 아래 한계와 함께 보고한다.
+
+PSS 시작 **205,767KiB**, 종료 **281,302KiB**, 30초 간격 관측 최고 **292,908KiB**였다(약 201→275MiB/관측 최고286MiB). 시작보다 약74MiB 증가했고 마지막 다섯 표본도 268,307~292,908KiB 범위였다. 중간 감소(181초의 205,891KiB 등)도 있어 단조 증가/누수를 확정하지 않지만 캐시 가열과 native/그래픽 메모리를 분리 측정한 것은 아니다. 10분 범위의 관측값이며 긴 세션 누수 부재/순간 peak 상한이나 실제 OOM 검증으로 확대하지 않는다. 고해상도 타일 미준비 **2048/2129**, 페이지 커버 미준비 **393/2129**의 제스처 직후 renderState 표본도 보존한다. 이는 물리 공백 프레임 수가 아니며 정지 후 선명화 20그룹 비교와 구분한다. 이전 P0는 화면/조건이 달라 직접 개선율로 비교하지 않는다.
+
+계측 호환/host 설치 대기 보완 d915642의 [push CI 39383339710](https://github.com/AtraFelis/ebook_viewer/actions/runs/39383339710)·[PR CI 39383343532](https://github.com/AtraFelis/ebook_viewer/actions/runs/39383343532)는 모두 성공했다. 실제 CodeRabbit 검토는 앱 수정과 이전 계측을 포함한 31ebdef까지 완료됐고 이 이후 프레임 호환/설치 대기 코드는 아직 외부 검토 미완료다. 시간당 1회 포함 리뷰 한도를 확인한 상태라 반복 요청하지 않는다. 건너뜀 성공을 해당 변경 리뷰 완료로 세지 않는다.
+
+기기 검사 종료 뒤 `local-artifacts/restore-final-debug.py`로 데이터 보존 재설치/설치 APK SHA를 확인했다. 앱은 기존 최종 기능 검증과 같은 **87b75a3bba2a0f344de5883962ee0f5c6d9f119f339d7399c832dd923134959f**, 최신 debug 계측은 **c0d3665bc74ccae96762dcc7154515a95cde7275e28d30ff34e0ebd1c58f29b0**다. debug 계측도 strict assembleDebugAndroidTest 성공이며 이전 기본 59개 실행의 d6bd685f… APK는 해시명으로 보존했다. 새 계측은 프레임 호환만 달라 59개를 재실행/새 APK에서 통과했다고 주장하지 않는다. 앱 runtime은 동일하다.
+
+글꼴 **1.1**, 앱/계측 PID 부재·PR OPEN을 확인했다. 앱은 자동으로 열지 않는다. 개인 파일을 받지 않고 본문/TalkBack 확인을 할 수 있게 기존 공개 합성 `text-outline.pdf` 1,445byte/SHA **985aa318330c9633d90327f9df4d47743c8e145e4935dd8a6e50226bda9af60b**을 기기 Download/P2-accessibility-sample-985aa318.pdf로 복사/해시 대조했다. 같은 이름의 다른 파일은 덮어쓰지 않는 절차다. 사용자에게 공개 샘플 본문 표시/닫기·TalkBack 음성/초점/큰 글꼴·평소 PDF 읽기/확대/이어 읽기 확인을 요청했고 현재 답변 대기다. 이후 기기는 추가 조작하지 않는다. 최종 개인 수용·사용자 병합·완료 기록 전이므로 **P2 전체 완료는 아직 아니다.**
