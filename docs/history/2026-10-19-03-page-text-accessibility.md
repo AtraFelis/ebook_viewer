@@ -98,3 +98,19 @@ watchdog a67f3f2·접근성 수정 0a95883을 같은 PR 브랜치에 일반 push
 모든 invocation 후 앱/테스트를 멈췄고 전역 글꼴 **1.1**을 확인했다. 여유 메모리는 **2,526,968KiB**로 준비 조건 2GiB 이상이지만 **thermal 3**으로 기준 0~1을 벗어났다. 이 상태에서 성능을 시작하거나 합격선을 낮추지 않고 앱 중지 상태로 냉각을 기다린다. 최종 정상/플링/32배율/복잡 자료 비교·프레임·10분 실제 Activity·TalkBack/가독성 개인 수용·사용자 병합은 미완료다.
 
 냉각 중 재조회는 thermal 2였다. `scripts/run-p2-integration-probe.py --label baseline --mode normal`의 준비 guard가 `Thermal status unavailable or above LIGHT; workload not started`로 종료했다. guard는 APK 설치/표본 수집보다 먼저 실행되므로 기준 앱 설치·측정 JSON은 아직 없다. 사용자에게 화면을 끄고 3~5분 쉬게 한 뒤 잠금 해제를 요청했다. 그동안 앱은 중지 상태이며 반복 테스트는 예약하지 않았다. 변경 Markdown의 로컬 링크 153개도 누락 없이 확인했다. 로드맵은 완료한 본문/자동 접근성 검사와 남은 개인 수용·성능·사용자 병합을 구분해 갱신했다.
+
+최신 문서 head 867c53b에서 [CodeRabbit 재요청](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6284300894)을 한 번 했으나 [Review rate limited](https://github.com/AtraFelis/ebook_viewer/pull/17#issuecomment-6284302680)로 실제 미실행이었다. 자동 건너뜀/한도 성공 체크를 후속 접근성 수정 검토 완료로 세지 않고 반복 요청하지 않는다.
+
+사용자 냉각/재개 답변 뒤 baseline normal 준비 조건은 통과했지만 첫 실제 probe는 `Sharpness probe left the foreground`로 실패했다. runs=[]/실패 1이었고 Dozing·keyguard showing=true·thermal 1을 확인했다. APK 설치/준비 중 자동 잠금으로 화면 전경을 잃었으며 성공 표본/성능 통과가 아니다. 원래 로그는 ignored `baseline-normal-foreground-failed-instrumentation.txt`로 보존했다. host guard에 잠금 상태뿐 아니라 `mWakefulness=Awake` 확인도 추가해 화면이 꺼진 준비 상태를 거부한다. 사용자에게 잠금 해제를 요청하고 완료 답변 직후 이미 설치된 같은 APK로 재시도했다. 이후 실제 수집 결과는 별도 기록한다.
+
+## 2026-10-20 성능 수집 재개 — 기준 normal 완료
+
+사용자 잠금 해제 답변 뒤 같은 baseline/common APK의 normal 재시도는 KST 14:48:46~14:55:38에 완료했다. `--label baseline --mode normal`의 9회/540표본(자료×방향별 90), timeout 0, thermal 전후 1·충전 status 2·font 1.1이었다. pooled p95는 vector 첫 방향 1,331.400ms/역방향 1,430.140ms, gray 149.166/132.827ms, RGB 516.135/432.595ms다. 이전 실패 보고서는 보존하며 이 표본과 합산하지 않는다.
+
+final normal 첫 준비는 APK 설치 뒤 메모리가 2GiB 미만이어서 guard로 중단됐다. 측정 표본은 없다. 후속 읽기에서 2,206,248KiB/thermal 1·Awake/잠금 해제를 확인하고 재설치 없이 같은 명령을 재개했다. 시스템 화면 timeout은 300,000ms이고 device-admin 강제 상한은 없었다. 전역 timeout/밝기/잠금 설정은 바꾸지 않았다. 최종 측정 완료와 비교는 후속 기록한다.
+
+PR 최신 head 867c53b의 실제 [PR CI 39376473079](https://github.com/AtraFelis/ebook_viewer/actions/runs/39376473079)는 도구 설치·Verify Wrapper and run checks가 실행돼 성공했다. 문서 전용이라는 이유로 이 실행을 미실행으로 단정하지 않는다. CodeRabbit 성공 표시는 기존 rate limited/자동 건너뜀과 구분하며 최신 접근성 코드의 실제 외부 재검토는 미완료다.
+
+final normal도 9회/540표본·timeout 0으로 완료했다. 동일 test SHA/font/자료 hash·viewport·배율·주사율·창 밝기·충전 상태를 대조했고 양쪽 thermal 전후 0~1이었다. 기준→최종 pooled p95(ms)는 vector 첫 방향 **1331.400→811.342**, 역방향 **1430.140→726.838**; gray **149.166→99.506**, **132.827→82.516**; RGB **516.135→249.090**, **432.595→216.119**로 6그룹 모두 사전 목표를 충족했다. 각 방향 n=90이며 null 표본 제거 없이 집계했고 cache≤64MiB였다. 이 결과는 normal 컴포넌트 계측만의 통과이며 나머지 플링/최대 배율/복잡 자료·실제 Activity 프레임/10분·개인 수용 완료로 확대하지 않는다. 원자료 `baseline-normal.json`, `final-normal.json`, 계산 `summary.json`은 ignored local-artifacts/p2-integration에 보존한다.
+
+이후 `--label baseline --mode fling`은 ADB operation failed로 중단됐고 실패 처리의 force-stop도 같은 연결 오류로 실패했다. JSON/플링 원자료는 생성되지 않았다. 재조회에서는 같은 기기가 승인 상태로 복구돼 앱/계측을 각각 force-stop하고 본 앱 PID 부재를 확인했다. 연결 실패의 내부 원인은 미확정이다. thermal 2로 상승한 상태여서 재시도하지 않고 냉각을 기다린다. normal 완료 표본/판정은 변경하지 않는다.

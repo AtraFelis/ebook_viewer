@@ -10,7 +10,7 @@
 
 기기 검사는 한 invocation씩 종료를 확인하며 다음 작업을 자동 연결하지 않는다. PC 래퍼 timeout/finally와 계측 자체 일반 720초/선명도 1200초/프레임 요청 시간+여유의 deadline을 적용했다. 실제 1초 제한에서 약 2.1초에 incomplete로 종료하고 앱 PID 부재·글꼴 1.1을 확인했다. 현재 소스 strict debug/profile 빌드·단위 44개·Lint/ktlint는 통과했다. 이전 앱 삭제 전 private 기록/설정 복구를 주장하지 않는다.
 
-본문 창의 페이지 선택은 짧은 문서를 모두 표시해도 PDF 줌/위치 변경 없이 다른 페이지를 읽는다. native 서비스의 6초·192MiB RSS 관측·여유 메모리·16,000자 제한은 유지하며 순간 peak/OOM hard limit 보장은 아니다. 실제 결과/미결은 [실행 이력](docs/history/2026-10-19-03-page-text-accessibility.md)에 기록한다. 선택 UI·검색·새 런타임 의존성/도구 변경은 없다. 성능·개인 접근성 수용 및 P2 완료는 아직 아니다. 기능 검사 후 여유 메모리는 약 2.4GiB였지만 thermal 3→2로 성능 기준 0~1을 벗어났다. baseline normal 준비 guard가 거부해 설치/표본 수집은 시작되지 않았다. 사용자에게 화면을 끄고 3~5분 식힌 뒤 잠금을 풀어 알려 달라고 요청했고 앱 중지 상태로 답변을 기다린다.
+본문 창의 페이지 선택은 짧은 문서를 모두 표시해도 PDF 줌/위치 변경 없이 다른 페이지를 읽는다. native 서비스의 6초·192MiB RSS 관측·여유 메모리·16,000자 제한은 유지하며 순간 peak/OOM hard limit 보장은 아니다. 실제 결과/미결은 [실행 이력](docs/history/2026-10-19-03-page-text-accessibility.md)에 기록한다. 선택 UI·검색·새 런타임 의존성/도구 변경은 없다. 성능·개인 접근성 수용 및 P2 완료는 아직 아니다. 냉각·잠금 해제 뒤 baseline normal은 540표본/timeout 0·thermal 전후 1로 완료했다. 최종 앱 설치 직후에는 여유 메모리 2GiB guard가 측정을 거부했으며, 회복(2,206,248KiB)/thermal 1·Awake/잠금 해제를 확인하고 재설치 없이 final normal을 시작했다. 동일 조건의 final normal도 540표본/timeout 0으로 완료했고 자료×방향 6그룹 모두 기존 목표를 충족했다(vector p95 1,331→811ms/1,430→727ms, gray 149→100/133→83ms, RGB 516→249/433→216ms). 플링 비교부터 순차 진행 중이며 최종 통합 전체 통과는 아직 아니다.
 
 현재 [PR #17](https://github.com/AtraFelis/ebook_viewer/pull/17)은 열려 있고 앱 첨부도 성공했다. c7ea3ed 및 계측 보완 f8d9265의 push/PR CI는 모두 성공했고, CodeRabbit 실제 31개 파일/후속 코드 1개 파일 검토도 각각 수정 요구 없이 완료됐다. 별도 docstring 80% 권고는 저장소 이유/제약 주석 규칙의 필수 기준이 아니어서 일괄 생성하지 않는다. 이 후속 접근성/계측 deadline 수정의 원격 검사와 혼동하지 않는다. 최종 성능 비교·10분 연속 검사·실제 TalkBack/가독성 사용자 확인과 사용자 병합은 남아 있다.
 

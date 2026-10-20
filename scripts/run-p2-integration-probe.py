@@ -45,6 +45,9 @@ def main():
         memory = re.search(r"(?m)^MemAvailable:\s+(\d+)", call(prefix + ["shell", "cat", "/proc/meminfo"]))
         if not memory or int(memory.group(1)) < 2 * 1024 * 1024:
             raise RuntimeError("2 GiB available memory required; workload not started")
+        power = call(prefix + ["shell", "dumpsys", "power"])
+        if not re.search(r"\bmWakefulness=Awake\b", power):
+            raise RuntimeError("Wake and unlock device before measurement")
         policy = call(prefix + ["shell", "dumpsys", "window", "policy"])
         if re.search(r"(?:showing|isStatusBarKeyguard|mShowingLockscreen)=true", policy):
             raise RuntimeError("Unlock device before measurement")
