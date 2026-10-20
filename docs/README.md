@@ -1,5 +1,7 @@
 # 문서 목차
 
+2026-10-20 P2의 기능·자동 통합 검사·사용자 수용과 PR #17 병합 완료 근거는 [P2 마무리](history/2026-10-20-01-p2-completion.md)를 확인합니다. 완료 문서 PR 반영 후 종료를 확정하며 기기/메모리·리뷰 범위의 한계를 함께 기록합니다.
+
 현재 페이지 본문 읽기의 [격리/중단·접근성 결정](adr/0015-bounded-current-page-text-and-accessibility.md)과 [실제 검사·미결](history/2026-10-19-03-page-text-accessibility.md)을 확인합니다. 2026-10-19 사용자 결정으로 선택/복사 UI는 후속 보류하고 본문 읽기 안전성·TalkBack/큰 글꼴·최종 통합 검증은 유지합니다.
 
 P2 읽기 화면 설정은 [ADR 0014](adr/0014-reader-display-settings.md), [실행/미결](history/2026-10-19-02-reader-display-settings.md)을 따릅니다. 새 의존성 없이 테마와 열람 중 밝기/화면 유지를 구현하며 기기 검사/개인 수용·최종 통합은 실제 이력의 상태를 따릅니다.
@@ -8,7 +10,7 @@ P2 자동 배경색은 [ADR 0013](adr/0013-automatic-page-background.md), [실�
 
 현재 P2는 사용자 결정으로 검색을 후속 보류하고 목차·비밀번호 PDF 읽기도 필수에서 제외합니다. [최신 범위](plan/p2-scope-and-completion.md)를 따릅니다. 선명도 작업은 검색과 독립된 [가시 면적/페이지 재사용 결정](adr/0012-bounded-page-reuse-and-sharpness.md), [실행 결과](history/2026-10-18-13-sharpness-baseline-and-page-reuse.md), [재현 절차](testing/sharpness-probe.md)에서 확인합니다.
 
-P2는 최신 범위의 기능 확장을 포함하고 Figma 전면 적용은 별도 단계로 분리합니다. [기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md) 후 보통 스크롤 선명화 기준선과 페이지 재사용 1차 개선·개인 PDF 체감 수용을 완료했습니다. 빠른 플링·고배율의 선명도 분포, 복잡한 자료와 최종 통합 검증 및 다른 필수 기능은 남아 있습니다. 목차는 필수 범위에서 제외했습니다.
+P2는 최신 범위의 기능 확장을 포함하고 Figma 전면 적용은 별도 단계로 분리합니다. [기능별 수용·종료 시점](plan/p2-scope-and-completion.md)을 확인합니다. [플랫폼 확장/합성 기능 검증](adr/0009-p2-platform-pdf-capabilities.md) 후 보통 스크롤 선명화 기준선과 페이지 재사용 1차 개선·개인 PDF 체감 수용을 완료했습니다. 빠른 플링·최대 배율·복잡 자료의 최종 선명도 20그룹과 실제 Activity 프레임/10분 검사·개인 사용 수용도 완료했습니다. 목차는 필수 범위에서 제외했습니다.
 
 현재 개인 API 33 범위의 P1은 완료했습니다. [완료 판정·최종 CI·사용자 수용·미결 리뷰](history/2026-10-17-12-p1-completion.md), [다음 단계 로드맵](plan/roadmap.md)을 확인합니다.
 
