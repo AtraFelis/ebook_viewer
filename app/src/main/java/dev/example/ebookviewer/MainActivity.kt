@@ -687,10 +687,16 @@ class MainActivity : Activity() {
     }
 
     private fun saveReading() {
-        // Lifecycle saves must not enqueue the old layout behind an in-flight settings write.
-        if (!loaded || pendingLayoutWrites > 0) return
+        if (!loaded) return
         val record = activeRecord ?: return
         val position = viewer.readingPosition() ?: return
+        if (pendingLayoutWrites > 0) {
+            // Queue the latest anchor without overwriting the settings result with the old UI value.
+            library.execute({ it.updatePosition(record.uri, position) }) { result ->
+                if (!isDestroyed) result.onFailure { reportError(R.string.save_error) }
+            }
+            return
+        }
         val updated = record.copy(position = position, pageLayout = viewer.pageLayoutSettings())
         activeRecord = updated
         val replacement = replacedUri

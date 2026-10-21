@@ -27,6 +27,7 @@ class P0Instrumentation : Instrumentation() {
     private var guidanceOnly = false
     private var chromeOnly = false
     private var panLockOnly = false
+    private var stateBoundaryOnly = false
     private var textOnly = false
     private var fontOnly = false
     private var navigationOnly = false
@@ -63,6 +64,7 @@ class P0Instrumentation : Instrumentation() {
                     "guidance",
                     "chrome",
                     "panLock",
+                    "stateBoundary",
                     "text",
                     "font",
                     "navigation",
@@ -81,6 +83,7 @@ class P0Instrumentation : Instrumentation() {
         guidanceOnly = suite == "guidance"
         chromeOnly = suite == "chrome"
         panLockOnly = suite == "panLock"
+        stateBoundaryOnly = suite == "stateBoundary"
         textOnly = suite == "text"
         fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
@@ -113,6 +116,7 @@ class P0Instrumentation : Instrumentation() {
         require(!guidanceOnly || (!probe && restartPhase == null))
         require(!chromeOnly || (!probe && restartPhase == null))
         require(!panLockOnly || (!probe && restartPhase == null))
+        require(!stateBoundaryOnly || (!probe && restartPhase == null))
         require(!textOnly || (!probe && restartPhase == null))
         require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
@@ -216,6 +220,8 @@ class P0Instrumentation : Instrumentation() {
             } else {
                 core.run(Request.method(DocumentAccessDeviceTest::class.java, method))
             }
+        } else if (stateBoundaryOnly) {
+            core.run(ReadingStateBoundaryDeviceTest::class.java)
         } else if (panLockOnly) {
             core.run(HorizontalPanLockDeviceTest::class.java)
         } else if (layoutOnly) {
@@ -247,6 +253,7 @@ class P0Instrumentation : Instrumentation() {
                 ReadingGuidanceDeviceTest::class.java,
                 ReaderChromeDeviceTest::class.java,
                 HorizontalPanLockDeviceTest::class.java,
+                ReadingStateBoundaryDeviceTest::class.java,
                 PageTextDeviceTest::class.java,
                 LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
