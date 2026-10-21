@@ -229,7 +229,12 @@ class ImmersiveDeviceTest {
             instrumentation.runOnMainSync { activity.finish() }
             instrumentation.waitForIdleSync()
             activity = ui.launch()
-            activity = awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+            activity = awaitOrientation(
+                activity,
+                monitor,
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+                expectChild = false
+            )
             assertTrue(activity.findViewById<View>(R.id.home_screen).isShown)
             clickSettings(activity)
             clickDialogText(activity.getString(R.string.orientation_auto))
@@ -256,7 +261,12 @@ class ImmersiveDeviceTest {
         val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         var activity = ui.launch()
         try {
-            activity = awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+            activity = awaitOrientation(
+                activity,
+                monitor,
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+                expectChild = false
+            )
             val portraitRotation = ui.onMain { rotation(activity) }
             var view = ui.sample(activity)
             repeat(2) { ui.pinch(view) }
@@ -306,7 +316,8 @@ class ImmersiveDeviceTest {
             activity = awaitOrientation(
                 activity,
                 monitor,
-                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
+                expectChild = false
             )
             ui.await("Saved reverse direction was not restored") {
                 rotation(activity) == (landscapeRotation + 2) % 4
@@ -415,7 +426,8 @@ class ImmersiveDeviceTest {
     private fun awaitOrientation(
         initial: Activity,
         monitor: android.app.Instrumentation.ActivityMonitor,
-        requested: Int
+        requested: Int,
+        expectChild: Boolean = true
     ): Activity {
         var latest = initial
         val target = when (requested) {
@@ -431,6 +443,18 @@ class ImmersiveDeviceTest {
         ui.await("Orientation setting was not applied") {
             latest = monitor.lastActivity ?: initial
             val decor = latest.window.decorView
+            val child = settingsDialog(latest)
+            val parent = settingsDialog(latest, "settingsHomeDialog")
+            // Selection must retain its child; a cold launch intentionally has no settings open.
+            val focusReady = if (expectChild) {
+                parent?.isShowing == true &&
+                    child != null &&
+                    child !== parent &&
+                    child.isShowing &&
+                    child.window?.decorView?.hasWindowFocus() == true
+            } else {
+                decor.hasWindowFocus() || child?.window?.decorView?.hasWindowFocus() == true
+            }
             val aspectMatches = when (target) {
                 Configuration.ORIENTATION_LANDSCAPE -> decor.width > decor.height
                 Configuration.ORIENTATION_PORTRAIT -> decor.height > decor.width
@@ -439,10 +463,7 @@ class ImmersiveDeviceTest {
             val ready =
                 !latest.isDestroyed &&
                     !latest.isFinishing &&
-                    (
-                        decor.hasWindowFocus() ||
-                            settingsDialog(latest)?.window?.decorView?.hasWindowFocus() == true
-                        ) &&
+                    focusReady &&
                     aspectMatches &&
                     (!recreate || latest !== initial) &&
                     latest.requestedOrientation == requested &&
@@ -454,6 +475,9 @@ class ImmersiveDeviceTest {
         // Selection stays in its child, including recreation; explicitly close both settings levels.
         val parent = ui.onMain { settingsDialog(latest, "settingsHomeDialog") }
         val child = ui.onMain { settingsDialog(latest) }
+        if (expectChild) {
+            assertTrue("Orientation child was not restored", child != null && child !== parent)
+        }
         if (child != null && child !== parent) {
             ui.onMain { child.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick() }
             ui.await("Orientation child did not return to its parent") {

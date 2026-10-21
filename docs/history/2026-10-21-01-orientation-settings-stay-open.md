@@ -26,6 +26,9 @@ git diff --check
 
 ## 기존 PR #21 리뷰/CI 확인
 
+후속: db844c2의 CI39560887729/39560883846 모두 SUCCESS다. 실제 리뷰5596279775가 제기한 immersive 검사의 세부 창 누락 허용1건은 채택해 [후속 이력](2026-10-21-02-review-orientation-child-focus.md)에서 수정/검증한다. 앱 수정 자체와 계측 검사 보강을 구분한다.
+
 - 기존 af0e64e의 CI39441645592/39441637281 모두 SUCCESS다. 이번 방향 수정의 새 head 검사로 확대하지 않는다.
 - 봇 요약 [6293480957](https://github.com/AtraFelis/ebook_viewer/pull/21#issuecomment-6293480957)은 base f90233d→af0e64e, 17개 파일, `No actionable comments`를 명시한다. Run ID `fbf31439-cc05-439d-8c1f-97221760b570`, 응답6293540887도 Review finished다. GitHub reviews/inline 목록은 비어 있으나 이 실제 완료 요약을 읽었으며 수정할 지적은 없었다. 앞선 무료 한도 거부/접수 상태와 구분한다.
 - 방향 수정은 검증과 기록을 모아 같은 PR에 일반 push한다. 새 head에 필요하면 후속 리뷰를 한 번 요청하고 실제 접수를 확인하며, 진행 중 head 변경/중복 요청은 피한다. 기기 수용 전 Draft 유지, 병합은 사용자가 한다.
+- 게시 결과: db844c2 일반 push와 PR #21 제목/설명 갱신 완료. [후속 요청6310359568](https://github.com/AtraFelis/ebook_viewer/pull/21#issuecomment-6310359568)에 실제 봇6310364669의 Review triggered/PENDING을 확인했다. 새 CI39560887729/39560883846는 IN_PROGRESS, 새 inline 목록은 아직 비어 있다. 실제 후속 리뷰 완료나 원격 CI 통과로 보고하지 않는다. 진행 중 head를 유지해 이 상태 기록은 로컬에 모아 두며 추가 호출/자동 모니터/기기 작업은 시작하지 않았다.
