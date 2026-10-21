@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="reading_hint" type="id" />
+    <item name="settings_save_error" type="id" />
     <item name="home_record" type="id" />
     <item name="read_page_text" type="id" />
     <item name="page_text_content" type="id" />

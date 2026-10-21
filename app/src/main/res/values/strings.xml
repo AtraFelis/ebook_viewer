@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="first_reading_hint">화면 중앙을 탭하면 읽기 도구와 설정을 열 수 있어요.</string>
+    <string name="settings_save_failed">설정을 저장하지 못했습니다. 기존 설정을 유지했어요. 입력값을 확인하고 다시 시도해 주세요.</string>
+    <string name="retry_settings_save">다시 적용</string>
+    <string name="settings_saving">저장 중…</string>
     <string name="document_list_action">문서 목록으로</string>
     <string name="reading_environment">읽기 환경 · 모든 문서</string>
     <string name="current_document">현재 문서</string>

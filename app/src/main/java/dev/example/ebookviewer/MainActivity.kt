@@ -59,6 +59,13 @@ class MainActivity : Activity() {
     private var settingsHomeDialog: AlertDialog? = null
     private var settingsChildLoading = false
     private var orientationSettingsOpen = false
+    private enum class SettingsFormKind { BACKGROUND, DISPLAY, LAYOUT }
+    private var settingsFormKind: SettingsFormKind? = null
+    private var editableSettingsForm: EditableSettingsForm? = null
+    private var pendingLayoutDraft: Bundle? = null
+    private var pendingLayoutWrites = 0
+    private lateinit var readingHintLabel: TextView
+    private val hintState get() = (application as ReaderApplication).readingHint
     private var documentLayoutSetting: Button? = null
     private var bindPageNumberSetting: ((Boolean) -> Unit)? = null
     private var navigationDialog: AlertDialog? = null
@@ -124,6 +131,14 @@ class MainActivity : Activity() {
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
                 if (first) hideTools()
+                if (first) {
+                    hintState.documentOpened()
+                    updateReadingHint()
+                    pendingLayoutDraft?.let { draft ->
+                        pendingLayoutDraft = null
+                        showPageLayoutSettings(draft)
+                    }
+                }
                 applyPendingNavigation()
                 updatePageIndicator()
                 setStatus(
@@ -149,6 +164,7 @@ class MainActivity : Activity() {
             scheduleSave()
         }
         viewer.onUserInteraction = {
+            dismissReadingHint()
             toolsPresentation.scrubber.cancelPreview()
             pendingNavigation = null
             updatePageIndicator()
@@ -224,10 +240,20 @@ class MainActivity : Activity() {
             visibility = View.GONE
             textSize = 12f
         }
+        readingHintLabel = ReaderStyle(this).label(R.string.first_reading_hint, 14f).apply {
+            id = R.id.reading_hint
+            val style = ReaderStyle(this@MainActivity)
+            setPadding(style.dp(16), style.dp(12), style.dp(16), style.dp(12))
+            background = style.shape(style.surface, 12)
+            visibility = View.GONE
+            isClickable = false
+            isFocusable = false
+        }
         homeScroll = ScrollView(this).apply { addView(homeScreen) }
         root = FrameLayout(this).apply {
             setBackgroundColor(themeBackground())
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
+            addView(readingHintLabel, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
             addView(homeScroll, FrameLayout.LayoutParams(-1, -1))
             addView(pageIndicator, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END))
             addView(readerTools, FrameLayout.LayoutParams(-1, -1))
@@ -276,6 +302,15 @@ class MainActivity : Activity() {
                         insets.systemWindowInsetBottom
                     )
                 }
+                val hintParams = readingHintLabel.layoutParams as FrameLayout.LayoutParams
+                val gap = ReaderStyle(this@MainActivity).dp(24)
+                hintParams.setMargins(
+                    readerTools.paddingLeft + gap,
+                    0,
+                    readerTools.paddingRight + gap,
+                    readerTools.paddingBottom + gap
+                )
+                readingHintLabel.layoutParams = hintParams
                 insets
             }
         }
@@ -344,7 +379,16 @@ class MainActivity : Activity() {
         }
         if (savedInstanceState?.getBoolean("settingsOpen") == true) {
             showSettings()
-            if (savedInstanceState.getBoolean("orientationSettingsOpen")) showOrientationSettings()
+            if (savedInstanceState.getBoolean("orientationSettingsOpen")) {
+                showOrientationSettings()
+            } else {
+                val draft = savedInstanceState.getBundle("settingsDraft")
+                when (savedInstanceState.getString("settingsForm")) {
+                    SettingsFormKind.BACKGROUND.name -> showBackgroundSettings(draft)
+                    SettingsFormKind.DISPLAY.name -> showDisplaySettings(draft)
+                    SettingsFormKind.LAYOUT.name -> pendingLayoutDraft = draft ?: Bundle()
+                }
+            }
         }
     }
 
@@ -529,6 +573,7 @@ class MainActivity : Activity() {
     }
 
     private fun showLibrary() {
+        dismissReadingHint()
         closeSettings()
         closePageText()
         saveReading()
@@ -629,7 +674,8 @@ class MainActivity : Activity() {
     }
 
     private fun saveReading() {
-        if (!loaded) return
+        // Lifecycle saves must not enqueue the old layout behind an in-flight settings write.
+        if (!loaded || pendingLayoutWrites > 0) return
         val record = activeRecord ?: return
         val position = viewer.readingPosition() ?: return
         val updated = record.copy(position = position, pageLayout = viewer.pageLayoutSettings())
@@ -681,11 +727,31 @@ class MainActivity : Activity() {
         readerTools.visibility = View.GONE
         viewer.dismissToolsOnOutsideTap = false
         readingWindow.apply(reading)
+        updateReadingHint()
     }
 
     private fun showTools() {
+        dismissReadingHint()
         readerTools.visibility = View.VISIBLE
         viewer.dismissToolsOnOutsideTap = true
+    }
+
+    private fun updateReadingHint() {
+        if (!::readingHintLabel.isInitialized) return
+        readingHintLabel.visibility = if (reading &&
+            loaded &&
+            hintState.visible &&
+            readerTools.visibility != View.VISIBLE
+        ) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
+    private fun dismissReadingHint() {
+        hintState.dismiss()
+        if (::readingHintLabel.isInitialized) readingHintLabel.visibility = View.GONE
     }
 
     private fun updatePageIndicator() {
@@ -975,20 +1041,20 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun showBackgroundSettings() {
+    private fun showBackgroundSettings(draft: Bundle? = null) {
         val parent = beginSettingsChild() ?: return
         settings.loadBackground { result ->
             if (!isSettingsParent(parent)) return@loadBackground
             settingsChildLoading = false
             result.onSuccess { current ->
-                val dialog = backgroundSettingsDialog(current) { selected ->
+                val form = backgroundSettingsDialog(current, draft) { selected, done ->
                     settings.saveBackground(selected) { saved ->
-                        if (isDestroyed) return@saveBackground
+                        if (isDestroyed || isFinishing) return@saveBackground
+                        done(saved.isSuccess)
                         saved.onSuccess(viewer::setBackgroundSettings)
-                            .onFailure { reportError(R.string.settings_error) }
                     }
                 }
-                showSettingsChild(parent, dialog)
+                showEditableSettingsChild(parent, SettingsFormKind.BACKGROUND, form)
             }.onFailure { reportError(R.string.settings_error) }
         }
     }
@@ -1011,13 +1077,7 @@ class MainActivity : Activity() {
             setText(R.string.page_layout_settings)
             isEnabled = loaded && reading
             setOnClickListener {
-                val parent = beginSettingsChild() ?: return@setOnClickListener
-                val dialog = pageLayoutDialog(viewer.pageLayoutSettings()) {
-                    viewer.setPageLayoutSettings(it)
-                    cancelSave()
-                    saveReading()
-                }
-                showSettingsChild(parent, dialog)
+                showPageLayoutSettings()
             }
         }
         documentLayoutSetting = layoutButton
@@ -1112,6 +1172,53 @@ class MainActivity : Activity() {
         return parent
     }
 
+    private fun showEditableSettingsChild(
+        parent: AlertDialog,
+        kind: SettingsFormKind,
+        form: EditableSettingsForm
+    ) {
+        if (!isSettingsParent(parent)) return
+        settingsFormKind = kind
+        editableSettingsForm = form
+        showSettingsChild(parent, form.dialog) {
+            settingsFormKind = null
+            editableSettingsForm = null
+        }
+    }
+
+    private fun showPageLayoutSettings(draft: Bundle? = null) {
+        if (!loaded || !reading) return
+        val parent = beginSettingsChild() ?: return
+        val generation = opening
+        val form = pageLayoutDialog(viewer.pageLayoutSettings(), draft) { selected, done ->
+            val record = activeRecord
+            if (generation != opening || !loaded) {
+                done(false)
+            } else if (record == null) {
+                // The synthetic demo has no library record; its layout is intentionally session-only.
+                viewer.setPageLayoutSettings(selected)
+                done(true)
+            } else {
+                cancelSave()
+                val updated = record.copy(
+                    position = viewer.readingPosition(),
+                    pageLayout = selected
+                )
+                pendingLayoutWrites++
+                library.execute({ it.put(updated) }) { saved ->
+                    pendingLayoutWrites--
+                    if (isDestroyed || isFinishing || generation != opening) return@execute
+                    saved.onSuccess {
+                        activeRecord = updated
+                        viewer.setPageLayoutSettings(selected)
+                    }
+                    done(saved.isSuccess)
+                }
+            }
+        }
+        showEditableSettingsChild(parent, SettingsFormKind.LAYOUT, form)
+    }
+
     private fun isSettingsParent(parent: AlertDialog): Boolean =
         !isDestroyed && !isFinishing && settingsHomeDialog === parent && parent.isShowing
 
@@ -1141,6 +1248,9 @@ class MainActivity : Activity() {
         settingsHomeDialog = null
         settingsChildLoading = false
         orientationSettingsOpen = false
+        settingsFormKind = null
+        editableSettingsForm = null
+        pendingLayoutDraft = null
         documentLayoutSetting = null
         bindPageNumberSetting = null
         child?.setOnDismissListener(null)
@@ -1162,20 +1272,20 @@ class MainActivity : Activity() {
         if (requestedOrientation != requested) requestedOrientation = requested
     }
 
-    private fun showDisplaySettings() {
+    private fun showDisplaySettings(draft: Bundle? = null) {
         val parent = beginSettingsChild() ?: return
         settings.loadDisplay { result ->
             if (!isSettingsParent(parent)) return@loadDisplay
             settingsChildLoading = false
             result.onSuccess { current ->
-                val dialog = displaySettingsDialog(current) { selected ->
+                val form = displaySettingsDialog(current, draft) { selected, done ->
                     settings.saveDisplay(selected) { saved ->
                         if (isDestroyed || isFinishing) return@saveDisplay
+                        done(saved.isSuccess)
                         saved.onSuccess(::applyDisplaySettings)
-                            .onFailure { reportError(R.string.settings_error) }
                     }
                 }
-                showSettingsChild(parent, dialog)
+                showEditableSettingsChild(parent, SettingsFormKind.DISPLAY, form)
             }.onFailure { reportError(R.string.settings_error) }
         }
     }
@@ -1235,6 +1345,12 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN &&
+            ::readingHintLabel.isInitialized &&
+            readingHintLabel.isShown
+        ) {
+            dismissReadingHint()
+        }
         // A second pointer may be routed to a sibling by ViewGroup's split touch dispatch.
         if (event.pointerCount > 1 && ::toolsPresentation.isInitialized) {
             toolsPresentation.scrubber.cancelPreview()
@@ -1304,6 +1420,14 @@ class MainActivity : Activity() {
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)
+        val form = editableSettingsForm
+        if (form?.dialog?.isShowing == true) {
+            outState.putString("settingsForm", settingsFormKind?.name)
+            outState.putBundle("settingsDraft", form.capture())
+        } else if (pendingLayoutDraft != null) {
+            outState.putString("settingsForm", SettingsFormKind.LAYOUT.name)
+            outState.putBundle("settingsDraft", pendingLayoutDraft)
+        }
         saveReading()
         pendingNavigation?.let {
             outState.putInt("pendingPage", it.page)
@@ -1313,7 +1437,18 @@ class MainActivity : Activity() {
         outState.putBoolean("synthetic", synthetic)
         outState.putString("reselectUri", reselectRecord?.uri)
         outState.putString("replacedUri", replacedUri)
-        outState.putBundle("viewport", viewer.saveViewport())
+        val viewport = viewer.saveViewport()?.let { saved ->
+            if (pendingLayoutWrites > 0) {
+                // The repository result decides the layout after recreation; retain only the anchor.
+                Bundle(saved).apply {
+                    remove("pageSizeMode")
+                    remove("pageGap")
+                }
+            } else {
+                saved
+            }
+        }
+        outState.putBundle("viewport", viewport)
         super.onSaveInstanceState(outState)
     }
 
