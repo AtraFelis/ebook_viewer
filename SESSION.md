@@ -2,7 +2,17 @@
 
 최종 갱신: 2026-10-21 (Asia/Seoul)
 
-## 현재 진행 — P3 읽기 상태·수명주기 안정화
+## 현재 진행 — P3 20분 읽기 안정성 점검 완료
+
+사용자 승인한 [전용 계획](docs/plan/p3-reading-soak.md)의 실제 **1,203초/1개/실패0**을 API33에서 완료했다. 30초 간격40회·문서 전환10/홈 왕복20/Activity 재생성5와 각 위치·좌표·줌·배치 복원, 최종 실제 기록 재읽기를 통과했다. 백그라운드 PSS 중앙값은 초기4~8분179,530KiB→후반16~20분166,270KiB(약175.3→162.4MiB), descriptor109→109로 사전 관측 예산 이내다. 관측 캐시 최대67,064,504bytes(<64MiB), 백그라운드20표본 캐시0이었다. 합성 기록/파일 정리·원래 글꼴1.1 유지·앱/계측 종료·ADB프로세스0을 확인했다. 현재 합성/debug 계측 범위에서 누적 증가를 관측하지 않았으며 모든 PDF/하루 사용/실제 OOM·메모리 압박/다른 기기를 보장하지 않는다.
+
+앱9da3aa5e는 앞선 검증 앱 그대로이며 새 opt-in 계측2947c5d2의 설치본 일치·strict 계측/Lint/ktlint5초·호스트 구문 검사 통과. 앱 코드/새 런타임 의존성/저장 형식은 불변이며 기본91개 검사는 반복하거나 늘리지 않았다. 테스트는 명시적으로만 실행하며 계측1,320초/호스트1,380초 deadline과 실행 UUID로 중단/이전 결과를 구분한다. [실행 이력](docs/history/2026-10-21-09-p3-reading-soak.md).
+
+앞선 [PR #25](https://github.com/AtraFelis/ebook_viewer/pull/25)는 CI두 건 SUCCESS·실제 CodeRabbit5600863334/12파일/head3c62e34 reviewed·inline지적0 확인 후 사용자 병합main754ed4d(2026-10-21 23:08 KST)로 완료했다. 낮은 우선순위 미검증 reflection 제안과 별도 docstring 비율 권고는 저장소 계약/최소 변경 근거로 보류했다. 추가 수동 호출은 하지 않았다. fetch 뒤 기존 앱 트리가 동일함을 확인하고 현재 체크아웃 `codex/p3-reading-soak`를 origin/main754ed4d에 ff-only 연결했다. 사용자 `docs/design.md` 아이콘86줄 변경은 보존/커밋 제외하며 최종 아이콘은 미선택/별도 후속이다. 다음은 이번 전용 검사·결과의 PR/CI/실제 리뷰·사용자 병합이며, P3 전체/릴리스 완료로 확대하지 않는다.
+
+## 앞선 진행 — P3 읽기 상태·수명주기 안정화
+
+당시 중간 확인(최신 완료는 위 현재 진행 참조): 수정/재현/검증 `3c62e343f4798093f569a261e93c9b32ebed1617`를 일반 push한 [PR #25](https://github.com/AtraFelis/ebook_viewer/pull/25)는 OPEN/isDraft=false다. CI39609129281은 SUCCESS,39609094411은 IN_PROGRESS다. 수동 요청6317403700 뒤 최초 봇6317410938은 Review triggered였지만, 후속 확인에서는 **Action not completed/Review rate limited**로 바뀌었고 요약6317408324도 **Review limit reached**를 명시한다. 따라서 실제 리뷰는 미실행이며 CodeRabbit SUCCESS 체크를 완료로 세지 않는다. 한도 중 추가 호출/자동 예약은 하지 않고 이 상태를 로컬에 모은다. 앱/ADB도 재시작하지 않는다. 남은 것은 CI 완료·한도 해제 후 실제 리뷰/타당한 수정과 사용자 병합이다.
 
 사용자 승인에 따라 [P3 첫 묶음 계획](docs/plan/p3-reading-stability.md)을 만들고 현재 체크아웃의 `codex/p3-reading-stability`에서 진행한다. PR #24의 최종 CI39605955671 SUCCESS·봇 수정 확인4337223859/스레드 해결·사용자 병합main eb923b0을 확인하고 동일 트리에서 ff-only 동기화했다. 사용자 `docs/design.md`의 아이콘 탐색86줄 변경은 보존/커밋 제외하며 최종 아이콘 선택은 별도 후속이다.
 
