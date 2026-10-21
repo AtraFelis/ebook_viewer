@@ -133,9 +133,13 @@ class PageScrubberDeviceTest {
             }
             touch(scrubber, MotionEvent.ACTION_DOWN, 0.8)
             ui.sample(activity)
+            awaitCatalog(viewer)
+            val replacement = ui.onMain { requireNotNull(viewer.readingPosition()) }
             assertNull(ui.onMain { scrubber.previewPage })
+            assertTrue("Replacement inherited the unconfirmed target", replacement.page != 79)
             touch(scrubber, MotionEvent.ACTION_UP, 0.8)
-            assertEquals(0, ui.onMain { viewer.readingPosition()?.page })
+            // The viewport center can be on page 2 at the default zoom; compare its actual anchor.
+            assertEquals(replacement, ui.onMain { viewer.readingPosition() })
         } finally {
             ui.onMain { activity.finish() }
         }

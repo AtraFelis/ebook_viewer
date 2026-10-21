@@ -26,3 +26,8 @@ git diff --check
 - 앱 SHA-256 `a0a6a16b40f316bd0b314d238508b223fe443c539a5c7a03616c1640224dd3cf`는 이전과 동일하다. 새 계측 SHA-256 `ed43d35c7ff534f586b9bdde29b6ec4e850436714fff11ca9c7aa42ea54542ca`이며 이전 계측 APK와 구분한다.
 - 앱/단위 로직은 불변이므로 앞서 통과한 단위48개를 반복하지 않았다. 사용자 지시대로 ADB·설치·기기·성능 검사는 시작하지 않았다. settings4/slider5/immersive 관련 회귀·시각 확인/사용자 수용과 전체 기대70개 실행은 여전히 남아 있다.
 - 기존 로컬 게시 상태 문서를 보존해 함께 반영하고 사용자 `docs/design.md` 변경은 수정·커밋에서 제외한다. 같은 PR 브랜치에 일반 push 후 해당 스레드에 검증 범위를 답변한다. 작은 계측 수정이고 포함 리뷰 잔여0이어서 추가 수동 호출은 하지 않는다. 새 head의 원격 CI는 별도 확인하며 기기 수용 전 Draft를 유지한다.
+
+## 게시 결과
+
+- 952ebc7 일반 push 완료. [답변4334217936](https://github.com/AtraFelis/ebook_viewer/pull/21#discussion_r4334217936)에 변경과 실제 검증/기기 미실행 범위를 남겼다. 해당 스레드 PRRT_kwDOVLKYJM6uqdsO의 isResolved=true를 확인했다.
+- 새 CI39563539150/39563534953는 확인 당시 IN_PROGRESS다. 이전 head의 성공이나 CodeRabbit 성공 체크를 새 실제 리뷰로 보고하지 않는다. 추가 수동 요청·자동 예약·기기/병합은 하지 않았다. 게시 상태 문서는 다음 결과와 모아 반영하도록 로컬에 보존한다.
