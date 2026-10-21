@@ -185,6 +185,9 @@ class PdfCanvasView @JvmOverloads constructor(
         override fun sizeOf(key: Tile, value: Bitmap): Int = value.allocationByteCount
     }
     private val scroller = OverScroller(context)
+    private var twoFingerFocusX = Float.NaN
+    private var twoFingerFocusY = Float.NaN
+    private var scaleUpdated = false
     private val scaleDetector =
         ScaleGestureDetector(
             context,
@@ -198,6 +201,7 @@ class PdfCanvasView @JvmOverloads constructor(
                         detector.focusY.toDouble(),
                         ZoomLimits.gestureMinimum(document.width, width, height)
                     )
+                    scaleUpdated = true
                     constrain()
                     return true
                 }
@@ -218,6 +222,7 @@ class PdfCanvasView @JvmOverloads constructor(
                     distanceX: Float,
                     distanceY: Float
                 ): Boolean {
+                    if (pageLayout.horizontalPanLocked && current.pointerCount > 1) return true
                     if (!scaleDetector.isInProgress) {
                         if (!pageLayout.horizontalPanLocked) viewport.x -= distanceX
                         viewport.y -= distanceY
@@ -567,7 +572,10 @@ class PdfCanvasView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_POINTER_DOWN -> hadMultiplePointers = true
         }
+        val panned = panWithTwoFingers(event)
+        scaleUpdated = false
         scaleDetector.onTouchEvent(event)
+        if (panned && !scaleUpdated) constrain()
         gestures.onTouchEvent(event)
         if (pageLayout.horizontalPanLocked &&
             event.actionMasked == MotionEvent.ACTION_POINTER_UP &&
@@ -594,6 +602,43 @@ class PdfCanvasView @JvmOverloads constructor(
             pendingClick = false
             performClick()
         }
+        return true
+    }
+
+    private fun panWithTwoFingers(event: MotionEvent): Boolean {
+        val lifted = if (event.actionMasked == MotionEvent.ACTION_POINTER_UP) {
+            event.actionIndex
+        } else {
+            -1
+        }
+        val count = event.pointerCount - if (lifted >= 0) 1 else 0
+        if (!pageLayout.horizontalPanLocked ||
+            layout == null ||
+            count < 2 ||
+            event.actionMasked == MotionEvent.ACTION_CANCEL ||
+            event.actionMasked == MotionEvent.ACTION_UP
+        ) {
+            twoFingerFocusX = Float.NaN
+            twoFingerFocusY = Float.NaN
+            return false
+        }
+        var focusX = 0f
+        var focusY = 0f
+        for (index in 0 until event.pointerCount) {
+            if (index == lifted) continue
+            focusX += event.getX(index) / count
+            focusY += event.getY(index) / count
+        }
+        val moving = event.actionMasked == MotionEvent.ACTION_MOVE && twoFingerFocusX.isFinite()
+        val dx = if (moving) focusX - twoFingerFocusX else 0f
+        val dy = if (moving) focusY - twoFingerFocusY else 0f
+        twoFingerFocusX = focusX
+        twoFingerFocusY = focusY
+        if (dx == 0f && dy == 0f) return false
+        scroller.forceFinished(true)
+        // Translate before zoomAt(new focus), so a moving pinch keeps the touched document point.
+        viewport.x += dx
+        viewport.y += dy
         return true
     }
 

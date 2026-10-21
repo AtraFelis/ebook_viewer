@@ -109,6 +109,19 @@ class HorizontalPanLockDeviceTest {
     }
 
     @Test
+    fun twoFingerPanAndMovingPinchKeepTouchedPointThenRelockEitherRemainingFinger() {
+        val view = fixture()
+        var clicks = 0
+        ui.onMain { view.setOnClickListener { clicks++ } }
+        try {
+            for (lifted in listOf(0, 1)) pinchThenScroll(view, lifted, translate = true)
+            assertEquals("Two-finger movement became a tools tap", 0, clicks)
+        } finally {
+            ui.onMain { view.reset() }
+        }
+    }
+
+    @Test
     fun headerIconKeepsViewportAndRestoresIndependentDocumentChoice() {
         withDocuments { first, second ->
             var activity = ui.launch()
@@ -258,7 +271,7 @@ class HorizontalPanLockDeviceTest {
         }
     }
 
-    private fun pinchThenScroll(view: PdfCanvasView, lifted: Int) {
+    private fun pinchThenScroll(view: PdfCanvasView, lifted: Int, translate: Boolean = false) {
         val down = SystemClock.uptimeMillis()
         fun event(action: Int, span: Float, remaining: Boolean = false, offset: Float = 0f) {
             val indices = when {
@@ -292,24 +305,62 @@ class HorizontalPanLockDeviceTest {
             MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
             48f
         )
+        var offset = 0f
+        if (translate) {
+            val before = ui.state(view)
+            repeat(12) {
+                SystemClock.sleep(16)
+                offset += 10f
+                event(MotionEvent.ACTION_MOVE, 48f, offset = offset)
+            }
+            val panned = ui.state(view)
+            val zoom = before.getDouble("zoom")
+            assertEquals(zoom, panned.getDouble("zoom"), 0.0)
+            assertEquals(
+                before.getDouble("centerX") + 30 / zoom,
+                panned.getDouble("centerX"),
+                0.00001
+            )
+            assertEquals(
+                before.getDouble("centerY") + 120 / zoom,
+                panned.getDouble("centerY"),
+                0.00001
+            )
+        }
+        fun touchedPoint(): Pair<Double, Double> {
+            val state = ui.state(view)
+            val zoom = state.getDouble("zoom")
+            return Pair(
+                state.getDouble("centerX") + (230 - offset / 4 - view.width / 2.0) / zoom,
+                state.getDouble("centerY") + (400 - offset - view.height / 2.0) / zoom
+            )
+        }
+        val touched = touchedPoint()
         repeat(12) {
             SystemClock.sleep(16)
-            event(MotionEvent.ACTION_MOVE, 48 + (it + 1) * 5f)
+            if (translate) offset += 6f
+            event(MotionEvent.ACTION_MOVE, 48 + (it + 1) * 5f, offset = offset)
+        }
+        if (translate) {
+            val actual = touchedPoint()
+            assertEquals(touched.first, actual.first, 0.0001)
+            assertEquals(touched.second, actual.second, 0.0001)
         }
         val enlarged = ui.state(view)
         event(
             MotionEvent.ACTION_POINTER_UP or (lifted shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
-            108f
+            108f,
+            offset = offset
         )
         assertEquals(enlarged.getDouble("centerX"), ui.state(view).getDouble("centerX"), 0.000001)
         repeat(12) {
             SystemClock.sleep(16)
-            event(MotionEvent.ACTION_MOVE, 108f, true, (it + 1) * 10f)
+            event(MotionEvent.ACTION_MOVE, 108f, true, offset + (it + 1) * 10f)
         }
         val scrolled = ui.state(view)
         assertEquals(enlarged.getDouble("centerX"), scrolled.getDouble("centerX"), 0.000001)
         assertTrue(scrolled.getDouble("centerY") > enlarged.getDouble("centerY"))
-        event(MotionEvent.ACTION_UP, 108f, true, 120f)
+        event(MotionEvent.ACTION_UP, 108f, true, offset + 120f)
         settle(view)
         assertEquals(scrolled.getDouble("centerY"), ui.state(view).getDouble("centerY"), 0.000001)
     }
