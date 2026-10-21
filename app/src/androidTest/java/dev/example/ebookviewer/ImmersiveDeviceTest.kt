@@ -441,7 +441,7 @@ class ImmersiveDeviceTest {
                     !latest.isFinishing &&
                     (
                         decor.hasWindowFocus() ||
-                            settingsRoot(latest)?.window?.decorView?.hasWindowFocus() == true
+                            settingsDialog(latest)?.window?.decorView?.hasWindowFocus() == true
                         ) &&
                     aspectMatches &&
                     (!recreate || latest !== initial) &&
@@ -451,16 +451,27 @@ class ImmersiveDeviceTest {
             previous = latest
             ready && SystemClock.uptimeMillis() - stableSince >= 250
         }
-        // Selection now returns to settings; close that parent before checking the reading Window.
+        // Selection stays in its child, including recreation; explicitly close both settings levels.
+        val parent = ui.onMain { settingsDialog(latest, "settingsHomeDialog") }
+        val child = ui.onMain { settingsDialog(latest) }
+        if (child != null && child !== parent) {
+            ui.onMain { child.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick() }
+            ui.await("Orientation child did not return to its parent") {
+                settingsDialog(latest) === parent
+            }
+        }
         ui.onMain {
-            settingsRoot(latest)?.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick()
+            parent?.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick()
         }
         ui.await("Reader focus did not return after closing settings") { latest.hasWindowFocus() }
         return latest
     }
 
-    private fun settingsRoot(activity: Activity): android.app.AlertDialog? {
-        val field = MainActivity::class.java.getDeclaredField("settingsHomeDialog")
+    private fun settingsDialog(
+        activity: Activity,
+        name: String = "settingsDialog"
+    ): android.app.AlertDialog? {
+        val field = MainActivity::class.java.getDeclaredField(name)
         field.isAccessible = true
         return field.get(activity) as android.app.AlertDialog?
     }

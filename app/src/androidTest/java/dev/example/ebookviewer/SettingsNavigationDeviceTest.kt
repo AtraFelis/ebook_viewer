@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -123,6 +122,71 @@ class SettingsNavigationDeviceTest {
     }
 
     @Test
+    fun orientationChoiceKeepsChildUntilExplicitCloseAndRestoresAfterRecreation() {
+        val previous = setting(repository::load)
+        setting { repository.save(OrientationMode.AUTO, it) }
+        val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
+        var activity = ui.launch()
+        try {
+            val parent = openRoot(activity)
+            val child = openChild(activity, parent, R.string.orientation_settings)
+            val target = ui.onMain {
+                val portrait = activity.resources.configuration.orientation ==
+                    Configuration.ORIENTATION_PORTRAIT
+                if (portrait) {
+                    OrientationMode.PORTRAIT
+                } else {
+                    OrientationMode.LANDSCAPE
+                }
+            }
+            ui.onMain {
+                val list = orientationList(child)
+                list.performItemClick(null, target.ordinal, target.ordinal.toLong())
+            }
+            assertEquals(target, setting(repository::load))
+            ui.await("Orientation selection dismissed its child") {
+                current(activity) === child &&
+                    child.window?.decorView?.hasWindowFocus() == true &&
+                    orientationList(child).isEnabled
+            }
+            assertEquals(target.ordinal, ui.onMain { orientationList(child).checkedItemPosition })
+            val oldActivity = activity
+            ui.onMain { activity.recreate() }
+            ui.await("Orientation child did not survive recreation", 30_000) {
+                val latest = monitor.lastActivity ?: activity
+                if (latest !== oldActivity &&
+                    current(latest) !== root(latest) &&
+                    current(latest)?.window?.decorView?.hasWindowFocus() == true
+                ) {
+                    activity = latest
+                    true
+                } else {
+                    false
+                }
+            }
+            val restoredParent = ui.onMain { requireNotNull(root(activity)) }
+            val restoredChild = ui.onMain { requireNotNull(current(activity)) }
+            assertEquals(
+                target.ordinal,
+                ui.onMain { orientationList(restoredChild).checkedItemPosition }
+            )
+            ui.onMain { restoredChild.getButton(AlertDialog.BUTTON_NEGATIVE).performClick() }
+            awaitParent(activity, restoredParent)
+            val reopened = openChild(activity, restoredParent, R.string.orientation_settings)
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            awaitParent(activity, restoredParent)
+            assertFalse(ui.onMain { reopened.isShowing })
+        } finally {
+            ui.onMain {
+                (monitor.lastActivity ?: activity).finish()
+                activity.finish()
+            }
+            instrumentation.removeMonitor(monitor)
+            setting { repository.save(previous, it) }
+        }
+    }
+
+    @Test
     fun readingApplyReturnsToParentAndRotationRestoresSettingsWithAnchor() {
         val oldBackground = setting(repository::loadBackground)
         val oldDisplay = setting(repository::loadDisplay)
@@ -166,8 +230,11 @@ class SettingsNavigationDeviceTest {
             }
             ui.await("Settings did not survive rotation", 30_000) {
                 val latest = monitor.lastActivity ?: activity
-                val root = root(latest)
-                if (latest !== activity && root?.window?.decorView?.hasWindowFocus() == true) {
+                val child = current(latest)
+                if (latest !== activity &&
+                    child !== root(latest) &&
+                    child?.window?.decorView?.hasWindowFocus() == true
+                ) {
                     activity = latest
                     true
                 } else {
@@ -176,12 +243,19 @@ class SettingsNavigationDeviceTest {
             }
             viewer = ui.awaitReady(activity)
             val restored = ui.onMain { requireNotNull(root(activity)) }
-            assertSame(restored, ui.onMain { current(activity) })
+            val restoredChild = ui.onMain { requireNotNull(current(activity)) }
+            assertNotSame(restored, restoredChild)
+            assertEquals(
+                target.ordinal,
+                ui.onMain { orientationList(restoredChild).checkedItemPosition }
+            )
             ui.await("Restored settings lost saved page number switch") {
                 ui.views(requireNotNull(restored.window).decorView)
                     .filterIsInstance<android.widget.Switch>().single().isChecked
             }
             assertAnchor(before, ui.state(viewer))
+            ui.onMain { restoredChild.getButton(AlertDialog.BUTTON_NEGATIVE).performClick() }
+            awaitParent(activity, restored)
             ui.onMain { restored.getButton(AlertDialog.BUTTON_NEGATIVE).performClick() }
             ui.await("Settings did not close to reader") {
                 current(activity) == null && activity.hasWindowFocus()
@@ -234,6 +308,10 @@ class SettingsNavigationDeviceTest {
 
     private fun current(activity: Activity) = dialog(activity, "settingsDialog")
     private fun root(activity: Activity) = dialog(activity, "settingsHomeDialog")
+
+    private fun orientationList(dialog: AlertDialog) =
+        ui.views(requireNotNull(dialog.window).decorView)
+            .filterIsInstance<android.widget.ListView>().single()
 
     private fun dialog(activity: Activity, name: String): AlertDialog? {
         val field = MainActivity::class.java.getDeclaredField(name)

@@ -58,6 +58,7 @@ class MainActivity : Activity() {
     private var settingsDialog: AlertDialog? = null
     private var settingsHomeDialog: AlertDialog? = null
     private var settingsChildLoading = false
+    private var orientationSettingsOpen = false
     private var documentLayoutSetting: Button? = null
     private var bindPageNumberSetting: ((Boolean) -> Unit)? = null
     private var navigationDialog: AlertDialog? = null
@@ -341,7 +342,10 @@ class MainActivity : Activity() {
                 }
             )
         }
-        if (savedInstanceState?.getBoolean("settingsOpen") == true) showSettings()
+        if (savedInstanceState?.getBoolean("settingsOpen") == true) {
+            showSettings()
+            if (savedInstanceState.getBoolean("orientationSettingsOpen")) showOrientationSettings()
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -914,10 +918,13 @@ class MainActivity : Activity() {
 
     private fun showOrientationSettings() {
         val parent = beginSettingsChild() ?: return
+        orientationSettingsOpen = true
         settings.load { result ->
             if (!isSettingsParent(parent)) return@load
             settingsChildLoading = false
             result.onSuccess { mode ->
+                var confirmed = mode
+                var saving = false
                 val labels =
                     arrayOf(
                         getString(R.string.orientation_auto),
@@ -939,18 +946,32 @@ class MainActivity : Activity() {
                     scrollContent = false
                 )
                 list.setOnItemClickListener { _, _, index, _ ->
-                    dialog.dismiss()
+                    if (saving) return@setOnItemClickListener
                     val selected = OrientationMode.entries[index]
+                    if (selected == confirmed) return@setOnItemClickListener
+                    saving = true
+                    list.isEnabled = false
                     settings.save(selected) { saved ->
-                        if (isDestroyed) return@save
+                        if (isDestroyed || isFinishing) return@save
+                        saving = false
+                        list.isEnabled = true
                         saved.onSuccess {
+                            confirmed = it
+                            list.setItemChecked(it.ordinal, true)
                             saveReading()
+                            // Keep this child open; recreation restores the same settings section.
                             applyOrientation(it)
-                        }.onFailure { reportError(R.string.settings_error) }
+                        }.onFailure {
+                            list.setItemChecked(confirmed.ordinal, true)
+                            reportError(R.string.settings_error)
+                        }
                     }
                 }
-                showSettingsChild(parent, dialog)
-            }.onFailure { reportError(R.string.settings_error) }
+                showSettingsChild(parent, dialog) { orientationSettingsOpen = false }
+            }.onFailure {
+                orientationSettingsOpen = false
+                reportError(R.string.settings_error)
+            }
         }
     }
 
@@ -1094,13 +1115,20 @@ class MainActivity : Activity() {
     private fun isSettingsParent(parent: AlertDialog): Boolean =
         !isDestroyed && !isFinishing && settingsHomeDialog === parent && parent.isShowing
 
-    private fun showSettingsChild(parent: AlertDialog, dialog: AlertDialog) {
+    private fun showSettingsChild(
+        parent: AlertDialog,
+        dialog: AlertDialog,
+        onClosed: () -> Unit = {}
+    ) {
         if (!isSettingsParent(parent)) return
         settingsChildLoading = false
         settingsDialog = dialog
         // Keep the opaque parent Window attached during asynchronous loading and child transitions.
         dialog.setOnDismissListener {
-            if (settingsDialog === dialog) settingsDialog = settingsHomeDialog
+            if (settingsDialog === dialog) {
+                settingsDialog = settingsHomeDialog
+                onClosed()
+            }
         }
         dialog.window?.setWindowAnimations(0)
         dialog.show()
@@ -1112,6 +1140,7 @@ class MainActivity : Activity() {
         settingsDialog = null
         settingsHomeDialog = null
         settingsChildLoading = false
+        orientationSettingsOpen = false
         documentLayoutSetting = null
         bindPageNumberSetting = null
         child?.setOnDismissListener(null)
@@ -1274,6 +1303,7 @@ class MainActivity : Activity() {
         outState.putString("displayTheme", displaySettings.theme.name)
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
+        outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)
         saveReading()
         pendingNavigation?.let {
             outState.putInt("pendingPage", it.page)
