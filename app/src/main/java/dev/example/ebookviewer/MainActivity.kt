@@ -72,7 +72,7 @@ class MainActivity : Activity() {
     private var pageTextDialog: AlertDialog? = null
     private lateinit var pageTextClient: PageTextClient
     private lateinit var readPageButton: Button
-    private lateinit var pageIndicator: TextView
+    private lateinit var pageIndicator: PageNumberView
     private lateinit var pageJumpButton: Button
     private lateinit var bookmarksButton: Button
     private var pageNumbersVisible = false
@@ -231,14 +231,9 @@ class MainActivity : Activity() {
         pageJumpButton = toolsPresentation.page
         bookmarksButton = toolsPresentation.bookmarks
         readPageButton = toolsPresentation.readText
-        pageIndicator = TextView(this).apply {
+        pageIndicator = PageNumberView(this).apply {
             id = R.id.page_indicator
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.argb(170, 0, 0, 0))
-            val padding = (6 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
             visibility = View.GONE
-            textSize = 12f
         }
         readingHintLabel = ReaderStyle(this).label(R.string.first_reading_hint, 14f).apply {
             id = R.id.reading_hint
@@ -249,13 +244,19 @@ class MainActivity : Activity() {
             isClickable = false
             isFocusable = false
         }
+        pageIndicator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            positionReadingHint()
+        }
         homeScroll = ScrollView(this).apply { addView(homeScreen) }
         root = FrameLayout(this).apply {
             setBackgroundColor(themeBackground())
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
             addView(readingHintLabel, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
             addView(homeScroll, FrameLayout.LayoutParams(-1, -1))
-            addView(pageIndicator, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END))
+            addView(
+                pageIndicator,
+                FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            )
             addView(readerTools, FrameLayout.LayoutParams(-1, -1))
             setOnApplyWindowInsetsListener { _, insets ->
                 // Only physical cutouts reserve PDF space; transient system bars never resize it.
@@ -290,9 +291,6 @@ class MainActivity : Activity() {
                     )
                     homeScreen.setPadding(safe.left, safe.top, safe.right, safe.bottom)
                     readerTools.setPadding(safe.left, safe.top, safe.right, safe.bottom)
-                    val numberLayout = pageIndicator.layoutParams as FrameLayout.LayoutParams
-                    numberLayout.setMargins(safe.left, 0, safe.right, safe.bottom)
-                    pageIndicator.layoutParams = numberLayout
                 } else {
                     @Suppress("DEPRECATION")
                     homeScreen.setPadding(
@@ -302,15 +300,29 @@ class MainActivity : Activity() {
                         insets.systemWindowInsetBottom
                     )
                 }
-                val hintParams = readingHintLabel.layoutParams as FrameLayout.LayoutParams
-                val gap = ReaderStyle(this@MainActivity).dp(24)
-                hintParams.setMargins(
-                    readerTools.paddingLeft + gap,
-                    0,
-                    readerTools.paddingRight + gap,
-                    readerTools.paddingBottom + gap
-                )
-                readingHintLabel.layoutParams = hintParams
+                val numberLayout = pageIndicator.layoutParams as FrameLayout.LayoutParams
+                val numberGap = ReaderStyle(this@MainActivity).dp(12)
+                if (Build.VERSION.SDK_INT >= 30) {
+                    val numberSafe = insets.getInsetsIgnoringVisibility(
+                        WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+                    )
+                    numberLayout.setMargins(
+                        numberSafe.left + numberGap,
+                        0,
+                        numberSafe.right + numberGap,
+                        numberSafe.bottom + numberGap
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    numberLayout.setMargins(
+                        insets.stableInsetLeft + numberGap,
+                        0,
+                        insets.stableInsetRight + numberGap,
+                        insets.stableInsetBottom + numberGap
+                    )
+                }
+                pageIndicator.layoutParams = numberLayout
+                positionReadingHint()
                 insets
             }
         }
@@ -748,6 +760,32 @@ class MainActivity : Activity() {
         } else {
             View.GONE
         }
+        positionReadingHint()
+    }
+
+    private fun positionReadingHint() {
+        if (!::readingHintLabel.isInitialized) return
+        val params = readingHintLabel.layoutParams as? FrameLayout.LayoutParams ?: return
+        val density = resources.displayMetrics.density
+        val gap = (24 * density).toInt()
+        val number = pageIndicator.layoutParams as? FrameLayout.LayoutParams
+        val bottom = if (pageIndicator.visibility == View.VISIBLE && number != null) {
+            maxOf(
+                readerTools.paddingBottom + gap,
+                number.bottomMargin + pageIndicator.height + (12 * density).toInt()
+            )
+        } else {
+            readerTools.paddingBottom + gap
+        }
+        val left = readerTools.paddingLeft + gap
+        val right = readerTools.paddingRight + gap
+        if (params.leftMargin != left ||
+            params.rightMargin != right ||
+            params.bottomMargin != bottom
+        ) {
+            params.setMargins(left, 0, right, bottom)
+            readingHintLabel.layoutParams = params
+        }
     }
 
     private fun dismissReadingHint() {
@@ -768,6 +806,7 @@ class MainActivity : Activity() {
             val text = getString(R.string.current_page, position.page + 1, expectedPages)
             if (pageIndicator.text != text) pageIndicator.text = text
         }
+        positionReadingHint()
         toolsPresentation.updatePages(
             position?.page,
             expectedPages,
