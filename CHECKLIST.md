@@ -6,12 +6,20 @@
 
 ## 문서 기반
 
+- [ ] P3 전용20분 검사·결과 PR 게시/CI/실제 리뷰·사용자 병합. 검사는 완료했으며 게시 후 별도 확인한다.
+
+- [x] P3 20분 [읽기 안정성 계획](docs/plan/p3-reading-soak.md)·관측 예산을 실행 전에 고정. 전용 opt-in 계측/제한 시간/진행 UUID·앱/ADB 종료 경로 추가. 앱 불변·strict 계측/Lint/ktlint5초 통과·설치본 일치.
+- [x] API33 실제1,203초/1개/실패0: 40회·문서 전환10/홈 왕복20/Activity 재생성5·위치/좌표/줌/배치 복원·실제 저장 재읽기 통과. PSS중앙값179,530→166,270KiB/descriptor109→109로 사전 예산 이내, 관측캐시67,064,504bytes<64MiB·백그라운드20표본0. 합성 기록/파일 정리·글꼴1.1·앱/계측 종료·ADB0 확인. 합성/debug범위이며 실제 OOM/모든 PDF/다른 API 보장 아님.
+- [x] PR #25 CI39609129281/39609094411 모두 SUCCESS·실제 CodeRabbit5600863334/12파일/head3c62e34 reviewed·inline 지적0 확인. 과거 한도 거부·성공 체크와 구분. 미검증 낮은 우선순위 reflection 제안은 근거와 함께 보류.
+- [x] PR #25 사용자 병합main754ed4d 확인. fetch·동일 앱 트리 확인 후 현재 후속 브랜치를 ff-only 연결, 사용자 디자인 변경 보존. 에이전트 병합/추가 수동 호출 없음.
+
 - [x] P3 첫 묶음 [범위/종료 조건](docs/plan/p3-reading-stability.md) 작성. 기존 체크아웃 별도 브랜치·PR #24 사용자 병합main eb923b0 ff-only 동기화·사용자 디자인 변경 보존/제외.
 - [x] 기존 앱/API33에서 설정 저장 중 문서 전환/목록/Activity 종료의 위치 유실을 합성3개/실패3으로 재현·실패 이력 보존. 저장 큐의 실제 기록에 위치만 병합하는 최소 수정, 스택/파일 형식 변경 없음.
 - [x] P3 수정 strict 앱·계측/단위53개(실패·오류·건너뜀0)/Lint 오류·경고0/ktlint12초 통과. 새 전체 기대91개는 실제 전체 실행 결과 아님.
 - [x] 같은 수정 앱/API33의 stateBoundary4/lifecycle4/navigation4/panLock5/guidance9 **합26개/실패0**. 원래 실패3개 재통과·실패 복구 뒤 양 잠금/배치 보존·삭제 기록 재생성 없음·실제 재읽기와 복귀/캐시64MiB/자원 해제 확인. 설치 APK 일치·글꼴1.1·앱/계측/ADB 종료(0프로세스).
 - [x] 앱 아이콘 최종 선택 여부 확인: 사용자 “아직 선택하지 않았어요”. 미확정 자산을 적용하지 않고 별도 후속으로 유지.
-- [ ] P3 첫 묶음 PR/실제 리뷰·CI/사용자 병합. 긴 세션/실제 OOM·다른 API·아이콘은 이번 묶음 밖의 후속.
+- [x] P3 수정3c62e34 일반 push·[PR #25](https://github.com/AtraFelis/ebook_viewer/pull/25) 생성/첨부(OPEN/isDraft=false). 수동 요청6317403700 한 번. 최초 접수 응답 뒤 후속 봇6317410938 Action not completed/Review rate limited·요약6317408324 Review limit reached 확인. 실제 리뷰 미실행/성공 체크와 구분하며 한도 중 중복 요청 없음.
+- [x] PR #25의 과거 한도 거부 후 두 CI 성공/실제 리뷰·사용자 병합 완료는 위 최신 확인에 반영했다. 실제 OOM·다른 API·아이콘은 이 첫 묶음의 검증 밖이다.
 
 - [x] PR #23 source3b11630의 CI 두 건 SUCCESS·실제 CodeRabbit14파일/No actionable comments/Review finished·사용자 병합d4b5bfe 확인. skip 성공과 실제 리뷰를 구분.
 - [x] main d4b5bfe 기반 현재 체크아웃의 `codex/horizontal-pan-lock`·사용자 디자인 문서 변경 보존/제외. 사용자 지시대로 제목 오른쪽 작은 잠금 아이콘·문서별 저장과 핀치 허용 구현, ADR0016/읽기 기록v3·v1/v2 읽기.

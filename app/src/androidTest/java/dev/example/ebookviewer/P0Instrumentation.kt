@@ -28,6 +28,9 @@ class P0Instrumentation : Instrumentation() {
     private var chromeOnly = false
     private var panLockOnly = false
     private var stateBoundaryOnly = false
+    private var readingSoakOnly = false
+    var soakRun = ""
+        private set
     private var textOnly = false
     private var fontOnly = false
     private var navigationOnly = false
@@ -65,6 +68,7 @@ class P0Instrumentation : Instrumentation() {
                     "chrome",
                     "panLock",
                     "stateBoundary",
+                    "readingSoak",
                     "text",
                     "font",
                     "navigation",
@@ -84,6 +88,10 @@ class P0Instrumentation : Instrumentation() {
         chromeOnly = suite == "chrome"
         panLockOnly = suite == "panLock"
         stateBoundaryOnly = suite == "stateBoundary"
+        readingSoakOnly = suite == "readingSoak"
+        soakRun = arguments?.getString("soakRun") ?: ""
+        require(!readingSoakOnly || soakRun.matches(Regex("[a-f0-9-]{36}")))
+        require(readingSoakOnly || soakRun.isEmpty())
         textOnly = suite == "text"
         fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
@@ -117,6 +125,7 @@ class P0Instrumentation : Instrumentation() {
         require(!chromeOnly || (!probe && restartPhase == null))
         require(!panLockOnly || (!probe && restartPhase == null))
         require(!stateBoundaryOnly || (!probe && restartPhase == null))
+        require(!readingSoakOnly || (!probe && restartPhase == null))
         require(!textOnly || (!probe && restartPhase == null))
         require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
@@ -134,6 +143,7 @@ class P0Instrumentation : Instrumentation() {
         val maximumSeconds = when {
             probe -> probeSeconds * probeRuns + 120
             sharpnessOnly -> 1_200
+            readingSoakOnly -> 1_320
             else -> 720
         }
         val deadlineSeconds = arguments?.getString("deadlineSeconds")?.let {
@@ -220,6 +230,8 @@ class P0Instrumentation : Instrumentation() {
             } else {
                 core.run(Request.method(DocumentAccessDeviceTest::class.java, method))
             }
+        } else if (readingSoakOnly) {
+            core.run(ReadingSoakDeviceTest::class.java)
         } else if (stateBoundaryOnly) {
             core.run(ReadingStateBoundaryDeviceTest::class.java)
         } else if (panLockOnly) {
