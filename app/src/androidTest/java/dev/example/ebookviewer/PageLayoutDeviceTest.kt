@@ -117,6 +117,14 @@ class PageLayoutDeviceTest {
         try {
             ui.onMain { (activity as MainActivity).openDocument(firstUri) }
             var view = ui.awaitReady(activity)
+            ui.onMain {
+                view.performClick()
+                activity.findViewById<View>(R.id.horizontal_pan_lock).performClick()
+            }
+            ui.await("Document pan lock did not save") {
+                view.pageLayoutSettings().horizontalPanLocked
+            }
+            val lockedDefault = PageLayoutSettings(horizontalPanLocked = true)
             ui.pinch(view)
             ui.await("Target page metadata did not arrive") { view.goToPage(20, 0.4) }
             val expected = requireNotNull(ui.onMain { view.readingPosition() })
@@ -124,15 +132,15 @@ class PageLayoutDeviceTest {
             action(activity.getString(R.string.uniform_page_width))
             gap(activity, "73")
             action(activity.getString(R.string.apply_settings))
-            assertEquals(PageLayoutSettings(), ui.onMain { view.pageLayoutSettings() })
+            assertEquals(lockedDefault, ui.onMain { view.pageLayoutSettings() })
             gap(activity, "24")
             action(activity.getString(android.R.string.cancel))
-            assertEquals(PageLayoutSettings(), ui.onMain { view.pageLayoutSettings() })
+            assertEquals(lockedDefault, ui.onMain { view.pageLayoutSettings() })
             openSettings(activity, view)
             action(activity.getString(R.string.uniform_page_width))
             gap(activity, "24")
             action(activity.getString(R.string.apply_settings))
-            val selected = PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24)
+            val selected = PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24, true)
             ui.await("Layout did not apply") { view.pageLayoutSettings() == selected }
             assertPosition(expected, requireNotNull(ui.onMain { view.readingPosition() }))
             ui.awaitReady(activity)

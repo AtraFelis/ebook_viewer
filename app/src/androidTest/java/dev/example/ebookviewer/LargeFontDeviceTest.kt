@@ -169,6 +169,7 @@ class LargeFontDeviceTest {
                             it is EditText ||
                             it.id == R.id.home_record ||
                             it.id == R.id.reader_home ||
+                            it.id == R.id.horizontal_pan_lock ||
                             it.id == R.id.page_scrubber
                         )
             }.take(limit)

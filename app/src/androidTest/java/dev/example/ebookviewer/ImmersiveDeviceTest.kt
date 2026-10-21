@@ -112,10 +112,22 @@ class ImmersiveDeviceTest {
                     "to ${afterScroll.getDouble("centerY")}",
                 afterScroll.getDouble("centerY") > afterPinch.getDouble("centerY")
             )
-            val header = activity.findViewById<View>(R.id.reader_header)
-            val rect = android.graphics.Rect()
-            ui.onMain { header.getGlobalVisibleRect(rect) }
-            ui.tap(root, 0.95f, (rect.centerY() - root.top) / root.height.toFloat())
+            val titleBounds = android.graphics.Rect()
+            val lockBounds = android.graphics.Rect()
+            val rootBounds = android.graphics.Rect()
+            ui.onMain {
+                activity.findViewById<View>(R.id.reader_title).getGlobalVisibleRect(titleBounds)
+                activity.findViewById<View>(R.id.horizontal_pan_lock)
+                    .getGlobalVisibleRect(lockBounds)
+                root.getGlobalVisibleRect(rootBounds)
+                assertTrue("No blank header gap", lockBounds.left > titleBounds.right)
+            }
+            // The right edge now contains the lock action; test the measured gap beside it.
+            ui.tap(
+                root,
+                ((titleBounds.right + lockBounds.left) / 2f - rootBounds.left) / root.width,
+                (lockBounds.centerY() - rootBounds.top) / root.height.toFloat()
+            )
             assertTools(activity, false)
             ui.assertCacheBound(view)
         } finally {

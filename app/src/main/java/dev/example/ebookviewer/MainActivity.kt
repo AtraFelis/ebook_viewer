@@ -225,7 +225,8 @@ class MainActivity : Activity() {
             onReadText = { showPageText() },
             onDismiss = ::hideTools,
             onScrubBegin = viewer::stopScrolling,
-            onScrubPage = { requestPage(it, keepTools = true) }
+            onScrubPage = { requestPage(it, keepTools = true) },
+            onPanLock = ::toggleHorizontalPanLock
         )
         readerTools = toolsPresentation.view
         pageJumpButton = toolsPresentation.page
@@ -818,7 +819,11 @@ class MainActivity : Activity() {
             pendingNavigation == null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
         if (::readPageButton.isInitialized) readPageButton.isEnabled = loaded && position != null
-        documentLayoutSetting?.isEnabled = loaded && reading
+        toolsPresentation.updatePanLock(
+            viewer.pageLayoutSettings().horizontalPanLocked,
+            loaded && reading && pendingLayoutWrites == 0
+        )
+        documentLayoutSetting?.isEnabled = loaded && reading && pendingLayoutWrites == 0
     }
 
     private fun showPageText(selectedPage: Int? = null) {
@@ -1115,7 +1120,7 @@ class MainActivity : Activity() {
         }
         val layoutButton = Button(this).apply {
             setText(R.string.page_layout_settings)
-            isEnabled = loaded && reading
+            isEnabled = loaded && reading && pendingLayoutWrites == 0
             setOnClickListener {
                 showPageLayoutSettings()
             }
@@ -1227,36 +1232,59 @@ class MainActivity : Activity() {
     }
 
     private fun showPageLayoutSettings(draft: Bundle? = null) {
-        if (!loaded || !reading) return
+        if (!loaded || !reading || pendingLayoutWrites > 0) return
         val parent = beginSettingsChild() ?: return
         val generation = opening
         val form = pageLayoutDialog(viewer.pageLayoutSettings(), draft) { selected, done ->
-            val record = activeRecord
-            if (generation != opening || !loaded) {
-                done(false)
-            } else if (record == null) {
-                // The synthetic demo has no library record; its layout is intentionally session-only.
-                viewer.setPageLayoutSettings(selected)
-                done(true)
-            } else {
-                cancelSave()
-                val updated = record.copy(
-                    position = viewer.readingPosition(),
-                    pageLayout = selected
-                )
-                pendingLayoutWrites++
-                library.execute({ it.put(updated) }) { saved ->
-                    pendingLayoutWrites--
-                    if (isDestroyed || isFinishing || generation != opening) return@execute
-                    saved.onSuccess {
-                        activeRecord = updated
-                        viewer.setPageLayoutSettings(selected)
-                    }
-                    done(saved.isSuccess)
-                }
-            }
+            savePageLayoutSettings(selected, generation, done)
         }
         showEditableSettingsChild(parent, SettingsFormKind.LAYOUT, form)
+    }
+
+    private fun toggleHorizontalPanLock() {
+        if (!loaded || !reading || pendingLayoutWrites > 0) return
+        viewer.stopScrolling()
+        val selected = viewer.pageLayoutSettings().let {
+            it.copy(horizontalPanLocked = !it.horizontalPanLocked)
+        }
+        savePageLayoutSettings(selected, opening) { success ->
+            if (!success) reportError(R.string.settings_error)
+        }
+    }
+
+    private fun savePageLayoutSettings(
+        selected: PageLayoutSettings,
+        generation: Int,
+        done: (Boolean) -> Unit
+    ) {
+        val record = activeRecord
+        if (generation != opening || !loaded || !reading || pendingLayoutWrites > 0) {
+            done(false)
+        } else if (record == null) {
+            // The synthetic demo has no library record; its layout is intentionally session-only.
+            viewer.setPageLayoutSettings(selected)
+            updatePageIndicator()
+            done(true)
+        } else {
+            cancelSave()
+            val updated = record.copy(position = viewer.readingPosition(), pageLayout = selected)
+            pendingLayoutWrites++
+            updatePageIndicator()
+            library.execute({ it.put(updated) }) { saved ->
+                pendingLayoutWrites--
+                if (isDestroyed || isFinishing) return@execute
+                if (generation != opening) {
+                    updatePageIndicator()
+                    return@execute
+                }
+                saved.onSuccess {
+                    activeRecord = updated
+                    viewer.setPageLayoutSettings(selected)
+                }
+                updatePageIndicator()
+                done(saved.isSuccess)
+            }
+        }
     }
 
     private fun isSettingsParent(parent: AlertDialog): Boolean =
@@ -1483,6 +1511,7 @@ class MainActivity : Activity() {
                 Bundle(saved).apply {
                     remove("pageSizeMode")
                     remove("pageGap")
+                    remove("horizontalPanLocked")
                 }
             } else {
                 saved
