@@ -31,6 +31,12 @@ class DocumentLibrary(file: File) {
         write(records.filter { it.uri != uri })
     }
 
+    fun updatePosition(uri: String, position: ReadingPosition) {
+        val current = records.firstOrNull { it.uri == uri } ?: return
+        // Merge on the IO queue after pending settings succeed or roll back; never resurrect deletion.
+        put(current.copy(position = position))
+    }
+
     private fun write(updated: List<ReadingRecord>) {
         val stream = atomic.startWrite()
         try {
