@@ -64,6 +64,7 @@ class LibraryRepository(private val file: () -> File) {
 }
 
 class ReaderApplication : Application() {
+    internal val readingHint = ReadingHintState()
     val bookmarks: BookmarkRepository by lazy {
         BookmarkRepository { File(filesDir, "bookmarks.bin") }
     }

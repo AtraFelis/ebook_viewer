@@ -24,6 +24,7 @@ class P0Instrumentation : Instrumentation() {
     private var displayOnly = false
     private var settingsOnly = false
     private var sliderOnly = false
+    private var guidanceOnly = false
     private var textOnly = false
     private var fontOnly = false
     private var navigationOnly = false
@@ -57,6 +58,7 @@ class P0Instrumentation : Instrumentation() {
                     "display",
                     "settings",
                     "slider",
+                    "guidance",
                     "text",
                     "font",
                     "navigation",
@@ -72,6 +74,7 @@ class P0Instrumentation : Instrumentation() {
         displayOnly = suite == "display"
         settingsOnly = suite == "settings"
         sliderOnly = suite == "slider"
+        guidanceOnly = suite == "guidance"
         textOnly = suite == "text"
         fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
@@ -101,6 +104,7 @@ class P0Instrumentation : Instrumentation() {
         require(!displayOnly || (!probe && restartPhase == null))
         require(!settingsOnly || (!probe && restartPhase == null))
         require(!sliderOnly || (!probe && restartPhase == null))
+        require(!guidanceOnly || (!probe && restartPhase == null))
         require(!textOnly || (!probe && restartPhase == null))
         require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
@@ -179,7 +183,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (sliderOnly) {
+        val result = if (guidanceOnly) {
+            core.run(ReadingGuidanceDeviceTest::class.java)
+        } else if (sliderOnly) {
             core.run(PageScrubberDeviceTest::class.java)
         } else if (settingsOnly) {
             core.run(SettingsNavigationDeviceTest::class.java)
@@ -226,6 +232,7 @@ class P0Instrumentation : Instrumentation() {
                 DisplayDeviceTest::class.java,
                 SettingsNavigationDeviceTest::class.java,
                 PageScrubberDeviceTest::class.java,
+                ReadingGuidanceDeviceTest::class.java,
                 PageTextDeviceTest::class.java,
                 LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,

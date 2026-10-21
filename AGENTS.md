@@ -27,7 +27,7 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·호환·슬라이더 상태 48개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 좌표·타일·기록·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·호환·슬라이더·첫 안내 상태 51개 통과 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
 | 기기 테스트 | `./scripts/device-smoke.ps1` | API 33 최종 기본 59개/실패 0(453.3초). 별도 화질 1개·프로세스 복원 seed/verify 각 1개 통과. 접근성 인덱스 건너뜀 수정·계측 자체 deadline 종료 확인. 최초 다른 페이지 이동 실패 원인은 미확정으로 보존. 실제 OOM/다른 API 검증 아님 |
 

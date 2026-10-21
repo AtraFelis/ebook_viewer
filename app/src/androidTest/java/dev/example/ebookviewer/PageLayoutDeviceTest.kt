@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import java.io.File
@@ -159,7 +160,7 @@ class PageLayoutDeviceTest {
             assertEquals(selected, stored.single { it.uri == firstUri.toString() }.pageLayout)
         } finally {
             ui.onMain { activity.finish() }
-            instrumentation.waitForIdleSync()
+            ui.await("Synthetic layout Activity did not close") { activity.isDestroyed }
             library {
                 it.remove(firstUri.toString())
                 it.remove(secondUri.toString())
@@ -177,8 +178,8 @@ class PageLayoutDeviceTest {
     }
 
     private fun openSettings(activity: Activity, view: PdfCanvasView) {
-        ui.tap(view)
         ui.onMain {
+            if (!activity.findViewById<View>(R.id.reader_tools).isShown) view.performClick()
             ui.views(activity.window.decorView).filterIsInstance<Button>()
                 .single {
                     it.isShown && it.text == activity.getString(R.string.settings)

@@ -1,7 +1,7 @@
 package dev.example.ebookviewer
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
 import android.widget.EditText
@@ -9,11 +9,13 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import java.util.Locale
 
-fun Activity.pageLayoutDialog(
+internal fun Activity.pageLayoutDialog(
     current: PageLayoutSettings,
-    apply: (PageLayoutSettings) -> Unit
-): AlertDialog {
+    draft: Bundle? = null,
+    apply: (PageLayoutSettings, (Boolean) -> Unit) -> Unit
+): EditableSettingsForm {
     val style = ReaderStyle(this)
+    val saving = SettingsSaveUi(this, draft?.getBoolean("failed") == true)
     val choices = RadioGroup(this).apply {
         addView(
             RadioButton(this@pageLayoutDialog).apply {
@@ -30,7 +32,7 @@ fun Activity.pageLayoutDialog(
             }
         )
         check(
-            if (current.mode == PageSizeMode.ORIGINAL) {
+            if ((draft?.getString("mode") ?: current.mode.name) == PageSizeMode.ORIGINAL.name) {
                 R.id.original_page_size
             } else {
                 R.id.uniform_page_width
@@ -44,17 +46,19 @@ fun Activity.pageLayoutDialog(
         filters = arrayOf(InputFilter.LengthFilter(3))
         hint = getString(R.string.page_gap_hint)
         contentDescription = hint
-        setText(String.format(Locale.ROOT, "%d", current.gap))
+        setText(draft?.getString("gap") ?: String.format(Locale.ROOT, "%d", current.gap))
         style.styleInput(this)
     }
-    return readerFormDialog(
+    val content = readerFormBody(
+        style.label(R.string.page_layout_description),
+        choices,
+        style.label(R.string.page_gap_hint, 14f),
+        input,
+        saving.notice
+    )
+    val dialog = readerFormDialog(
         R.string.page_layout_settings,
-        readerFormBody(
-            style.label(R.string.page_layout_description),
-            choices,
-            style.label(R.string.page_gap_hint, 14f),
-            input
-        ),
+        content,
         positive = R.string.apply_settings,
         onConfirm = { dialog ->
             val gap = input.text.toString().toIntOrNull()
@@ -66,9 +70,23 @@ fun Activity.pageLayoutDialog(
                 } else {
                     PageSizeMode.UNIFORM_WIDTH
                 }
-                apply(PageLayoutSettings(mode, gap))
-                dialog.dismiss()
+                val selected = PageLayoutSettings(mode, gap)
+                saving.submit(dialog, content) { done -> apply(selected, done) }
             }
         }
     )
+    return EditableSettingsForm(dialog) {
+        Bundle().apply {
+            putString("gap", input.text.toString())
+            putString(
+                "mode",
+                if (choices.checkedRadioButtonId == R.id.original_page_size) {
+                    PageSizeMode.ORIGINAL.name
+                } else {
+                    PageSizeMode.UNIFORM_WIDTH.name
+                }
+            )
+            putBoolean("failed", saving.captureFailed())
+        }
+    }
 }

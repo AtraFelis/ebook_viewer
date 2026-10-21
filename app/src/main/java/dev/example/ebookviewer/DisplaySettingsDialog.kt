@@ -1,18 +1,30 @@
 package dev.example.ebookviewer
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.os.Bundle
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.Switch
 
-fun Activity.displaySettingsDialog(
+internal fun Activity.displaySettingsDialog(
     current: DisplaySettings,
-    save: (DisplaySettings) -> Unit
-): AlertDialog {
+    draft: Bundle? = null,
+    save: (DisplaySettings, (Boolean) -> Unit) -> Unit
+): EditableSettingsForm {
     val style = ReaderStyle(this)
+    val saving = SettingsSaveUi(this, draft?.getBoolean("failed") == true)
+    val initial = draft?.let {
+        DisplaySettings(
+            ReaderTheme.entries.firstOrNull { theme ->
+                theme.name == it.getString("theme")
+            } ?: current.theme,
+            it.getBoolean("systemBrightness"),
+            it.getInt("brightness").coerceIn(1, 100),
+            it.getBoolean("keepScreenOn")
+        )
+    } ?: current
     val choices = listOf(
         Triple(R.id.theme_system, R.string.theme_system, ReaderTheme.SYSTEM),
         Triple(R.id.theme_light, R.string.theme_light, ReaderTheme.LIGHT),
@@ -29,18 +41,18 @@ fun Activity.displaySettingsDialog(
                 LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = style.dp(8) }
             )
         }
-        check(choices.single { it.third == current.theme }.first)
+        check(choices.single { it.third == initial.theme }.first)
     }
     val brightnessLabel = style.label(R.string.reading_brightness, 14f).apply {
         id = R.id.brightness_label
-        text = getString(R.string.brightness_percent, current.brightnessPercent)
+        text = getString(R.string.brightness_percent, initial.brightnessPercent)
     }
     val brightness = SeekBar(this).apply {
         id = R.id.reading_brightness
         max = 99
-        progress = current.brightnessPercent - 1
+        progress = initial.brightnessPercent - 1
         contentDescription = getString(R.string.reading_brightness)
-        isEnabled = !current.systemBrightness
+        isEnabled = !initial.systemBrightness
         minimumHeight = style.dp(48)
         setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -53,39 +65,50 @@ fun Activity.displaySettingsDialog(
     val systemBrightness = Switch(this).apply {
         id = R.id.system_brightness
         setText(R.string.system_brightness)
-        isChecked = current.systemBrightness
+        isChecked = initial.systemBrightness
         style.styleChoice(this)
         setOnCheckedChangeListener { _, checked -> brightness.isEnabled = !checked }
     }
     val keepScreenOn = Switch(this).apply {
         id = R.id.keep_screen_on
         setText(R.string.keep_screen_on)
-        isChecked = current.keepScreenOn
+        isChecked = initial.keepScreenOn
         style.styleChoice(this)
     }
-    return readerFormDialog(
+    val content = readerFormBody(
+        style.label(R.string.app_theme, 18f, true),
+        theme,
+        style.label(R.string.display_description, 12f).apply { setTextColor(style.secondary) },
+        style.label(R.string.reading_brightness, 18f, true),
+        systemBrightness,
+        brightnessLabel,
+        brightness,
+        keepScreenOn,
+        saving.notice
+    )
+    fun selected() = DisplaySettings(
+        choices.single { it.first == theme.checkedRadioButtonId }.third,
+        systemBrightness.isChecked,
+        brightness.progress + 1,
+        keepScreenOn.isChecked
+    )
+    val dialog = readerFormDialog(
         R.string.display_settings,
-        readerFormBody(
-            style.label(R.string.app_theme, 18f, true),
-            theme,
-            style.label(R.string.display_description, 12f).apply { setTextColor(style.secondary) },
-            style.label(R.string.reading_brightness, 18f, true),
-            systemBrightness,
-            brightnessLabel,
-            brightness,
-            keepScreenOn
-        ),
+        content,
         positive = R.string.apply_settings,
         onConfirm = { dialog ->
-            save(
-                DisplaySettings(
-                    choices.single { it.first == theme.checkedRadioButtonId }.third,
-                    systemBrightness.isChecked,
-                    brightness.progress + 1,
-                    keepScreenOn.isChecked
-                )
-            )
-            dialog.dismiss()
+            val value = selected()
+            saving.submit(dialog, content) { done -> save(value, done) }
         }
     )
+    return EditableSettingsForm(dialog) {
+        val value = selected()
+        Bundle().apply {
+            putString("theme", value.theme.name)
+            putBoolean("systemBrightness", value.systemBrightness)
+            putInt("brightness", value.brightnessPercent)
+            putBoolean("keepScreenOn", value.keepScreenOn)
+            putBoolean("failed", saving.captureFailed())
+        }
+    }
 }
