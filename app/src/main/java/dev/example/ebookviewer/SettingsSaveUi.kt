@@ -35,7 +35,7 @@ internal class SettingsSaveUi(private val activity: Activity, failed: Boolean) {
         apply.setText(R.string.settings_saving)
         notice.visibility = View.GONE
         var completed = false
-        write { success ->
+        val finish: (Boolean) -> Unit = { success ->
             activity.runOnUiThread {
                 if (completed) return@runOnUiThread
                 completed = true
@@ -58,6 +58,12 @@ internal class SettingsSaveUi(private val activity: Activity, failed: Boolean) {
                     }
                 }
             }
+        }
+        try {
+            write(finish)
+        } catch (_: Exception) {
+            // A rejected submission needs the same recovery as an asynchronous write failure.
+            finish(false)
         }
     }
 }

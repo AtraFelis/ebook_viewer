@@ -731,7 +731,8 @@ class MainActivity : Activity() {
     }
 
     private fun showTools() {
-        dismissReadingHint()
+        // Recreating a reader also shows tools programmatically; it is not a user's dismissal.
+        if (::readingHintLabel.isInitialized) readingHintLabel.visibility = View.GONE
         readerTools.visibility = View.VISIBLE
         viewer.dismissToolsOnOutsideTap = true
     }

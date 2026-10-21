@@ -371,6 +371,48 @@ class ReadingGuidanceDeviceTest {
     }
 
     @Test
+    fun synchronousSaveExceptionRestoresControlsAndAllowsSuccessfulRetry() {
+        val activity = ui.launch()
+        var attempts = 0
+        val form = ui.onMain {
+            activity.backgroundSettingsDialog(BackgroundSettings()) { _, done ->
+                attempts++
+                if (attempts == 1) throw IOException("Synthetic submission failure")
+                done(true)
+                // Completion is final even if a caller subsequently throws.
+                throw IOException("Synthetic post-completion failure")
+            }.also { it.dialog.show() }
+        }
+        try {
+            ui.onMain {
+                form.dialog.input(R.id.background_color_input).setText("#654321")
+                form.dialog.toggle(R.id.background_automatic).isChecked = true
+                form.dialog.applySettings()
+            }
+            awaitFailure(form.dialog)
+            ui.onMain {
+                assertEquals(1, attempts)
+                val input = form.dialog.input(R.id.background_color_input)
+                assertEquals("#654321", input.text.toString())
+                assertTrue(input.isEnabled)
+                val automatic = form.dialog.toggle(R.id.background_automatic)
+                assertTrue(automatic.isChecked)
+                assertTrue(automatic.isEnabled)
+                form.dialog.applySettings()
+            }
+            ui.await("Successful retry after a synchronous exception did not close") {
+                !form.dialog.isShowing
+            }
+            assertEquals(2, ui.onMain { attempts })
+        } finally {
+            ui.onMain {
+                form.dialog.dismiss()
+                activity.finish()
+            }
+        }
+    }
+
+    @Test
     fun firstCentralTapDismissesHintAndOpensToolsInOneGestureWithoutMovingPdf() {
         withFreshHint { activity ->
             val viewer = ui.sample(activity)
@@ -387,6 +429,45 @@ class ReadingGuidanceDeviceTest {
             assertEquals(before, ui.onMain { viewer.readingPosition() })
             ui.sample(activity)
             assertFalse(ui.onMain { activity.findViewById<View>(R.id.reading_hint).isShown })
+        }
+    }
+
+    @Test
+    fun unhandledFirstHintSurvivesActivityRecreationUntilAnActualTap() {
+        withFreshHint { initial ->
+            val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
+            var activity = initial
+            try {
+                ui.sample(initial)
+                ui.await("Initial hint not shown") {
+                    initial.findViewById<View>(R.id.reading_hint).isShown
+                }
+                ui.onMain { initial.recreate() }
+                ui.await("Reader Activity did not recreate", 30_000) {
+                    val next = monitor.lastActivity ?: initial
+                    if (next !== initial && !next.isDestroyed && !next.isFinishing) {
+                        activity = next
+                        true
+                    } else {
+                        false
+                    }
+                }
+                val viewer = ui.awaitReady(activity)
+                ui.await("Recreation consumed the unhandled first hint") {
+                    activity.findViewById<View>(R.id.reading_hint).isShown &&
+                        activity.window.decorView.hasWindowFocus()
+                }
+                ui.tap(viewer.parent as View)
+                ui.await("Actual tap did not dismiss the restored hint and open tools") {
+                    !activity.findViewById<View>(R.id.reading_hint).isShown &&
+                        activity.findViewById<View>(R.id.reader_tools).isShown
+                }
+                ui.sample(activity)
+                assertFalse(ui.onMain { activity.findViewById<View>(R.id.reading_hint).isShown })
+            } finally {
+                ui.onMain { (monitor.lastActivity ?: activity).finish() }
+                instrumentation.removeMonitor(monitor)
+            }
         }
     }
 
