@@ -86,16 +86,19 @@ internal class ReaderToolsView(
             LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 addView(page, LinearLayout.LayoutParams(0, -2, 1f))
-                addView(bookmarks, LinearLayout.LayoutParams(0, -2, 1f))
+                addView(
+                    bookmarks,
+                    LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) }
+                )
                 addView(
                     action(R.string.settings, onSettings),
-                    LinearLayout.LayoutParams(0, -2, 1f)
+                    LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) }
                 )
                 dismissBlankTaps(onDismiss)
             },
             LinearLayout.LayoutParams(-1, -2)
         )
-        addView(readText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(4) })
+        addView(readText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(8) })
         dismissBlankTaps(onDismiss)
     }
     private val footer = object : LinearLayout(context) {
@@ -184,11 +187,6 @@ internal class ReaderToolsView(
     private fun action(label: Int, click: () -> Unit): Button =
         style.button(label, onClick = click).apply {
             setPadding(style.dp(4), style.dp(8), style.dp(4), style.dp(8))
-            background = RippleDrawable(
-                ColorStateList.valueOf(style.accentSoft),
-                style.shape(style.surface, 8),
-                style.shape(-1, 8)
-            )
         }
 
     private fun View.dismissBlankTaps(onDismiss: () -> Unit) {

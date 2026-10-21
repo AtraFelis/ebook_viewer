@@ -25,6 +25,7 @@ class P0Instrumentation : Instrumentation() {
     private var settingsOnly = false
     private var sliderOnly = false
     private var guidanceOnly = false
+    private var chromeOnly = false
     private var textOnly = false
     private var fontOnly = false
     private var navigationOnly = false
@@ -59,6 +60,7 @@ class P0Instrumentation : Instrumentation() {
                     "settings",
                     "slider",
                     "guidance",
+                    "chrome",
                     "text",
                     "font",
                     "navigation",
@@ -75,6 +77,7 @@ class P0Instrumentation : Instrumentation() {
         settingsOnly = suite == "settings"
         sliderOnly = suite == "slider"
         guidanceOnly = suite == "guidance"
+        chromeOnly = suite == "chrome"
         textOnly = suite == "text"
         fontOnly = suite == "font"
         navigationOnly = suite == "navigation"
@@ -105,6 +108,7 @@ class P0Instrumentation : Instrumentation() {
         require(!settingsOnly || (!probe && restartPhase == null))
         require(!sliderOnly || (!probe && restartPhase == null))
         require(!guidanceOnly || (!probe && restartPhase == null))
+        require(!chromeOnly || (!probe && restartPhase == null))
         require(!textOnly || (!probe && restartPhase == null))
         require(!fontOnly || (!probe && restartPhase == null))
         require(!navigationOnly || (!probe && restartPhase == null))
@@ -183,7 +187,9 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (guidanceOnly) {
+        val result = if (chromeOnly) {
+            core.run(ReaderChromeDeviceTest::class.java)
+        } else if (guidanceOnly) {
             core.run(ReadingGuidanceDeviceTest::class.java)
         } else if (sliderOnly) {
             core.run(PageScrubberDeviceTest::class.java)
@@ -233,6 +239,7 @@ class P0Instrumentation : Instrumentation() {
                 SettingsNavigationDeviceTest::class.java,
                 PageScrubberDeviceTest::class.java,
                 ReadingGuidanceDeviceTest::class.java,
+                ReaderChromeDeviceTest::class.java,
                 PageTextDeviceTest::class.java,
                 LargeFontDeviceTest::class.java,
                 NavigationDeviceTest::class.java,
