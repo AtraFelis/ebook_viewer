@@ -25,7 +25,8 @@ internal class ReaderToolsView(
     onReadText: () -> Unit,
     onDismiss: () -> Unit,
     onScrubBegin: () -> Unit,
-    onScrubPage: (Int) -> Unit
+    onScrubPage: (Int) -> Unit,
+    onPanLock: () -> Unit = {}
 ) {
     private val style = ReaderStyle(context)
     private var availableHeight = 0
@@ -44,6 +45,13 @@ internal class ReaderToolsView(
         background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
         setOnClickListener { onHome() }
     }
+    val panLock = ImageButton(context).apply {
+        id = R.id.horizontal_pan_lock
+        setPadding(style.dp(13), style.dp(13), style.dp(13), style.dp(13))
+        val circle = InsetDrawable(style.shape(style.accentSoft, 20), style.dp(4))
+        background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
+        setOnClickListener { onPanLock() }
+    }
     val page = action(R.string.go_to_page, onPage)
     val bookmarks = action(R.string.bookmarks, onBookmarks)
     val readText = action(R.string.read_page_text, onReadText).apply {
@@ -55,6 +63,7 @@ internal class ReaderToolsView(
     }
     private var currentPage: Int? = null
     private var totalPages = 0
+    private var panLockInitialized = false
     val scrubber = PageScrubberView(context, onScrubBegin, onScrubPage).apply {
         onPreviewChanged = ::updatePageLabel
     }
@@ -67,6 +76,10 @@ internal class ReaderToolsView(
         setBackgroundColor(style.surface)
         addView(home, LinearLayout.LayoutParams(style.dp(48), style.dp(48)))
         addView(title, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) })
+        addView(
+            panLock,
+            LinearLayout.LayoutParams(style.dp(48), style.dp(48)).apply { leftMargin = style.dp(8) }
+        )
         dismissBlankTaps(onDismiss)
     }
     private val summary = LinearLayout(context).apply {
@@ -163,6 +176,27 @@ internal class ReaderToolsView(
         totalPages = count
         scrubber.update(page, count, available)
         updatePageLabel()
+    }
+
+    fun updatePanLock(locked: Boolean, available: Boolean) {
+        if (panLockInitialized &&
+            panLock.isSelected == locked &&
+            panLock.isEnabled == available
+        ) {
+            return
+        }
+        panLockInitialized = true
+        panLock.isEnabled = available
+        panLock.isSelected = locked
+        panLock.alpha = if (available) 1f else 0.4f
+        panLock.setImageResource(
+            if (locked) R.drawable.reader_pan_locked else R.drawable.reader_pan_unlocked
+        )
+        panLock.imageTintList =
+            ColorStateList.valueOf(if (locked) style.accent else style.secondary)
+        panLock.contentDescription = panLock.context.getString(
+            if (locked) R.string.unlock_horizontal_pan else R.string.lock_horizontal_pan
+        )
     }
 
     private fun updatePageLabel() {

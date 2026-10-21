@@ -64,10 +64,17 @@ class PdfCanvasView @JvmOverloads constructor(
 
     fun setPageLayoutSettings(settings: PageLayoutSettings) {
         if (pageLayout == settings) return
+        val previous = pageLayout
         val saved = saveViewport()
         pageLayout = settings
-        val pages = layout?.pages ?: return
         scroller.forceFinished(true)
+        val pages = layout?.pages ?: return
+        if (previous.mode == settings.mode && previous.gap == settings.gap) {
+            // A pan policy change must not reproject or recenter the current page anchor.
+            layout = DocumentLayout(pages, settings)
+            invalidate()
+            return
+        }
         layout = null
         restored = saved
         setPages(pages)
@@ -178,6 +185,9 @@ class PdfCanvasView @JvmOverloads constructor(
         override fun sizeOf(key: Tile, value: Bitmap): Int = value.allocationByteCount
     }
     private val scroller = OverScroller(context)
+    private var twoFingerFocusX = Float.NaN
+    private var twoFingerFocusY = Float.NaN
+    private var scaleUpdated = false
     private val scaleDetector =
         ScaleGestureDetector(
             context,
@@ -191,6 +201,7 @@ class PdfCanvasView @JvmOverloads constructor(
                         detector.focusY.toDouble(),
                         ZoomLimits.gestureMinimum(document.width, width, height)
                     )
+                    scaleUpdated = true
                     constrain()
                     return true
                 }
@@ -211,8 +222,9 @@ class PdfCanvasView @JvmOverloads constructor(
                     distanceX: Float,
                     distanceY: Float
                 ): Boolean {
+                    if (pageLayout.horizontalPanLocked && current.pointerCount > 1) return true
                     if (!scaleDetector.isInProgress) {
-                        viewport.x -= distanceX
+                        if (!pageLayout.horizontalPanLocked) viewport.x -= distanceX
                         viewport.y -= distanceY
                         constrain()
                     }
@@ -226,10 +238,11 @@ class PdfCanvasView @JvmOverloads constructor(
                     velocityY: Float
                 ): Boolean {
                     val document = layout ?: return false
+                    if (pageLayout.horizontalPanLocked && hadMultiplePointers) return false
                     scroller.fling(
                         viewport.x.toInt(),
                         viewport.y.toInt(),
-                        velocityX.toInt(),
+                        if (pageLayout.horizontalPanLocked) 0 else velocityX.toInt(),
                         velocityY.toInt(),
                         min(0, (width - document.width * viewport.zoom).toInt()),
                         max(0, viewport.x.toInt()),
@@ -415,6 +428,7 @@ class PdfCanvasView @JvmOverloads constructor(
         Bundle().apply {
             putString("pageSizeMode", pageLayout.mode.name)
             putInt("pageGap", pageLayout.gap)
+            putBoolean("horizontalPanLocked", pageLayout.horizontalPanLocked)
             putDouble("zoom", viewport.zoom)
             putDouble("centerX", (width / 2.0 - viewport.x) / viewport.zoom)
             putDouble("centerY", (height / 2.0 - viewport.y) / viewport.zoom)
@@ -460,7 +474,12 @@ class PdfCanvasView @JvmOverloads constructor(
         pageLayout = if (saved?.containsKey("pageSizeMode") == true) {
             PageLayoutSettings(
                 PageSizeMode.valueOf(requireNotNull(saved.getString("pageSizeMode"))),
-                saved.getInt("pageGap")
+                saved.getInt("pageGap"),
+                if (saved.containsKey("horizontalPanLocked")) {
+                    saved.getBoolean("horizontalPanLocked")
+                } else {
+                    pageLayout.horizontalPanLocked
+                }
             )
         } else {
             pageLayout
@@ -553,12 +572,73 @@ class PdfCanvasView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_POINTER_DOWN -> hadMultiplePointers = true
         }
+        val panned = panWithTwoFingers(event)
+        scaleUpdated = false
         scaleDetector.onTouchEvent(event)
+        if (panned && !scaleUpdated) constrain()
         gestures.onTouchEvent(event)
+        if (pageLayout.horizontalPanLocked &&
+            event.actionMasked == MotionEvent.ACTION_POINTER_UP &&
+            event.pointerCount == 2
+        ) {
+            // Discard the pinch centroid/velocity before the remaining finger scrolls vertically.
+            val cancel = MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }
+            gestures.onTouchEvent(cancel)
+            cancel.recycle()
+            val remaining = if (event.actionIndex == 0) 1 else 0
+            val down = MotionEvent.obtain(
+                event.eventTime,
+                event.eventTime,
+                MotionEvent.ACTION_DOWN,
+                event.getX(remaining),
+                event.getY(remaining),
+                event.metaState
+            )
+            gestures.onTouchEvent(down)
+            down.recycle()
+            tapAllowed = false
+        }
         if (pendingClick) {
             pendingClick = false
             performClick()
         }
+        return true
+    }
+
+    private fun panWithTwoFingers(event: MotionEvent): Boolean {
+        val lifted = if (event.actionMasked == MotionEvent.ACTION_POINTER_UP) {
+            event.actionIndex
+        } else {
+            -1
+        }
+        val count = event.pointerCount - if (lifted >= 0) 1 else 0
+        if (!pageLayout.horizontalPanLocked ||
+            layout == null ||
+            count < 2 ||
+            event.actionMasked == MotionEvent.ACTION_CANCEL ||
+            event.actionMasked == MotionEvent.ACTION_UP
+        ) {
+            twoFingerFocusX = Float.NaN
+            twoFingerFocusY = Float.NaN
+            return false
+        }
+        var focusX = 0f
+        var focusY = 0f
+        for (index in 0 until event.pointerCount) {
+            if (index == lifted) continue
+            focusX += event.getX(index) / count
+            focusY += event.getY(index) / count
+        }
+        val moving = event.actionMasked == MotionEvent.ACTION_MOVE && twoFingerFocusX.isFinite()
+        val dx = if (moving) focusX - twoFingerFocusX else 0f
+        val dy = if (moving) focusY - twoFingerFocusY else 0f
+        twoFingerFocusX = focusX
+        twoFingerFocusY = focusY
+        if (dx == 0f && dy == 0f) return false
+        scroller.forceFinished(true)
+        // Translate before zoomAt(new focus), so a moving pinch keeps the touched document point.
+        viewport.x += dx
+        viewport.y += dy
         return true
     }
 
@@ -569,7 +649,8 @@ class PdfCanvasView @JvmOverloads constructor(
 
     override fun computeScroll() {
         if (scroller.computeScrollOffset()) {
-            viewport.x = scroller.currX.toDouble()
+            // OverScroller stores integer pixels; a vertical fling must retain fractional X too.
+            if (!pageLayout.horizontalPanLocked) viewport.x = scroller.currX.toDouble()
             viewport.y = scroller.currY.toDouble()
             constrain()
             postInvalidateOnAnimation()

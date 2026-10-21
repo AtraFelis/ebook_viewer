@@ -49,6 +49,11 @@ internal fun Activity.pageLayoutDialog(
         setText(draft?.getString("gap") ?: String.format(Locale.ROOT, "%d", current.gap))
         style.styleInput(this)
     }
+    val horizontalLocked = if (draft?.containsKey("horizontalPanLocked") == true) {
+        draft.getBoolean("horizontalPanLocked")
+    } else {
+        current.horizontalPanLocked
+    }
     val content = readerFormBody(
         style.label(R.string.page_layout_description),
         choices,
@@ -70,7 +75,7 @@ internal fun Activity.pageLayoutDialog(
                 } else {
                     PageSizeMode.UNIFORM_WIDTH
                 }
-                val selected = PageLayoutSettings(mode, gap)
+                val selected = PageLayoutSettings(mode, gap, horizontalLocked)
                 saving.submit(dialog, content) { done -> apply(selected, done) }
             }
         }
@@ -78,6 +83,7 @@ internal fun Activity.pageLayoutDialog(
     return EditableSettingsForm(dialog) {
         Bundle().apply {
             putString("gap", input.text.toString())
+            putBoolean("horizontalPanLocked", horizontalLocked)
             putString(
                 "mode",
                 if (choices.checkedRadioButtonId == R.id.original_page_size) {

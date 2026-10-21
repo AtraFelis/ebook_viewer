@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="lock_horizontal_pan">가로 이동 잠금 켜기 · 확대·축소 유지</string>
+    <string name="unlock_horizontal_pan">가로 이동 잠금 끄기 · 현재 잠김</string>
     <string name="first_reading_hint">화면 중앙을 탭하면 읽기 도구와 설정을 열 수 있어요.</string>
     <string name="settings_save_failed">설정을 저장하지 못했습니다. 기존 설정을 유지했어요. 입력값을 확인하고 다시 시도해 주세요.</string>
     <string name="retry_settings_save">다시 적용</string>

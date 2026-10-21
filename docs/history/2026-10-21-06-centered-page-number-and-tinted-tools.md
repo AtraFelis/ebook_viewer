@@ -38,3 +38,17 @@
 - 검사가 생성한 알려진 합성 화면 `design-centered-number-synthetic.png`/`design-tinted-tools-synthetic.png`만 로컬로 가져와 중앙 번호의 상자 제거/본문 가림 감소와 버튼 바탕·간격·비활성 구분을 시각 확인했다. 사용자 PDF/목록을 캡처하지 않았다.
 - 설치 app SHA-256이 최종 검증 APK와 일치했다. 원래 font_scale **1.1**, 앱·계측 force-stop/ADB kill-server와 프로세스 **0** 확인. 기기 기본 설정/앱 데이터 삭제·예약/반복 계측 없음.
 - 사용자가 직접 새 앱의 번호 위치/가독성·버튼 외관을 확인하고 **“지금 모습이 좋아요”**로 수용했다. 자동 검사와 구분한다. 전체82개/단위51개 재실행/성능/다른 API/실제 저장장치 실패/모든 PDF 무늬의 대비 보장은 미실행이다. PR/실제 리뷰/CI는 게시 후 별도 확인한다.
+
+## 게시 결과
+
+- 구현/검증/수용 `3b11630e3dcc2b782bda86dad50e4a603c8970fb` 일반 push·[PR #23](https://github.com/AtraFelis/ebook_viewer/pull/23) 생성/채팅 첨부 완료. 사용자 수용까지 끝난 변경이어서 OPEN/isDraft=false로 게시했다. 사용자 `docs/design.md` 변경은 포함하지 않았다.
+- 마무리된 head에 수동 요청6312709797을 한 번 보냈고 실제 봇6312711711은 **Review rate limited/Action not completed**로 응답했다. 접수/진행/실제 리뷰 완료가 아니며 성공 체크와 구분한다. 추가 중복 요청/Autofix/병합 없음.
+- CI39577586665/39577550837는 확인 당시 IN_PROGRESS다. 게시 상태만으로 새 head/CI를 만들지 않고 결과 기록은 로컬에 모아 둔다. 다음은 최신 CI와 한도 이후 실제 리뷰 확인·타당한 수정이다. 앱/ADB/반복 계측을 재시작하거나 예약하지 않았다.
+
+## 후속 상태 확인
+
+사용자의 다음 작업 질문에 원격을 다시 읽어 source3b11630의 CI39577586665/39577550837 모두 **SUCCESS**와 PR #23 OPEN을 확인했다. 최초 한도 거부 뒤 봇6314596422의 **Review triggered**/CodeRabbit PENDING이 있어 실제 접수는 완료됐으며, 완료 리뷰 API는 아직 비어 있다. 진행 중 동일 head에 추가 요청하지 않는다. 리뷰 결과/타당한 수정·사용자 병합 뒤 가로 이동 잠금이 다음 개발이다. 새 앱/기기 검사/기능 개발 없이 로컬 상태 기록만 갱신했다.
+
+## 완료 확인
+
+후속 개발 시작 전 PR #23의 사용자 병합 `d4b5bfe1cd9adebb08a2ec842ef73f6a90ac6a33`와 최종 CI 두 건 SUCCESS를 확인했다. 리뷰 API/inline은 비어 있지만 CodeRabbit 실제 요약6312707997에서 basee069dc9→source3b11630의 **14파일 검토/No actionable comments**를 확인했다(run `51df2eab-cb33-4ca3-aad3-3faaf0b24975`). 요청 응답6314596422도 **Review finished**로 바뀌었다. 건너뜀 성공과 구분해 실제 리뷰 완료/수정 요구0으로 마감한다. 일반 docstring 비율 안내는 계약의 이유·제약 주석 규칙을 바꾸는 코드 지적으로 채택하지 않았고 Autofix를 켜지 않았다. 추가 수동 호출 없이 다음 가로 이동 잠금을 main 기반 별도 브랜치에서 진행한다.

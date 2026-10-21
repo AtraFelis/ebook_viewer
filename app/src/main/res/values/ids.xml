@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="horizontal_pan_lock" type="id" />
     <item name="reading_hint" type="id" />
     <item name="settings_save_error" type="id" />
     <item name="home_record" type="id" />

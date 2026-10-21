@@ -10,7 +10,7 @@ import org.junit.Test
 
 class ReadingRecordsTest {
     @Test
-    fun legacyVersionOneMigratesAndVersionTwoKeepsIndependentLayouts() {
+    fun legacyVersionOneMigratesAndCurrentVersionKeepsIndependentLayouts() {
         val legacy = ByteArrayOutputStream()
         DataOutputStream(legacy).apply {
             writeInt(0x45565231)
@@ -33,7 +33,7 @@ class ReadingRecordsTest {
             migrated,
             migrated.copy(
                 uri = "new",
-                pageLayout = PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24)
+                pageLayout = PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24, true)
             )
         )
         val output = ByteArrayOutputStream()
@@ -42,6 +42,55 @@ class ReadingRecordsTest {
         val invalid = output.toByteArray().also { it[it.lastIndex] = 73 }
         assertThrows(IllegalArgumentException::class.java) {
             ReadingRecordsCodec.read(ByteArrayInputStream(invalid))
+        }
+    }
+
+    @Test
+    fun legacyVersionTwoRetainsLayoutAndDefaultsToUnlocked() {
+        val legacy = ByteArrayOutputStream()
+        DataOutputStream(legacy).apply {
+            writeInt(0x45565231)
+            writeInt(2)
+            writeInt(1)
+            writeUTF("content://fixture/v2")
+            writeUTF("Version two")
+            writeLong(10)
+            writeInt(20)
+            writeBoolean(true)
+            writeInt(4)
+            writeDouble(0.3)
+            writeDouble(0.6)
+            writeDouble(3.0)
+            writeUTF(PageSizeMode.UNIFORM_WIDTH.name)
+            writeInt(24)
+        }
+        val records = ReadingRecordsCodec.read(ByteArrayInputStream(legacy.toByteArray()))
+        assertEquals(
+            PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24, false),
+            records.single().pageLayout
+        )
+        assertEquals(ReadingPosition(4, 0.3, 0.6, 3.0), records.single().position)
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.write(output, records)
+        assertEquals(records, ReadingRecordsCodec.read(ByteArrayInputStream(output.toByteArray())))
+    }
+
+    @Test
+    fun invalidVersionThreeLockFlagAndGapAreRejected() {
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.write(
+            output,
+            listOf(ReadingRecord("content://fixture/lock", "Lock", 1))
+        )
+        for (flag in listOf(2, 255)) {
+            val invalid = output.toByteArray().also { it[it.lastIndex] = flag.toByte() }
+            assertThrows(IllegalArgumentException::class.java) {
+                ReadingRecordsCodec.read(ByteArrayInputStream(invalid))
+            }
+        }
+        val invalidGap = output.toByteArray().also { it[it.lastIndex - 1] = 73 }
+        assertThrows(IllegalArgumentException::class.java) {
+            ReadingRecordsCodec.read(ByteArrayInputStream(invalidGap))
         }
     }
 
