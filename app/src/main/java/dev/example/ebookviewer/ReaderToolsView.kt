@@ -23,7 +23,9 @@ internal class ReaderToolsView(
     onPage: () -> Unit,
     onBookmarks: () -> Unit,
     onReadText: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onScrubBegin: () -> Unit,
+    onScrubPage: (Int) -> Unit
 ) {
     private val style = ReaderStyle(context)
     private var availableHeight = 0
@@ -51,6 +53,11 @@ internal class ReaderToolsView(
         id = R.id.reader_page_count
         setTextColor(style.secondary)
     }
+    private var currentPage: Int? = null
+    private var totalPages = 0
+    val scrubber = PageScrubberView(context, onScrubBegin, onScrubPage).apply {
+        onPreviewChanged = ::updatePageLabel
+    }
     private val header = LinearLayout(context).apply {
         id = R.id.reader_header
         orientation = LinearLayout.HORIZONTAL
@@ -65,6 +72,7 @@ internal class ReaderToolsView(
     private val summary = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         addView(pageCount, LinearLayout.LayoutParams(-1, -2))
+        addView(scrubber, LinearLayout.LayoutParams(-1, style.dp(48)))
         status.apply {
             textSize = 12f
             setTextColor(style.secondary)
@@ -145,6 +153,32 @@ internal class ReaderToolsView(
     fun setTitle(text: CharSequence) {
         title.text = text
         title.contentDescription = text
+    }
+
+    fun updatePages(page: Int?, count: Int, available: Boolean) {
+        currentPage = page
+        totalPages = count
+        scrubber.update(page, count, available)
+        updatePageLabel()
+    }
+
+    private fun updatePageLabel() {
+        val page = currentPage
+        pageCount.text = if (page == null || totalPages <= 0) {
+            pageCount.context.getString(R.string.loading)
+        } else {
+            val target = scrubber.previewPage
+            if (target != null) {
+                pageCount.context.getString(
+                    R.string.page_scrub_preview,
+                    page + 1,
+                    totalPages,
+                    target + 1
+                )
+            } else {
+                pageCount.context.getString(R.string.current_page, page + 1, totalPages)
+            }
+        }
     }
 
     private fun action(label: Int, click: () -> Unit): Button =
