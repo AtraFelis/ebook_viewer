@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="page_crop_settings">페이지 여백 자르기</string>
+    <string name="crop_description" formatted="false">위 PDF 미리보기에서 파란색으로 표시한 여백을 숨깁니다. 이 문서 전체에 원본 크기의 비율로 적용합니다(0~45%). 적용 전에는 저장되지 않으며 원본 파일과 본문 읽기는 바뀌지 않습니다.</string>
+    <string name="crop_preview_loading">PDF 미리보기 준비 중…</string>
+    <string name="crop_left">왼쪽</string>
+    <string name="crop_top">위쪽</string>
+    <string name="crop_right">오른쪽</string>
+    <string name="crop_bottom">아래쪽</string>
+    <string name="crop_side_value">%1$s · %2$d%%</string>
+    <string name="crop_reset">여백 초기화</string>
     <string name="lock_horizontal_pan">가로 이동 잠금 켜기 · 확대·축소 유지</string>
     <string name="unlock_horizontal_pan">가로 이동 잠금 끄기 · 현재 잠김</string>
     <string name="first_reading_hint">화면 중앙을 탭하면 읽기 도구와 설정을 열 수 있어요.</string>

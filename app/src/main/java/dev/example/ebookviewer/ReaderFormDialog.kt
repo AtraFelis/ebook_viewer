@@ -37,7 +37,8 @@ internal fun Activity.readerFormDialog(
     neutral: Int? = null,
     scrollContent: Boolean = true,
     onNeutral: (() -> Unit)? = null,
-    onConfirm: ((AlertDialog) -> Unit)? = null
+    onConfirm: ((AlertDialog) -> Unit)? = null,
+    preview: View? = null
 ): AlertDialog = ReaderFormDialog(
     this,
     title,
@@ -47,7 +48,8 @@ internal fun Activity.readerFormDialog(
     neutral,
     scrollContent,
     onNeutral,
-    onConfirm
+    onConfirm,
+    preview
 )
 
 /** A separate Window changes app chrome without resizing the PDF underneath it. */
@@ -60,7 +62,8 @@ private class ReaderFormDialog(
     private val neutral: Int?,
     private val scrollContent: Boolean,
     private val onNeutral: (() -> Unit)?,
-    private val onConfirm: ((AlertDialog) -> Unit)?
+    private val onConfirm: ((AlertDialog) -> Unit)?,
+    private val preview: View?
 ) : AlertDialog(
     activity,
     if (ReaderStyle(activity).isLight) R.style.ReaderFormLight else R.style.ReaderFormDark
@@ -138,17 +141,39 @@ private class ReaderFormDialog(
             addView(content, LinearLayout.LayoutParams(-1, if (scrollContent) -2 else -1))
         }
         val body = if (scrollContent) ScrollView(activity).apply { addView(flow) } else flow
-        val root = LinearLayout(activity).apply {
+        val root = object : LinearLayout(activity) {
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                preview?.let {
+                    heading.measure(
+                        MeasureSpec.makeMeasureSpec(
+                            (MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight)
+                                .coerceAtLeast(0),
+                            MeasureSpec.EXACTLY
+                        ),
+                        MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+                    )
+                    val available =
+                        MeasureSpec.getSize(heightMeasureSpec) - paddingTop - paddingBottom
+                    it.layoutParams.height = minOf(
+                        style.dp(240),
+                        available / 3,
+                        (available - heading.measuredHeight - style.dp(96)).coerceAtLeast(0)
+                    )
+                }
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            }
+        }.apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(style.background)
             addView(heading, LinearLayout.LayoutParams(-1, -2))
+            preview?.let { addView(it, LinearLayout.LayoutParams(-1, style.dp(240))) }
             addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
             addView(footer, LinearLayout.LayoutParams(-1, -2))
         }
         fun adaptFooter() {
             if (root.height == 0 || !scrollContent) return
             val bodyHeight = root.height - root.paddingTop - root.paddingBottom -
-                heading.height - footer.height
+                heading.height - footer.height - (preview?.height ?: 0)
             val inline = bodyHeight < style.dp(96)
             if (inline && footer.parent === root) {
                 root.removeView(footer)
@@ -172,6 +197,17 @@ private class ReaderFormDialog(
         }
         setContentView(root)
         window?.apply {
+            fun hasEditor(view: View): Boolean {
+                if (view.onCheckIsTextEditor()) return true
+                if (view is ViewGroup) {
+                    for (index in 0 until view.childCount) {
+                        if (hasEditor(view.getChildAt(index))) return true
+                    }
+                }
+                return false
+            }
+            // AlertController cannot see editors installed via our setContentView, so undo its block.
+            if (hasEditor(content)) clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
             if (Build.VERSION.SDK_INT >= 30) {

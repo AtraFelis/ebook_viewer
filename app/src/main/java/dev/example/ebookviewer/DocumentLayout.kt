@@ -32,12 +32,14 @@ fun DocumentLayout.visibleTiles(
     val last = pageAt((screenHeight - viewport.y) / zoom)
     for (index in first..last) {
         val page = pages[index]
-        val left = viewport.x + left(index) * zoom
-        val top = viewport.y + tops[index] * zoom
-        if (top + pageHeight(index) * zoom <= 0 ||
-            top >= screenHeight ||
-            left + pageWidth(index) * zoom <= 0 ||
-            left >= screenWidth
+        val clippedLeft = viewport.x + left(index) * zoom
+        val clippedTop = viewport.y + tops[index] * zoom
+        val left = viewport.x + sourceLeft(index) * zoom
+        val top = viewport.y + sourceTop(index) * zoom
+        if (clippedTop + pageHeight(index) * zoom <= 0 ||
+            clippedTop >= screenHeight ||
+            clippedLeft + pageWidth(index) * zoom <= 0 ||
+            clippedLeft >= screenWidth
         ) {
             continue
         }
@@ -45,15 +47,17 @@ fun DocumentLayout.visibleTiles(
         val ratio = renderScale / zoom
         val pixelWidth = ceil(page.width * pageScale).toInt()
         val pixelHeight = ceil(page.height * pageScale).toInt()
-        val x0 = max(0, floor(-left * ratio / TILE_SIZE).toInt())
-        val y0 = max(0, floor(-top * ratio / TILE_SIZE).toInt())
+        val right = min(screenWidth.toDouble(), clippedLeft + pageWidth(index) * zoom)
+        val bottom = min(screenHeight.toDouble(), clippedTop + pageHeight(index) * zoom)
+        val x0 = max(0, floor((max(0.0, clippedLeft) - left) * ratio / TILE_SIZE).toInt())
+        val y0 = max(0, floor((max(0.0, clippedTop) - top) * ratio / TILE_SIZE).toInt())
         val x1 = min(
             (pixelWidth - 1) / TILE_SIZE,
-            ceil((screenWidth - left) * ratio / TILE_SIZE).toInt() - 1
+            ceil((right - left) * ratio / TILE_SIZE).toInt() - 1
         )
         val y1 = min(
             (pixelHeight - 1) / TILE_SIZE,
-            ceil((screenHeight - top) * ratio / TILE_SIZE).toInt() - 1
+            ceil((bottom - top) * ratio / TILE_SIZE).toInt() - 1
         )
         for (row in y0..y1) {
             for (column in x0..x1) {
@@ -89,16 +93,18 @@ fun Tile.visibleArea(
 ): Double {
     val left = viewport.x + document.left(page) * viewport.zoom
     val top = viewport.y + document.tops[page] * viewport.zoom
+    val sourceLeft = viewport.x + document.sourceLeft(page) * viewport.zoom
+    val sourceTop = viewport.y + document.sourceTop(page) * viewport.zoom
     val ratio = viewport.zoom * document.scale(page) / scale
-    val x0 = max(0.0, max(left, left + x * ratio))
-    val y0 = max(0.0, max(top, top + y * ratio))
+    val x0 = max(0.0, max(left, sourceLeft + x * ratio))
+    val y0 = max(0.0, max(top, sourceTop + y * ratio))
     val x1 = min(
         width.toDouble(),
-        min(left + document.pageWidth(page) * viewport.zoom, left + (x + this.width) * ratio)
+        min(left + document.pageWidth(page) * viewport.zoom, sourceLeft + (x + this.width) * ratio)
     )
     val y1 = min(
         height.toDouble(),
-        min(top + document.pageHeight(page) * viewport.zoom, top + (y + this.height) * ratio)
+        min(top + document.pageHeight(page) * viewport.zoom, sourceTop + (y + this.height) * ratio)
     )
     return (x1 - x0).coerceAtLeast(0.0) * (y1 - y0).coerceAtLeast(0.0)
 }
@@ -114,7 +120,7 @@ class DocumentLayout(
     val pages: List<PageSize>,
     val settings: PageLayoutSettings = PageLayoutSettings()
 ) {
-    val width = pages.maxOf { it.width }.toDouble()
+    val width = pages.maxOf { it.width } * settings.crop.widthFraction
     val tops = DoubleArray(pages.size + 1)
 
     init {
@@ -126,14 +132,37 @@ class DocumentLayout(
 
     val height: Double get() = tops.last()
 
-    fun scale(index: Int): Double =
-        if (settings.mode == PageSizeMode.UNIFORM_WIDTH) width / pages[index].width else 1.0
+    fun scale(index: Int): Double = if (settings.mode == PageSizeMode.UNIFORM_WIDTH) {
+        width / (pages[index].width * settings.crop.widthFraction)
+    } else {
+        1.0
+    }
 
-    fun pageWidth(index: Int): Double = pages[index].width * scale(index)
+    fun pageWidth(index: Int): Double =
+        pages[index].width * settings.crop.widthFraction * scale(index)
 
-    fun pageHeight(index: Int): Double = pages[index].height * scale(index)
+    fun pageHeight(index: Int): Double =
+        pages[index].height * settings.crop.heightFraction * scale(index)
 
     fun left(index: Int): Double = (width - pageWidth(index)) / 2
+
+    fun sourceLeft(index: Int): Double =
+        left(index) - pages[index].width * settings.crop.left / 100.0 * scale(index)
+
+    fun sourceTop(index: Int): Double =
+        tops[index] - pages[index].height * settings.crop.top / 100.0 * scale(index)
+
+    fun pageX(index: Int, originalFraction: Double): Double =
+        sourceLeft(index) + originalFraction * pages[index].width * scale(index)
+
+    fun pageY(index: Int, originalFraction: Double): Double =
+        sourceTop(index) + originalFraction * pages[index].height * scale(index)
+
+    fun originalX(index: Int, documentX: Double): Double =
+        (documentX - sourceLeft(index)) / (pages[index].width * scale(index))
+
+    fun originalY(index: Int, documentY: Double): Double =
+        (documentY - sourceTop(index)) / (pages[index].height * scale(index))
 
     fun pageAt(y: Double): Int {
         val match = tops.binarySearch(y.coerceIn(0.0, height))
@@ -164,7 +193,9 @@ class Viewport(var zoom: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0)
         y = if (fractionY == null) {
             -layout.tops[page] * zoom
         } else {
-            height / 2.0 - (layout.tops[page] + fractionY * layout.pageHeight(page)) * zoom
+            val target = layout.pageY(page, fractionY)
+                .coerceIn(layout.tops[page], layout.tops[page] + layout.pageHeight(page))
+            height / 2.0 - target * zoom
         }
         constrain(layout, width, height)
     }

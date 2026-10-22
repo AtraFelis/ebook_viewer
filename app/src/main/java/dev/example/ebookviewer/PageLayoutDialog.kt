@@ -75,7 +75,11 @@ internal fun Activity.pageLayoutDialog(
                 } else {
                     PageSizeMode.UNIFORM_WIDTH
                 }
-                val selected = PageLayoutSettings(mode, gap, horizontalLocked)
+                val selected = current.copy(
+                    mode = mode,
+                    gap = gap,
+                    horizontalPanLocked = horizontalLocked
+                )
                 saving.submit(dialog, content) { done -> apply(selected, done) }
             }
         }

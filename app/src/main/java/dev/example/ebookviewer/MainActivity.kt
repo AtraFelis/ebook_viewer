@@ -59,14 +59,18 @@ class MainActivity : Activity() {
     private var settingsHomeDialog: AlertDialog? = null
     private var settingsChildLoading = false
     private var orientationSettingsOpen = false
-    private enum class SettingsFormKind { BACKGROUND, DISPLAY, LAYOUT }
+    private var orientationPopup: android.widget.PopupWindow? = null
+    private var quickOrientationOpen = false
+    private enum class SettingsFormKind { BACKGROUND, DISPLAY, LAYOUT, CROP }
     private var settingsFormKind: SettingsFormKind? = null
     private var editableSettingsForm: EditableSettingsForm? = null
     private var pendingLayoutDraft: Bundle? = null
+    private var pendingCropDraft: Bundle? = null
     private var pendingLayoutWrites = 0
     private lateinit var readingHintLabel: TextView
     private val hintState get() = (application as ReaderApplication).readingHint
     private var documentLayoutSetting: Button? = null
+    private var documentCropSetting: Button? = null
     private var bindPageNumberSetting: ((Boolean) -> Unit)? = null
     private var navigationDialog: AlertDialog? = null
     private var pageTextDialog: AlertDialog? = null
@@ -130,13 +134,19 @@ class MainActivity : Activity() {
                 updateDisplayWindow()
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
-                if (first) hideTools()
+                if (first) {
+                    if (quickOrientationOpen) showTools() else hideTools()
+                }
                 if (first) {
                     hintState.documentOpened()
                     updateReadingHint()
                     pendingLayoutDraft?.let { draft ->
                         pendingLayoutDraft = null
                         showPageLayoutSettings(draft)
+                    }
+                    pendingCropDraft?.let { draft ->
+                        pendingCropDraft = null
+                        showPageCropSettings(draft)
                     }
                 }
                 applyPendingNavigation()
@@ -226,7 +236,8 @@ class MainActivity : Activity() {
             onDismiss = ::hideTools,
             onScrubBegin = viewer::stopScrolling,
             onScrubPage = { requestPage(it, keepTools = true) },
-            onPanLock = ::toggleHorizontalPanLock
+            onPanLock = ::toggleHorizontalPanLock,
+            onOrientation = ::showQuickOrientation
         )
         readerTools = toolsPresentation.view
         pageJumpButton = toolsPresentation.page
@@ -348,6 +359,7 @@ class MainActivity : Activity() {
             if (isDestroyed) return@load
             result.onSuccess {
                 // AUTO preserves the platform's rotation policy across Activity recreation.
+                toolsPresentation.updateOrientation(it)
                 if (it != OrientationMode.AUTO) applyOrientation(it)
             }.onFailure { reportError(R.string.settings_error) }
         }
@@ -391,7 +403,9 @@ class MainActivity : Activity() {
                 }
             )
         }
-        if (savedInstanceState?.getBoolean("settingsOpen") == true) {
+        if (savedInstanceState?.getBoolean("quickOrientationOpen") == true) {
+            root.post { if (!isDestroyed) showQuickOrientation() }
+        } else if (savedInstanceState?.getBoolean("settingsOpen") == true) {
             showSettings()
             if (savedInstanceState.getBoolean("orientationSettingsOpen")) {
                 showOrientationSettings()
@@ -401,6 +415,7 @@ class MainActivity : Activity() {
                     SettingsFormKind.BACKGROUND.name -> showBackgroundSettings(draft)
                     SettingsFormKind.DISPLAY.name -> showDisplaySettings(draft)
                     SettingsFormKind.LAYOUT.name -> pendingLayoutDraft = draft ?: Bundle()
+                    SettingsFormKind.CROP.name -> pendingCropDraft = draft ?: Bundle()
                 }
             }
         }
@@ -831,6 +846,7 @@ class MainActivity : Activity() {
             loaded && reading && pendingLayoutWrites == 0
         )
         documentLayoutSetting?.isEnabled = loaded && reading && pendingLayoutWrites == 0
+        documentCropSetting?.isEnabled = loaded && reading && pendingLayoutWrites == 0
     }
 
     private fun showPageText(selectedPage: Int? = null) {
@@ -1016,7 +1032,7 @@ class MainActivity : Activity() {
     }
 
     private fun showSettings() {
-        if (settingsDialog != null || isDestroyed || isFinishing) return
+        if (settingsDialog != null || settingsChildLoading || isDestroyed || isFinishing) return
         val dialog = readerFormDialog(
             R.string.reader_settings_title,
             settingsControls(),
@@ -1053,7 +1069,11 @@ class MainActivity : Activity() {
                     )
                 val list = ListView(this).apply {
                     choiceMode = ListView.CHOICE_MODE_SINGLE
-                    adapter = readerListAdapter(labels.toList(), singleChoice = true)
+                    adapter = readerListAdapter(
+                        labels.toList(),
+                        singleChoice = true,
+                        icons = OrientationMode.entries.map { it.iconResource() }
+                    )
                     setItemChecked(mode.ordinal, true)
                     divider = null
                 }
@@ -1088,6 +1108,98 @@ class MainActivity : Activity() {
                 showSettingsChild(parent, dialog) { orientationSettingsOpen = false }
             }.onFailure {
                 orientationSettingsOpen = false
+                reportError(R.string.settings_error)
+            }
+        }
+    }
+
+    private fun showQuickOrientation() {
+        if (!reading ||
+            isDestroyed ||
+            isFinishing ||
+            settingsDialog != null ||
+            orientationPopup != null ||
+            settingsChildLoading
+        ) {
+            return
+        }
+        quickOrientationOpen = true
+        settingsChildLoading = true
+        settings.load { result ->
+            if (isDestroyed || isFinishing || !quickOrientationOpen) return@load
+            settingsChildLoading = false
+            result.onSuccess { mode ->
+                val style = ReaderStyle(this)
+                toolsPresentation.updateOrientation(mode)
+                val labels = listOf(
+                    R.string.orientation_auto,
+                    R.string.orientation_portrait,
+                    R.string.orientation_landscape,
+                    R.string.orientation_reverse_portrait,
+                    R.string.orientation_reverse_landscape
+                ).map(::getString)
+                var confirmed = mode
+                var saving = false
+                val list = ListView(this).apply {
+                    id = R.id.quick_orientation_choices
+                    choiceMode = ListView.CHOICE_MODE_SINGLE
+                    adapter = readerListAdapter(
+                        labels,
+                        singleChoice = true,
+                        icons = OrientationMode.entries.map { it.iconResource() }
+                    )
+                    setItemChecked(mode.ordinal, true)
+                    divider = null
+                    setBackgroundColor(style.surface)
+                }
+                val popup = android.widget.PopupWindow(
+                    list,
+                    minOf(style.dp(300), root.width - style.dp(16)),
+                    minOf(style.dp(340), root.height / 2),
+                    true
+                ).apply {
+                    setBackgroundDrawable(style.shape(style.surface))
+                    elevation = style.dp(8).toFloat()
+                    isOutsideTouchable = true
+                    inputMethodMode = android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED
+                }
+                orientationPopup = popup
+                popup.setOnDismissListener {
+                    if (orientationPopup === popup) {
+                        orientationPopup = null
+                        quickOrientationOpen = false
+                    }
+                }
+                list.setOnItemClickListener { _, _, index, _ ->
+                    if (saving) return@setOnItemClickListener
+                    val selected = OrientationMode.entries[index]
+                    if (selected == confirmed) return@setOnItemClickListener
+                    saving = true
+                    list.isEnabled = false
+                    settings.save(selected) { saved ->
+                        if (isDestroyed || isFinishing) return@save
+                        saving = false
+                        list.isEnabled = true
+                        saved.onSuccess {
+                            confirmed = it
+                            list.setItemChecked(it.ordinal, true)
+                            saveReading()
+                            applyOrientation(it)
+                        }.onFailure {
+                            list.setItemChecked(confirmed.ordinal, true)
+                            reportError(R.string.settings_error)
+                        }
+                    }
+                }
+                showTools()
+                popup.showAsDropDown(
+                    toolsPresentation.orientationButton,
+                    0,
+                    style.dp(4),
+                    Gravity.END
+                )
+            }.onFailure {
+                quickOrientationOpen = false
                 reportError(R.string.settings_error)
             }
         }
@@ -1133,6 +1245,12 @@ class MainActivity : Activity() {
             }
         }
         documentLayoutSetting = layoutButton
+        val cropButton = Button(this).apply {
+            setText(R.string.page_crop_settings)
+            isEnabled = loaded && reading && pendingLayoutWrites == 0
+            setOnClickListener { showPageCropSettings() }
+        }
+        documentCropSetting = cropButton
         val backgroundButton = Button(this).apply {
             setText(R.string.background_settings)
             setOnClickListener {
@@ -1171,7 +1289,7 @@ class MainActivity : Activity() {
                 binding = false
             }
         }
-        listOf(orientationButton, displayButton, layoutButton, backgroundButton)
+        listOf(orientationButton, displayButton, layoutButton, cropButton, backgroundButton)
             .forEach(style::styleSettingButton)
         return readerFormBody(
             style.label(R.string.reading_environment, 14f).apply { setTextColor(style.secondary) },
@@ -1181,40 +1299,52 @@ class MainActivity : Activity() {
             displayButton,
             style.label(R.string.current_document, 14f).apply { setTextColor(style.secondary) },
             layoutButton,
+            cropButton,
             style.label(R.string.document_settings_hint, 12f).apply {
                 setTextColor(style.secondary)
             }
         )
     }
 
-    private fun readerListAdapter(labels: List<String>, singleChoice: Boolean = false) =
-        object : ArrayAdapter<String>(
-            this,
-            if (singleChoice) {
-                android.R.layout.simple_list_item_single_choice
-            } else {
-                android.R.layout.simple_list_item_1
-            },
-            labels
-        ) {
-            override fun getView(
-                position: Int,
-                convertView: View?,
-                parent: android.view.ViewGroup
-            ): View = super.getView(position, convertView, parent).apply {
-                val style = ReaderStyle(this@MainActivity)
-                minimumHeight = style.dp(64)
-                // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
-                layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
-                (this as TextView).apply {
-                    textSize = 16f
-                    setTextColor(style.text)
-                    isSingleLine = false
-                    includeFontPadding = true
+    private fun readerListAdapter(
+        labels: List<String>,
+        singleChoice: Boolean = false,
+        icons: List<Int>? = null
+    ) = object : ArrayAdapter<String>(
+        this,
+        if (singleChoice) {
+            android.R.layout.simple_list_item_single_choice
+        } else {
+            android.R.layout.simple_list_item_1
+        },
+        labels
+    ) {
+        override fun getView(
+            position: Int,
+            convertView: View?,
+            parent: android.view.ViewGroup
+        ): View = super.getView(position, convertView, parent).apply {
+            val style = ReaderStyle(this@MainActivity)
+            minimumHeight = style.dp(64)
+            // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
+            layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
+            (this as TextView).apply {
+                textSize = 16f
+                setTextColor(style.text)
+                isSingleLine = false
+                includeFontPadding = true
+                val icon = icons?.get(position)?.let {
+                    getDrawable(it)?.mutate()?.apply {
+                        setTint(style.accent)
+                        setBounds(0, 0, style.dp(24), style.dp(24))
+                    }
                 }
+                setCompoundDrawablesRelative(icon, null, null, null)
+                compoundDrawablePadding = style.dp(12)
             }
         }
+    }
 
     private fun beginSettingsChild(): AlertDialog? {
         val parent = settingsHomeDialog ?: return null
@@ -1233,6 +1363,7 @@ class MainActivity : Activity() {
         settingsFormKind = kind
         editableSettingsForm = form
         showSettingsChild(parent, form.dialog) {
+            if (kind == SettingsFormKind.CROP) viewer.observeCropPreview(null)
             settingsFormKind = null
             editableSettingsForm = null
         }
@@ -1257,6 +1388,18 @@ class MainActivity : Activity() {
         savePageLayoutSettings(selected, opening) { success ->
             if (!success) reportError(R.string.settings_error)
         }
+    }
+
+    private fun showPageCropSettings(draft: Bundle? = null) {
+        if (!loaded || !reading || pendingLayoutWrites > 0) return
+        val parent = beginSettingsChild() ?: return
+        val generation = opening
+        val preview = PageCropPreview(this)
+        viewer.observeCropPreview(preview::showPage)
+        val form = pageCropDialog(viewer.pageLayoutSettings(), draft, preview) { selected, done ->
+            savePageLayoutSettings(selected, generation, done)
+        }
+        showEditableSettingsChild(parent, SettingsFormKind.CROP, form)
     }
 
     private fun savePageLayoutSettings(
@@ -1317,16 +1460,22 @@ class MainActivity : Activity() {
     }
 
     private fun closeSettings() {
+        if (::viewer.isInitialized) viewer.observeCropPreview(null)
         val child = settingsDialog
         val parent = settingsHomeDialog
         settingsDialog = null
         settingsHomeDialog = null
         settingsChildLoading = false
         orientationSettingsOpen = false
+        orientationPopup?.dismiss()
+        orientationPopup = null
+        quickOrientationOpen = false
         settingsFormKind = null
         editableSettingsForm = null
         pendingLayoutDraft = null
+        pendingCropDraft = null
         documentLayoutSetting = null
+        documentCropSetting = null
         bindPageNumberSetting = null
         child?.setOnDismissListener(null)
         child?.dismiss()
@@ -1337,6 +1486,7 @@ class MainActivity : Activity() {
     }
 
     private fun applyOrientation(mode: OrientationMode) {
+        toolsPresentation.updateOrientation(mode)
         val requested = when (mode) {
             OrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             OrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -1495,6 +1645,7 @@ class MainActivity : Activity() {
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)
+        outState.putBoolean("quickOrientationOpen", quickOrientationOpen)
         val form = editableSettingsForm
         if (form?.dialog?.isShowing == true) {
             outState.putString("settingsForm", settingsFormKind?.name)
@@ -1502,6 +1653,9 @@ class MainActivity : Activity() {
         } else if (pendingLayoutDraft != null) {
             outState.putString("settingsForm", SettingsFormKind.LAYOUT.name)
             outState.putBundle("settingsDraft", pendingLayoutDraft)
+        } else if (pendingCropDraft != null) {
+            outState.putString("settingsForm", SettingsFormKind.CROP.name)
+            outState.putBundle("settingsDraft", pendingCropDraft)
         }
         saveReading()
         pendingNavigation?.let {
@@ -1519,6 +1673,7 @@ class MainActivity : Activity() {
                     remove("pageSizeMode")
                     remove("pageGap")
                     remove("horizontalPanLocked")
+                    remove("pageCrop")
                 }
             } else {
                 saved

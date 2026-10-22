@@ -2,7 +2,37 @@
 
 최종 갱신: 2026-10-22 (Asia/Seoul)
 
-## 현재 진행 — 개인용 정식판 빌드·서명 준비
+## 현재 진행 — 개인 사용 피드백: 배경색·방향·여백
+
+좌우 화살표 시안 사용자 승인 후 locked/unlocked 벡터의 path를 그대로 적용했고 두 상태 모두 기존 테마 파란 accent를 사용한다. 48dp 버튼·선택 상태·제스처/저장 로직은 바꾸지 않았다. strict debug/계측 빌드·Lint·ktlint11초 통과. 사용자가 아이콘 작업의 동작 재검증이 불필요하다고 지적해 추가 기기 검사 호스트를 중단하고 개발용 앱/계측 force-stop·글꼴1.1·ADB 종료를 확인했다. 이 작업의 기기 검사 통과를 주장하지 않는다. 이후 시각적 아이콘 교체는 필요한 빌드/리소스 확인으로 범위를 맞춘다. 아래 시안 대기는 승인 전 기록이다.
+
+새 시안 요청: 가로 이동 잠금 아이콘 아래에 좌우 양방향 화살표를 추가한 잠금/해제 두 상태를 기존 파란색#285BC5로 만들었다. local-artifacts/reader-pan-arrows-proposal.svg/png와 Android 벡터 시안 XML만 생성해 확대/버튼 크기 예시를 육안 확인했다. 앱 리소스·동작·설치·PR은 변경하지 않았고 시안 사용자 확인 대기다. 시안만의 작업이라 앱 빌드/기기 검사는 실행하지 않았다.
+
+최신 게시 확인: b1fcbcaded6266ebc3fe62ff637d6fd066994398 일반 push·PR #31 OPEN/ready/원격 head 일치. PR 설명을 최종 상태 아이콘/리뷰 수정·관련5개 범위로 갱신했고 리뷰 답변4349117220/4349117496을 게시했다. 새 CI두 건 IN_PROGRESS이며 이전 head 성공과 구분한다. 포함 리뷰 allowance0이라 추가 유료/중복 호출은 하지 않았다. 아래 push 예정은 게시 전 기록이다. 이 게시 결과만으로 상태 문서를 다시 push해 리뷰 head를 바꾸지 않으며 사용자 병합은 남아 있다.
+
+이번 최종 검증: 요청한 세 종류 파란 방향 아이콘/toolbar 상태 연동·두 목록 적용과 리뷰2개 수정 완료. strict debug/계측/unsigned release·JVM59개/실패0·양 Lint0/0·ktlint 통과. 기기는 분할한 관련5개(방향 상태 아이콘/드롭다운 복원1, 기존 preview 픽셀1, 초기 크기/복원/취소 신규1, 큰 글꼴6조합1, 일반 방향1) 최종 성공이다. 아이콘은 허용 오차 없이 동일 크기의 캐시를 사용해 픽셀 완전 일치·실제 tint를 확인했다. 중간 검사 실패·자동 검토 거절은 history에 보존했다. 개발용 앱만 업데이트했고 글꼴1.1 복원/앱·계측 중지/ADB 종료 확인. 전체91개/성능·정식판 배포는 반복하지 않았다. 같은 PR #31에 일반 push 예정이며 사용자 디자인 해시28ef0cdc는 그대로다.
+
+최신 요청: 첨부된 자동 회전·가로/세로 자물쇠 모양으로 파란 방향 아이콘을 교체한다. 제목 옆은 저장/선택/재생성 상태와 연동하며 빠른 목록과 일반 방향 목록에도 표시한다. CodeRabbit 실제 리뷰5614954864(f803154) 지적2개를 확인했고, 크기 준비 전 여백 preview 구독의 후속 타일 생성 누락과 roadmap의 공통 적용/원본 보존 표현을 수정했다. anchor 복원/재투영 뒤 preview를 계산하며 취소/해제와 기존 layout 경로를 회귀 검사한다. 아이콘 직전0b32355 CI두 건은 SUCCESS였다. 최종 기기 검증/게시 결과는 아래에 이어 기록한다. 이전 빈 리뷰/단일 화살표는 당시 이력이며 사용자 docs/design.md128줄은 보존/제외한다.
+
+최신 게시: 승인 아이콘0b32355e1db00d27acfb291396d47404f80699a9 일반 push/원격head 일치·PR #31 OPEN/isDraft=false(ready for review). 새 CI39786680886은 QUEUED로 확인했고 실제 review/inline API는 아직 빈 배열이다. 앞선 수동 요청이 진행 중이어서 작은 아이콘 수정 뒤 중복 요청하지 않았다. 병합은 사용자이며 CI/실제 리뷰 결과가 남아 있다. 아래 Draft/적용 전 표현은 당시 상태다.
+
+아이콘 최종 적용: 사용자가 회전 화살표 시안을 승인해 reader_orientation.xml에 동일 path/2dp stroke/round cap·join을 반영했다. 48dp 버튼 위치/크기·테마 tint·동작은 그대로다. SVG/Android 벡터 토큰·stroke 동일 확인, strict debug/계측 빌드·Lint0/0·ktlint7초와 개발용 앱의 기존 방향 드롭다운/재생성/복귀1개·실패0(44.3초)을 확인했다. app6ef11855/계측e6acd237, 원래 글꼴1.1·앱/계측 중지/ADB 종료. 이전9개/전체91개/성능은 반복하지 않았다. 모든 기능의 사용자 수용과 아이콘 시안 승인은 끝났으며 다음은 같은 PR에 아이콘 반영/CI·실제 리뷰 결과다. 사용자 디자인128줄은 보존/제외한다.
+
+게시/수용 최신: f803154248045772ef59c37488446d49dce9b66c 일반 push·PR #31 OPEN/Draft·원격 head 일치. CI39785514412/39785508866 진행 중이며 수동6341732725 한 번에 봇6341735307 Review triggered·요약6341184734 실제 처리 중을 확인했다. 실제 review/inline API는 아직 비어 있다. 사용자는 방향 드롭다운/실제 PDF 미리보기/키패드를 수용했고, 방향 아이콘만 회전 화살표로 바꾸되 적용 전에 시안을 보여 달라고 했다. local-artifacts/orientation-rotate-arrow-proposal.svg/png 시안만 만들고 앱 리소스는 변경하지 않았다. 다음은 아이콘 시안 승인 후 적용·관련 검증, 실제 CI/리뷰 결과 대응이다. 리뷰 중 상태 기록만의 push/중복 요청은 하지 않는다.
+
+최신 보완: 초기b785042는 Draft PR #31로 게시/첨부했고 아직 CodeRabbit을 호출하지 않았다. 자동 배경색은 사용자 “이제 깜빡임 없어”로 수용했다. 방향은 작은 드롭다운, 여백은 실제 PDF 고정 미리보기로 바꾸고 추가 보고된 간격 숫자 키패드의 공통 Window 차단을 수정했다. 보완 앱25개 통과 뒤 큰 글꼴200% 가로에서 미리보기 높이 회귀를 확인해 수정했다. **최종 앱의 관련9개/실패0·116.4초**(새7/큰 글꼴6조합1/일반방향1), strict debug/계측·unsigned release·단위59개/양 Lint0/0·ktlint 통과다. 최종 app beb69c01/계측e6acd237 설치본 해시 일치·API33·글꼴1.1·두 앱 중지/ADB0 확인. NotificationShade 포커스 두 실패와 실제 높이 회귀/수정은 이력에 보존했다. 아래24개/기기 분리 당시 해시 미확인은 초기 앱의 이력이다. 새 최종 UI 사용자 수용은 다시 요청/대기이며 정식판/개인 키는 사용하지 않았다.
+
+현재 체크아웃은 PR #30 사용자 병합 main b3acea0을 ff-only 연결한 codex/reader-background-orientation-crop이다. [계획](docs/plan/reader-usability-follow-up.md)/[ADR0018](docs/adr/0018-document-crop-and-reading-records-v4.md)대로 자동 배경색 미준비 시 직전 색 유지, 제목 오른쪽 방향 빠른 접근, 문서 전체 공통 원본 보존 여백0~45%/네 방향을 구현했다. 기록v4는v1~v3와 원본 앵커·북마크/줌을 보존한다. 새 의존성/개인 키 접근/정식판 설치 변경은 없다.
+
+strict debug/계측/unsigned release·단위59개 실제 실행·양 Lint(debug0/0/info6·release0/0/info4)·ktlint 통과. 새 합성5개와 기존 관련19개, **고유24개 최종 성공**을 분할 확인했다. 추가로 새 방향 아이콘/여백 슬라이더까지 확장한 기존 큰 글꼴1개(6조합) 재통과·최종 빌드16초다. 첫 방향 검사1개 실패는 Dialog dismiss 콜백 직전 검사였으며 조건/포커스 복귀 대기를 보완했고 앱 수정 없이 재통과했다. 전체91개/20분/성능 재측정은 하지 않았다. [실제 명령·한계](docs/history/2026-10-22-05-reader-usability.md).
+
+개발용.p0 앱만 -r 설치·검사했고 최종 호스트는 글꼴1.1 유지/앱·계측 force-stop/ADB 종료를 확인했다. 이후 설치본 해시 재대조 때는 기기가 분리되어 재확인하지 못했다. 사용자 디자인128줄/SHA25628ef0cdc는 보존/커밋 제외한다. 사용자에게 개발용 PDF Viewer의 새 기능 수용을 요청했고 응답은 아직 대기다. 다음은 이 묶음 PR/CI·실제 CodeRabbit와 사용자 수용/병합이며 정식 업데이트 서명은 별도 로컬 절차다.
+
+## 앞선 진행 — 개인용 정식판 빌드·서명 준비
+
+최신 확인: PR #30 MERGED b3acea0c701618287ebd59fa728fbc287883d903, CI39735181505/39735168394 모두SUCCESS다. 실제 review/inline API는 빈 배열이므로 CodeRabbit 체크 성공을 완료 리뷰로 세지 않는다. 아래 OPEN/진행 중 표현은 당시 기록이다. 개인용 키/설치의 실제 성공은 비밀번호를 받거나 임의로 파일을 열어 확인하지 않았다.
+
+게시 확인: 5b90164c0e2e838a9137cf6c82d15606cbf01620 일반 push·[PR #30](https://github.com/AtraFelis/ebook_viewer/pull/30) 생성/첨부(OPEN/base main). CI39735181505/39735168394 진행 중이다. 수동 요청6334472989 한 번에 봇6334474290 Review triggered·요약6334469491의21파일 실제 처리 중을 확인했다. 아직 완료 리뷰 API는 비어 있어 완료로 세지 않는다. 리뷰 중 상태 기록만의 재push/중복 요청/자동 예약/에이전트 병합은 하지 않는다. 실제 개인용 키 생성은 사용자 로컬 마스킹 입력 단계로 남겨 두고 기존 앱/휴대폰은 사용하지 않았다.
 
 2026-10-22 사용자는 정식판을 새 기록/설정으로 시작하고 코드 라이선스는 보류하기로 했다. main973f784 기반 현재 체크아웃 codex/release-preparation에서 [계획](docs/plan/personal-release.md)·[ADR0017](docs/adr/0017-personal-release-identity-and-signing.md)을 반영했다. release ID dev.example.ebookviewer, debug/profile .p0 ID 유지, 버전0.1.0/code2(gradle.properties), debug -dev/profile -profile이다. 기존 설치 앱/기록을 제거하거나 새 APK를 설치하지 않았다. 사용자 docs/design.md128줄 변경은 보존/커밋 제외한다.
 
@@ -373,3 +403,5 @@ P1 첫 범위인 최근/읽던 문서 목록과 문서별 이어 읽기를 구�
 5. 실제 SAF provider 영구 권한·재부팅·권한 소실 재연결과 개인 PDF 손입력/물리 회전 센서 수용은 남아 있다. 비탐색 provider 제한 복사는 합성 provider로 검증했고, 실제 제조사 파일 선택 UI/개인 PDF 수용은 후속이다. 방향 설정의 별도 강제 프로세스 종료/기기 재부팅은 미검증이다. 갑작스러운 종료 직전 미제출/미완료 이동은 유실될 수 있으며 손상된 기록/설정의 복구 UI는 아직 없다. 이번 통과는 API 33 합성 자료/앱 내부 파일 URI와 주입 입력 기준이다.
 
 [push·CI 결과](docs/history/2026-10-16-10-github-push-and-ci.md), [최종 검증·명령·원본 위치](docs/history/2026-10-16-09-p0-local-validation.md), [첫 표시 개선](docs/history/2026-10-16-08-first-page-priority.md), [Windows 실행](docs/windows-development.md), [ADR](docs/adr/0001-p0-toolchain-and-renderer.md).
+
+승인 시안과 실제 벡터 path/stroke 일치를 확인했고 개발용 APK install Success 뒤 앱/ADB를 종료했다. 추가 동작 검사는 수행하지 않았다.
