@@ -89,7 +89,9 @@ class ReaderChromeDeviceTest {
             ui.onMain {
                 val params = label.layoutParams as FrameLayout.LayoutParams
                 assertEquals(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, params.gravity)
-                val center = (root.width + params.leftMargin - params.rightMargin) / 2.0
+                // FrameLayout adds the full margin difference after centering inside its padding.
+                val center = (root.width + root.paddingLeft - root.paddingRight) / 2.0 +
+                    params.leftMargin - params.rightMargin
                 assertEquals(center, label.left + label.width / 2.0, 1.0)
                 assertTrue(params.bottomMargin >= ReaderStyle(activity).dp(12))
                 assertTrue(label.bottom < root.height)

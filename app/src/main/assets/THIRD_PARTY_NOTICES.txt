@@ -1,0 +1,30 @@
+Third-party software notices
+===========================
+
+This application uses the following runtime components. These notices do not
+assign a license to the application's own source code.
+
+Kotlin standard library 2.1.20
+-----------------------------
+Coordinate: org.jetbrains.kotlin:kotlin-stdlib:2.1.20
+Copyright JetBrains s.r.o. and Kotlin Programming Language contributors.
+License: Apache License, Version 2.0 (licenses/Apache-2.0.txt).
+Source: https://github.com/JetBrains/kotlin/tree/v2.1.20/libraries/stdlib
+The upstream Kotlin distribution NOTICE is reproduced without changes in
+licenses/Kotlin-NOTICE.txt. Its heading identifies the compiler distribution;
+the application uses the standard library, not the compiler runtime.
+
+JetBrains annotations 13.0
+-------------------------
+Coordinate: org.jetbrains:annotations:13.0
+Copyright 2000-2012 JetBrains s.r.o.
+License: Apache License, Version 2.0 (licenses/Apache-2.0.txt).
+Versioned source and metadata:
+https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/
+
+These upstream runtime artifacts are used without source modifications.
+JUnit, Hamcrest, Gradle, Android Gradle Plugin, the Kotlin compiler, ktlint,
+the JDK and Android SDK are test/build/platform tools, not additional bundled
+application runtime libraries. Their separate notices apply when distributing
+those tools or the instrumentation APK; see docs/release-preparation.md in the
+source repository for the scope and remaining release decisions.
