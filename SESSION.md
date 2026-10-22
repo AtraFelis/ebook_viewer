@@ -2,7 +2,23 @@
 
 최종 갱신: 2026-10-22 (Asia/Seoul)
 
-## 현재 진행 — 선택 아이콘 런처 적용
+## 현재 진행 — 개인용 정식판 빌드·서명 준비
+
+2026-10-22 사용자는 정식판을 새 기록/설정으로 시작하고 코드 라이선스는 보류하기로 했다. main973f784 기반 현재 체크아웃 codex/release-preparation에서 [계획](docs/plan/personal-release.md)·[ADR0017](docs/adr/0017-personal-release-identity-and-signing.md)을 반영했다. release ID dev.example.ebookviewer, debug/profile .p0 ID 유지, 버전0.1.0/code2(gradle.properties), debug -dev/profile -profile이다. 기존 설치 앱/기록을 제거하거나 새 APK를 설치하지 않았다. 사용자 docs/design.md128줄 변경은 보존/커밋 제외한다.
+
+로컬 SecureString 입력·저장소 밖 PKCS12 키·명시적 releaseSigning=true만 서명하는 스크립트와 CI unsigned release/식별자 검사를 추가했다. strict debug/계측/profile/unsigned release·단위·양 Lint·ktlint17초 통과. 단위53개는 UP-TO-DATE 재사용, Lint debug0/0/info6·release0/0/info4다. 실제 APK debug/profile ID 유지·별도 release ID·버전/debuggable·고지 바이트/개인 파일 제외를 확인했다.
+
+일회용 임시 키의 생성/재사용/서명·기존 키 보존/잘못된 비밀번호/저장소 경로 거부/기존 출력 충돌 보존/환경변수 복구/자격 누락 실패/마지막 unsigned 복원 검증을 완료했다(최종 스크립트 exit0). 임시 키 디렉터리0·ADB0, 휴대폰 미사용이다. Windows의 Gradle 인자 분리·null 환경변수 복구·실패 경로 검사 후 종료 코드 문제를 실제 실패로 보존하고 수정했다. [명령/한계](docs/history/2026-10-22-04-personal-release-preparation.md).
+
+준비 구현/검증은 완료했으며 **실제 개인용 키 생성·백업/그 키의 APK 설치·수용은 아직 남아 있다**. 비밀번호는 채팅으로 받지 않고 사용자가 [로컬 절차](docs/personal-release.md)에서 직접 입력한다. 코드 LICENSE/외부 게시/스토어 배포는 보류·별도다. 검증용 서명 APK를 개인용 정식판으로 제공하지 않는다.
+
+## 앞선 진행 — 선택 아이콘 런처 적용
+
+최신 완료: PR #29 사용자 병합973f784bf309718cf445f8ba4df9039b7d2dff52(2026-10-22 15:12 KST)·최종 CI39731267009/39731254725 모두SUCCESS를 확인했다. 색상 아이콘 구현/설치/사용자 수용/병합은 완료다. 실제 CodeRabbit review/inline API는 비어 있어 한도로 미실행인 이력을 유지하고 병합 뒤 재호출하지 않는다. 현재 체크아웃은 origin/main973f784로 ff-only 연결했으며 사용자 디자인 문서와 상태 기록을 보존했다. 앱/ADB/검사는 재실행하지 않았다. 다음 별도 결정은 프로젝트 LICENSE·제품 버전·release 서명/개인 설치 업데이트 방식이다. 미재현 회전/포커스 원인과 다른 API/시스템 단색 테마 수용을 해결/완료로 확대하지 않는다. 아래 OPEN/진행 중 표현은 당시 기록이다.
+
+최신 수용/원격 확인: 사용자가 “새 아이콘이 잘 보여요”로 설치된 홈/앱 목록의 색상 아이콘을 수용했다. 시스템 단색 테마/다른 API 수용으로 확대하지 않는다. PR #29 head7566f21은 OPEN/MERGEABLE·CI두 건 진행 중이며 실제 리뷰/inline은 비어 있다. 봇6333924577은 이후 Action not completed/Review rate limited로 바뀌었다. 아래 최초 Review triggered 응답은 당시 기록으로 구분하며 한도 중 재호출/상태 기록 push/앱·ADB 실행은 하지 않았다.
+
+게시 확인: 7566f21ae6ce5b61ea2d79a59e668e5cf6c016f7 일반 push·[PR #29](https://github.com/AtraFelis/ebook_viewer/pull/29) 생성/첨부(OPEN/base main). CI39731267009/39731254725 진행 중. 자동 리뷰는 별 수 skip이었고, 구현/검증 완료 후 수동 요청6333923316 한 번에 봇6333924577 Review triggered가 왔다. 그러나 요약6333915186은 Review limit reached(당시3분)를 표시하며 실제 리뷰 API는 비어 있다. 접수 응답과 실제 완료를 구분하고 추가 중복 호출/상태 기록 재push/자동 예약/병합은 하지 않는다. 사용자에게 설치된 런처 외관 확인을 요청했으며 아직 응답 전이다.
 
 PR #28 사용자 병합main a58b0207c058e05a687594249801ca92a2bfd845(2026-10-22 14:45 KST)·최종 CI두 건 SUCCESS·실제 리뷰/inline 없음과 CodeRabbit 한도 응답을 확인했다. 기존 체크아웃을 ff-only 연결하고 codex/launcher-icon에서 [아이콘 적용 계획](docs/plan/launcher-icon.md)을 수행했다. 기존 사용자 docs/design.md128줄 변경은 보존/커밋 제외한다.
 

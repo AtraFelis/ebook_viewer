@@ -27,5 +27,6 @@ jobs:
           if ((Get-FileHash gradle/wrapper/gradle-wrapper.jar -Algorithm SHA256).Hash -ne $expected) {
             throw 'Wrapper checksum mismatch'
           }
-          ./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug ktlintCheck --dependency-verification strict --console=plain
+          ./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease ktlintCheck --dependency-verification strict --console=plain
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./scripts/check-build-identities.ps1

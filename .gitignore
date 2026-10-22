@@ -12,6 +12,9 @@ local.properties
 !.env.example
 *.jks
 *.keystore
+*.p12
+*.pfx
+keystore.properties
 
 # Private documents and artifacts
 local-documents/

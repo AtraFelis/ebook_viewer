@@ -1,5 +1,7 @@
 # 문서 목차
 
+[개인용 정식 APK 준비](personal-release.md)·[범위/종료 기준](plan/personal-release.md)·[앱 식별자와 서명 결정](adr/0017-personal-release-identity-and-signing.md): 기존 개발용 앱/데이터를 유지하며 별도 정식판으로 시작한다. 실제 개인용 키/설치와 코드 라이선스 보류를 구분한다.
+
 현재 Windows의 [빌드·설치·라이선스/배포 준비](release-preparation.md)와 [P3 최종 통합 점검](history/2026-10-22-01-p3-final-verification.md)을 먼저 확인합니다. [이번 범위/종료 조건](plan/p3-final-verification-and-release-preparation.md)은 아이콘 선택·실제 release 배포와 분리합니다.
 
 2026-10-20 P2의 기능·자동 통합 검사·사용자 수용과 PR #17 병합 완료 근거는 [P2 마무리](history/2026-10-20-01-p2-completion.md)를 확인합니다. 완료 문서 PR 반영 후 종료를 확정하며 기기/메모리·리뷰 범위의 한계를 함께 기록합니다.
