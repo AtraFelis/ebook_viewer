@@ -54,24 +54,27 @@ class PdfCanvasView @JvmOverloads constructor(
     internal fun observeCropPreview(listener: ((Bitmap?) -> Unit)?) {
         if (listener == null && cropPreviewListener == null) return
         cropPreviewListener = listener
-        cropPreviewTile = if (listener == null) {
-            null
-        } else {
-            val document = layout ?: return
-            val index = readingPosition()?.page ?: return
-            val page = document.pages[index]
-            val scale = 512.0 / max(page.width, page.height)
-            Tile(
-                index,
-                scale,
-                0,
-                0,
-                ceil(page.width * scale).toInt(),
-                ceil(page.height * scale).toInt()
-            )
-        }
+        cropPreviewTile = null
+        refreshCropPreviewTile()
         listener?.invoke(cropPreviewTile?.let(cache::get))
         requestMissingTiles()
+    }
+
+    private fun refreshCropPreviewTile(): Boolean {
+        if (cropPreviewListener == null || cropPreviewTile != null) return false
+        val document = layout ?: return false
+        val index = readingPosition()?.page ?: return false
+        val page = document.pages[index]
+        val scale = 512.0 / max(page.width, page.height)
+        cropPreviewTile = Tile(
+            index,
+            scale,
+            0,
+            0,
+            ceil(page.width * scale).toInt(),
+            ceil(page.height * scale).toInt()
+        )
+        return true
     }
 
     private fun requestMissingTiles() {
@@ -583,7 +586,13 @@ class PdfCanvasView @JvmOverloads constructor(
 
     private fun constrain() {
         layout?.let { viewport.constrain(it, width, height) }
+        // Resolve deferred previews only after the restored/reprojected page anchor is ready.
+        val previewReady = refreshCropPreviewTile()
         updateTiles()
+        if (previewReady) {
+            cropPreviewListener?.invoke(cropPreviewTile?.let(cache::get))
+            requestMissingTiles()
+        }
         invalidate()
         if (layout != null) onPositionChanged?.invoke()
     }

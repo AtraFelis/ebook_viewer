@@ -265,6 +265,15 @@ class ReaderUsabilityDeviceTest {
                 assertNull(field(activity, "settingsHomeDialog"))
                 val list = ui.views(requireNotNull(popup(activity)).contentView)
                     .filterIsInstance<ListView>().single()
+                for (mode in OrientationMode.entries) {
+                    val row = list.adapter.getView(
+                        mode.ordinal,
+                        null,
+                        list
+                    ) as android.widget.TextView
+                    assertTrue(row.compoundDrawablesRelative[0] != null)
+                }
+                assertOrientationIcon(activity, OrientationMode.entries[list.checkedItemPosition])
                 val portrait = activity.resources.configuration.orientation ==
                     android.content.res.Configuration.ORIENTATION_PORTRAIT
                 val target = if (portrait) OrientationMode.PORTRAIT else OrientationMode.LANDSCAPE
@@ -276,6 +285,10 @@ class ReaderUsabilityDeviceTest {
                 val list = ui.views(requireNotNull(popup(activity)).contentView)
                     .filterIsInstance<ListView>().single()
                 list.isEnabled
+            }
+            ui.onMain {
+                val list = requireNotNull(popup(activity)).contentView as ListView
+                assertOrientationIcon(activity, OrientationMode.entries[list.checkedItemPosition])
             }
             val old = activity
             ui.onMain { activity.recreate() }
@@ -293,6 +306,8 @@ class ReaderUsabilityDeviceTest {
             }
             ui.awaitReady(activity)
             ui.onMain {
+                val list = requireNotNull(popup(activity)).contentView as ListView
+                assertOrientationIcon(activity, OrientationMode.entries[list.checkedItemPosition])
                 assertNull(field(activity, "settingsHomeDialog"))
                 requireNotNull(popup(activity)).dismiss()
             }
@@ -313,6 +328,35 @@ class ReaderUsabilityDeviceTest {
 
     private fun popup(activity: Activity): android.widget.PopupWindow? =
         field(activity, "orientationPopup") as android.widget.PopupWindow?
+
+    private fun assertOrientationIcon(activity: Activity, mode: OrientationMode) {
+        val button = activity.findViewById<android.widget.ImageButton>(R.id.reader_orientation)
+        val expected = requireNotNull(activity.getDrawable(mode.iconResource())).mutate()
+        val actual = requireNotNull(button.drawable.constantState)
+            .newDrawable(activity.resources).mutate()
+        val accent = ReaderStyle(activity).accent
+        expected.setTint(accent)
+        actual.setTint(accent)
+        assertEquals(accent, button.imageTintList?.defaultColor)
+        // Grow both native vector caches beyond the already drawn 48dp button before comparing.
+        // A smaller target can reuse/downsample its existing cache, unlike a fresh resource.
+        val size = maxOf(256, button.width * 2)
+        val actualPixels = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val expectedPixels = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        try {
+            actual.setBounds(0, 0, size, size)
+            actual.draw(Canvas(actualPixels))
+            expected.setBounds(0, 0, size, size)
+            expected.draw(Canvas(expectedPixels))
+            assertTrue(
+                "Orientation $mode drawable differs from its resource",
+                actualPixels.sameAs(expectedPixels)
+            )
+        } finally {
+            actualPixels.recycle()
+            expectedPixels.recycle()
+        }
+    }
 
     private fun current(activity: Activity): AlertDialog? =
         field(activity, "settingsDialog") as AlertDialog?
@@ -391,6 +435,53 @@ class ReaderUsabilityDeviceTest {
             ui.await("Typed gap did not apply") { view.pageLayoutSettings().gap == 24 }
         } finally {
             ui.onMain { activity.finish() }
+        }
+    }
+
+    @Test
+    fun previewRegisteredBeforeSizeLoadsRestoredPageAndCanBeCancelled() {
+        ui.onMain {
+            // Exercise both a first layout and a later metadata update with an existing layout.
+            for (existingLayout in listOf(false, true)) {
+                var requests = emptyList<Tile>()
+                val view = PdfCanvasView(instrumentation.targetContext) { requests = it }
+                val pages = List(3) { PageSize(800, 1000) }
+                if (existingLayout) {
+                    view.layout(0, 0, 400, 800)
+                    view.setPages(pages)
+                    view.goToPage(2)
+                    view.layout(0, 0, 0, 0)
+                } else {
+                    view.restorePosition(ReadingPosition(2, 0.5, 0.5, 1.0))
+                }
+                view.setPages(pages)
+                val received = mutableListOf<Bitmap?>()
+                view.observeCropPreview { received.add(it) }
+                assertEquals(listOf<Bitmap?>(null), received)
+                view.layout(0, 0, 400, 800)
+                assertEquals(2, requireNotNull(view.readingPosition()).page)
+                val tile = requests.single { it.page == 2 && it.scale == 0.512 }
+                val bitmap = Bitmap.createBitmap(tile.width, tile.height, Bitmap.Config.ARGB_8888)
+                try {
+                    view.putTile(tile, bitmap)
+                    assertTrue(received.last() === bitmap)
+                    view.observeCropPreview(null)
+                    val count = received.size
+                    view.layout(0, 0, 500, 800)
+                    view.putTile(tile, bitmap)
+                    assertEquals(count, received.size)
+                    view.reset()
+                    // At 400px normal previews use 0.5, distinct from the 0.512 crop preview.
+                    view.layout(0, 0, 400, 800)
+                    view.observeCropPreview { received.add(it) }
+                    view.observeCropPreview(null)
+                    view.setPages(pages)
+                    assertFalse(requests.any { it.scale == 0.512 })
+                } finally {
+                    view.reset()
+                    bitmap.recycle()
+                }
+            }
         }
     }
 

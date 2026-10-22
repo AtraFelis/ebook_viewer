@@ -1,5 +1,23 @@
 # 2026-10-22 — 개인 사용 피드백 세 가지
 
+## 방향 상태 아이콘과 실제 리뷰 보완
+
+최종: 요청 아이콘/리뷰2개 보완 앱의 관련5개를 분할해 모두 성공했다. device-4에서 quickOrientation(아이콘 픽셀 완전 일치/tint/선택/재생성/복귀)·actualPreview 기존2개 성공 후 신규 취소 검사가 일반512px preview를 crop 전용 요청으로 오인해 실패했다. normal preview가0.5배이고 crop은0.512배가 되도록400px 화면 조건을 명시해 둘을 구분했고 assertion은 그대로 유지했다. device-final에서 신규1·큰 글꼴1(6조합)·일반 방향1, **3개/실패0·54.8초**를 완료했다. 최종 앱은 전체91개/장시간·프레임 성능/다른 API를 반복하지 않았다.
+
+초기 아이콘 검사의48px target은 이미 표시된 native vector cache를 축소해 fresh resource와 AA가 달랐다. 독립 drawable만으로도 차이가 남았다(device-2/3 실패). 15% 허용 오차 시도는 자동 승인 검토가 테스트 약화 위험으로 거절했으며 해당 검사 실행은 하지 않았다. 그 변경을 완전히 제거하고 두 벡터를 버튼보다 큰 동일 크기로 그려 캐시 크기를 맞췄다. **Bitmap.sameAs 완전 일치 조건과 실제 ImageButton tint 검사로 통과**했고 조건 완화/오류 억제는 최종 코드에 없다. test-build-2의 진단 문자열 줄바꿈 ktlint 실패도 수동 수정했다.
+
+최종 앱 f23ee0cf40cea40f42f05253379b1d4cf33e479b4a34f8be268f9b16c6b78b12, 계측 ae177ec8386fb796b48616c2333a658e4abd9904036db4e0882b3c010c45d6a0이다. 마지막 test-build-5 strict 계측/Lint/ktlint6초 성공·양 Lint 오류/경고0, JVM59개/실패·오류·건너뜀0이다. API33 개발용 앱만 사용했고 원래 글꼴1.1·앱/계측 중지·ADB 종료를 확인했다. 사용자 디자인128줄/해시28ef0cdc 보존, 새 의존성/개인 키/정식판 변경은 없다. CodeRabbit 완료 리뷰의 포함 allowance는0으로 표시돼 이번에 유료 리뷰나 반복 수동 호출을 추가하지 않는다. 같은 PR에 수정 push/스레드 답변 후 새 CI와 추가 실제 리뷰·사용자 병합은 구분한다.
+
+사용자 첨부의 자동 회전(두 화살표/기울어진 기기)·가로/세로 자물쇠를 네이티브 벡터로 구현했다. toolbar와 두 방향 목록은 기존 테마 accent(밝은 테마#285BC5/어두운 테마#88ACFF)를 사용한다. 저장 성공/초기 로드/재생성에 선택 상태를 반영하고 실패 때 확정 아이콘을 유지한다. 역방향은 같은 기기 모양과 기존 문구로 구분한다. 버튼48dp/드롭다운 유지·동작은 그대로다. 원본 첨부 이미지는 Git/외부에 올리지 않았다.
+
+CodeRabbit 실제 리뷰5614954864는 f803154 대상으로 지적2개를 게시했다. inline4348886932의 크기 준비 전 preview 구독 후 타일 생성 누락은 타당하다. 계산을 분리하고 constrain에서 원본 anchor 복원/재투영/경계 제한 뒤 생성·요청·캐시 알림을 처리했다. suggested fix의 layout 생성 직후 위치는 복원 전 페이지를 고를 수 있어 그대로 복사하지 않았다. 신규 회귀는 최초 pendingPages와 기존 layout의 크기 재준비, 복원된 뒤쪽 페이지 선택/비트맵 전달·취소/해제·reset을 검사한다. inline4348886951도 수용해 여백 전체 공통 적용과 원본 보존이 동시에 성립한다고 명시했다. 직전0b32355 원격 CI두 건 SUCCESS, 새 head의 원격 검증은 별도다.
+
+PC 첫 두 시도는 새 인자/함수 표현식 들여쓰기 ktlint 실패로 수동 수정했고, 세 번째는 벡터 fillType의 API24+ Lint 오류2개로 실패했다. min23을 올리거나 경고를 억제하지 않고 반대 winding 경로로 같은 구멍 모양을 구현했다. 네 번째 strict debug/계측/JVM/Lint/ktlint7초 통과, JVM59개는 세 번째 빌드에서 실제 실행 후 재사용이다. unsigned release/Lint/ktlint11초 통과, 양 Lint 오류/경고0이다. 개인 키·정식판은 사용하지 않았다.
+
+기기 첫 방향 검사1개는 새 픽셀 비교 assertion에서 실패했다. 기존 ImageButton drawable의 bounds/cache를 직접 바꾸지 않고 constantState의 독립 인스턴스로 기하를 비교하며 버튼의 실제 tint는 별도로 확인하도록 검사를 수정했다. 실패 로그는 보존한다. 검사의 후속 실제 결과/범위는 아래에 추가한다. 로그: orientation-reference-build[-2~-4].txt, orientation-reference-release.txt, orientation-reference-test-build.txt, orientation-reference-device[-2].txt (local-artifacts/무시 경로).
+
+아이콘 게시 확인: 0b32355e1db00d27acfb291396d47404f80699a9 일반 push·PR #31 OPEN/isDraft=false/원격head 일치로 ready for review 전환했다. 새 CI39786680886은 QUEUED, 실제 review/inline API는 아직 빈 배열이었다. f803154의 앞선 수동 요청이 진행 중이므로 아이콘 수정에 추가 수동 요청은 하지 않았다. 사용자 기능 수용/아이콘 승인은 완료했고 원격 CI·실제 리뷰 대응/사용자 병합은 남겨 둔다. 상태 기록만의 추가 push는 하지 않는다.
+
 최신 아이콘 승인/적용: 사용자가 “좋아 이걸로 해줘”로 사전 시안을 승인했다. reader_orientation.xml을 같은 경로·strokeWidth2/round cap/round join의 회전 화살표로 교체하고 버튼48dp/위치/색상 tint/동작은 보존했다. 저장해 둔 SVG와 Android path를 토큰 비교해 기하/선 일치를 확인했다. 새 의존성/다른 사용자 변경은 없다.
 
 `. ./scripts/android-env.ps1` 후 `./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck --dependency-verification strict --console=plain` 7초 성공·Lint 오류/경고0/정보6. 개발용 앱 -r 업데이트 후 기존 quickOrientationRestoresItsOwnRouteWithoutOpeningSettingsHome **1개/실패0·44.3초**를 확인했다. 단위/이전9개/전체91개/장시간·성능은 자원만 바꾼 이번에 반복하지 않았다. 로그 reader-orientation-icon-build.txt·reader-orientation-icon-device.txt(무시 경로), 로컬 앱6ef11855a6535516e27462da3f794014a4e0714ded4644e27b69ea9508d43a29/계측e6acd237e640a11eadd5568c558e98f3cadd6a705dbb3ac2e6015557c23d49db다. 원래 글꼴1.1 유지·앱/계측 force-stop/ADB 종료 확인. 정식판과 개인 키는 사용하지 않았다.

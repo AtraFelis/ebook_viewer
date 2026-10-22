@@ -359,6 +359,7 @@ class MainActivity : Activity() {
             if (isDestroyed) return@load
             result.onSuccess {
                 // AUTO preserves the platform's rotation policy across Activity recreation.
+                toolsPresentation.updateOrientation(it)
                 if (it != OrientationMode.AUTO) applyOrientation(it)
             }.onFailure { reportError(R.string.settings_error) }
         }
@@ -1068,7 +1069,11 @@ class MainActivity : Activity() {
                     )
                 val list = ListView(this).apply {
                     choiceMode = ListView.CHOICE_MODE_SINGLE
-                    adapter = readerListAdapter(labels.toList(), singleChoice = true)
+                    adapter = readerListAdapter(
+                        labels.toList(),
+                        singleChoice = true,
+                        icons = OrientationMode.entries.map { it.iconResource() }
+                    )
                     setItemChecked(mode.ordinal, true)
                     divider = null
                 }
@@ -1125,6 +1130,7 @@ class MainActivity : Activity() {
             settingsChildLoading = false
             result.onSuccess { mode ->
                 val style = ReaderStyle(this)
+                toolsPresentation.updateOrientation(mode)
                 val labels = listOf(
                     R.string.orientation_auto,
                     R.string.orientation_portrait,
@@ -1137,7 +1143,11 @@ class MainActivity : Activity() {
                 val list = ListView(this).apply {
                     id = R.id.quick_orientation_choices
                     choiceMode = ListView.CHOICE_MODE_SINGLE
-                    adapter = readerListAdapter(labels, singleChoice = true)
+                    adapter = readerListAdapter(
+                        labels,
+                        singleChoice = true,
+                        icons = OrientationMode.entries.map { it.iconResource() }
+                    )
                     setItemChecked(mode.ordinal, true)
                     divider = null
                     setBackgroundColor(style.surface)
@@ -1296,34 +1306,45 @@ class MainActivity : Activity() {
         )
     }
 
-    private fun readerListAdapter(labels: List<String>, singleChoice: Boolean = false) =
-        object : ArrayAdapter<String>(
-            this,
-            if (singleChoice) {
-                android.R.layout.simple_list_item_single_choice
-            } else {
-                android.R.layout.simple_list_item_1
-            },
-            labels
-        ) {
-            override fun getView(
-                position: Int,
-                convertView: View?,
-                parent: android.view.ViewGroup
-            ): View = super.getView(position, convertView, parent).apply {
-                val style = ReaderStyle(this@MainActivity)
-                minimumHeight = style.dp(64)
-                // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
-                layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
-                (this as TextView).apply {
-                    textSize = 16f
-                    setTextColor(style.text)
-                    isSingleLine = false
-                    includeFontPadding = true
+    private fun readerListAdapter(
+        labels: List<String>,
+        singleChoice: Boolean = false,
+        icons: List<Int>? = null
+    ) = object : ArrayAdapter<String>(
+        this,
+        if (singleChoice) {
+            android.R.layout.simple_list_item_single_choice
+        } else {
+            android.R.layout.simple_list_item_1
+        },
+        labels
+    ) {
+        override fun getView(
+            position: Int,
+            convertView: View?,
+            parent: android.view.ViewGroup
+        ): View = super.getView(position, convertView, parent).apply {
+            val style = ReaderStyle(this@MainActivity)
+            minimumHeight = style.dp(64)
+            // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
+            layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
+            (this as TextView).apply {
+                textSize = 16f
+                setTextColor(style.text)
+                isSingleLine = false
+                includeFontPadding = true
+                val icon = icons?.get(position)?.let {
+                    getDrawable(it)?.mutate()?.apply {
+                        setTint(style.accent)
+                        setBounds(0, 0, style.dp(24), style.dp(24))
+                    }
                 }
+                setCompoundDrawablesRelative(icon, null, null, null)
+                compoundDrawablePadding = style.dp(12)
             }
         }
+    }
 
     private fun beginSettingsChild(): AlertDialog? {
         val parent = settingsHomeDialog ?: return null
@@ -1465,6 +1486,7 @@ class MainActivity : Activity() {
     }
 
     private fun applyOrientation(mode: OrientationMode) {
+        toolsPresentation.updateOrientation(mode)
         val requested = when (mode) {
             OrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             OrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT

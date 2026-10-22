@@ -64,6 +64,10 @@ internal class ReaderToolsView(
         background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
         setOnClickListener { onOrientation() }
     }
+    fun updateOrientation(mode: OrientationMode) {
+        orientationButton.setImageResource(mode.iconResource())
+    }
+
     val bookmarks = action(R.string.bookmarks, onBookmarks)
     val readText = action(R.string.read_page_text, onReadText).apply {
         id = R.id.read_page_text
