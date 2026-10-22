@@ -1,8 +1,6 @@
 package dev.example.ebookviewer
 
 import android.app.Activity
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.os.Bundle
 import android.view.View
 import android.widget.SeekBar
@@ -10,6 +8,7 @@ import android.widget.SeekBar
 internal fun Activity.pageCropDialog(
     current: PageLayoutSettings,
     draft: Bundle? = null,
+    preview: PageCropPreview = PageCropPreview(this),
     apply: (PageLayoutSettings, (Boolean) -> Unit) -> Unit
 ): EditableSettingsForm {
     val style = ReaderStyle(this)
@@ -18,35 +17,7 @@ internal fun Activity.pageCropDialog(
     val values = intArrayOf(crop.left, crop.top, crop.right, crop.bottom)
     draft?.getIntArray("crop")?.takeIf { it.size == 4 && it.all { value -> value in 0..45 } }
         ?.copyInto(values)
-    val preview = object : View(this) {
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), style.dp(128))
-        }
-
-        override fun onDraw(canvas: Canvas) {
-            super.onDraw(canvas)
-            val pageWidth = minOf(width * 0.6f, height * 0.7f)
-            val pageHeight = height - style.dp(8).toFloat()
-            val left = (width - pageWidth) / 2
-            val top = style.dp(4).toFloat()
-            paint.style = Paint.Style.FILL
-            paint.color = style.accentSoft
-            canvas.drawRect(left, top, left + pageWidth, top + pageHeight, paint)
-            paint.color = style.surface
-            canvas.drawRect(
-                left + pageWidth * values[0] / 100,
-                top + pageHeight * values[1] / 100,
-                left + pageWidth * (100 - values[2]) / 100,
-                top + pageHeight * (100 - values[3]) / 100,
-                paint
-            )
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = style.dp(1).toFloat()
-            paint.color = style.accent
-            canvas.drawRect(left, top, left + pageWidth, top + pageHeight, paint)
-        }
-    }.apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
+    preview.crop = PageCrop(values[0], values[1], values[2], values[3])
     val sideLabels = listOf(
         R.string.crop_left,
         R.string.crop_top,
@@ -74,7 +45,7 @@ internal fun Activity.pageCropDialog(
                         getString(sideLabels[index]),
                         progress
                     )
-                    preview.invalidate()
+                    preview.crop = PageCrop(values[0], values[1], values[2], values[3])
                 }
 
                 override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
@@ -84,7 +55,7 @@ internal fun Activity.pageCropDialog(
         }
     }
     val reset = style.button(R.string.crop_reset) { sliders.forEach { it.progress = 0 } }
-    val controls = mutableListOf<View>(style.label(R.string.crop_description, 14f), preview)
+    val controls = mutableListOf<View>(style.label(R.string.crop_description, 14f))
     sliders.indices.forEach { index ->
         controls.add(labels[index])
         controls.add(sliders[index])
@@ -96,6 +67,7 @@ internal fun Activity.pageCropDialog(
         R.string.page_crop_settings,
         content,
         positive = R.string.apply_settings,
+        preview = preview,
         onConfirm = { dialog ->
             val selected = current.copy(crop = PageCrop(values[0], values[1], values[2], values[3]))
             saving.submit(dialog, content) { done -> apply(selected, done) }

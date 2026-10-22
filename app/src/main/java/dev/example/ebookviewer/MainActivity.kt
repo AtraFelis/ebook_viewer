@@ -59,7 +59,8 @@ class MainActivity : Activity() {
     private var settingsHomeDialog: AlertDialog? = null
     private var settingsChildLoading = false
     private var orientationSettingsOpen = false
-    private var orientationFromTools = false
+    private var orientationPopup: android.widget.PopupWindow? = null
+    private var quickOrientationOpen = false
     private enum class SettingsFormKind { BACKGROUND, DISPLAY, LAYOUT, CROP }
     private var settingsFormKind: SettingsFormKind? = null
     private var editableSettingsForm: EditableSettingsForm? = null
@@ -133,7 +134,9 @@ class MainActivity : Activity() {
                 updateDisplayWindow()
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
-                if (first) hideTools()
+                if (first) {
+                    if (quickOrientationOpen) showTools() else hideTools()
+                }
                 if (first) {
                     hintState.documentOpened()
                     updateReadingHint()
@@ -234,7 +237,7 @@ class MainActivity : Activity() {
             onScrubBegin = viewer::stopScrolling,
             onScrubPage = { requestPage(it, keepTools = true) },
             onPanLock = ::toggleHorizontalPanLock,
-            onOrientation = { showOrientationSettings(fromTools = true) }
+            onOrientation = ::showQuickOrientation
         )
         readerTools = toolsPresentation.view
         pageJumpButton = toolsPresentation.page
@@ -399,14 +402,12 @@ class MainActivity : Activity() {
                 }
             )
         }
-        if (savedInstanceState?.getBoolean("orientationFromTools") == true &&
-            savedInstanceState.getBoolean("orientationSettingsOpen")
-        ) {
-            showOrientationSettings(fromTools = true)
+        if (savedInstanceState?.getBoolean("quickOrientationOpen") == true) {
+            root.post { if (!isDestroyed) showQuickOrientation() }
         } else if (savedInstanceState?.getBoolean("settingsOpen") == true) {
             showSettings()
             if (savedInstanceState.getBoolean("orientationSettingsOpen")) {
-                showOrientationSettings(savedInstanceState.getBoolean("orientationFromTools"))
+                showOrientationSettings()
             } else {
                 val draft = savedInstanceState.getBundle("settingsDraft")
                 when (savedInstanceState.getString("settingsForm")) {
@@ -1048,20 +1049,11 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
-    private fun showOrientationSettings(fromTools: Boolean = false) {
-        if (isDestroyed || isFinishing) return
-        val parent = if (fromTools) {
-            if (!reading || settingsDialog != null || settingsChildLoading) return
-            settingsChildLoading = true
-            null
-        } else {
-            beginSettingsChild() ?: return
-        }
+    private fun showOrientationSettings() {
+        val parent = beginSettingsChild() ?: return
         orientationSettingsOpen = true
-        orientationFromTools = fromTools
         settings.load { result ->
-            if (isDestroyed || isFinishing || !orientationSettingsOpen) return@load
-            if (parent != null && !isSettingsParent(parent)) return@load
+            if (!isSettingsParent(parent)) return@load
             settingsChildLoading = false
             result.onSuccess { mode ->
                 var confirmed = mode
@@ -1108,24 +1100,96 @@ class MainActivity : Activity() {
                         }
                     }
                 }
-                if (parent != null) {
-                    showSettingsChild(parent, dialog) { orientationSettingsOpen = false }
-                } else {
-                    settingsDialog = dialog
-                    dialog.setOnDismissListener {
-                        if (settingsDialog === dialog) {
-                            settingsDialog = null
-                            orientationSettingsOpen = false
-                            orientationFromTools = false
-                            if (reading && loaded) showTools()
-                        }
-                    }
-                    dialog.window?.setWindowAnimations(0)
-                    dialog.show()
-                }
+                showSettingsChild(parent, dialog) { orientationSettingsOpen = false }
             }.onFailure {
                 orientationSettingsOpen = false
-                orientationFromTools = false
+                reportError(R.string.settings_error)
+            }
+        }
+    }
+
+    private fun showQuickOrientation() {
+        if (!reading ||
+            isDestroyed ||
+            isFinishing ||
+            settingsDialog != null ||
+            orientationPopup != null ||
+            settingsChildLoading
+        ) {
+            return
+        }
+        quickOrientationOpen = true
+        settingsChildLoading = true
+        settings.load { result ->
+            if (isDestroyed || isFinishing || !quickOrientationOpen) return@load
+            settingsChildLoading = false
+            result.onSuccess { mode ->
+                val style = ReaderStyle(this)
+                val labels = listOf(
+                    R.string.orientation_auto,
+                    R.string.orientation_portrait,
+                    R.string.orientation_landscape,
+                    R.string.orientation_reverse_portrait,
+                    R.string.orientation_reverse_landscape
+                ).map(::getString)
+                var confirmed = mode
+                var saving = false
+                val list = ListView(this).apply {
+                    id = R.id.quick_orientation_choices
+                    choiceMode = ListView.CHOICE_MODE_SINGLE
+                    adapter = readerListAdapter(labels, singleChoice = true)
+                    setItemChecked(mode.ordinal, true)
+                    divider = null
+                    setBackgroundColor(style.surface)
+                }
+                val popup = android.widget.PopupWindow(
+                    list,
+                    minOf(style.dp(300), root.width - style.dp(16)),
+                    minOf(style.dp(340), root.height / 2),
+                    true
+                ).apply {
+                    setBackgroundDrawable(style.shape(style.surface))
+                    elevation = style.dp(8).toFloat()
+                    isOutsideTouchable = true
+                    inputMethodMode = android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED
+                }
+                orientationPopup = popup
+                popup.setOnDismissListener {
+                    if (orientationPopup === popup) {
+                        orientationPopup = null
+                        quickOrientationOpen = false
+                    }
+                }
+                list.setOnItemClickListener { _, _, index, _ ->
+                    if (saving) return@setOnItemClickListener
+                    val selected = OrientationMode.entries[index]
+                    if (selected == confirmed) return@setOnItemClickListener
+                    saving = true
+                    list.isEnabled = false
+                    settings.save(selected) { saved ->
+                        if (isDestroyed || isFinishing) return@save
+                        saving = false
+                        list.isEnabled = true
+                        saved.onSuccess {
+                            confirmed = it
+                            list.setItemChecked(it.ordinal, true)
+                            saveReading()
+                            applyOrientation(it)
+                        }.onFailure {
+                            list.setItemChecked(confirmed.ordinal, true)
+                            reportError(R.string.settings_error)
+                        }
+                    }
+                }
+                showTools()
+                popup.showAsDropDown(
+                    toolsPresentation.orientationButton,
+                    0,
+                    style.dp(4),
+                    Gravity.END
+                )
+            }.onFailure {
+                quickOrientationOpen = false
                 reportError(R.string.settings_error)
             }
         }
@@ -1278,6 +1342,7 @@ class MainActivity : Activity() {
         settingsFormKind = kind
         editableSettingsForm = form
         showSettingsChild(parent, form.dialog) {
+            if (kind == SettingsFormKind.CROP) viewer.observeCropPreview(null)
             settingsFormKind = null
             editableSettingsForm = null
         }
@@ -1308,7 +1373,9 @@ class MainActivity : Activity() {
         if (!loaded || !reading || pendingLayoutWrites > 0) return
         val parent = beginSettingsChild() ?: return
         val generation = opening
-        val form = pageCropDialog(viewer.pageLayoutSettings(), draft) { selected, done ->
+        val preview = PageCropPreview(this)
+        viewer.observeCropPreview(preview::showPage)
+        val form = pageCropDialog(viewer.pageLayoutSettings(), draft, preview) { selected, done ->
             savePageLayoutSettings(selected, generation, done)
         }
         showEditableSettingsChild(parent, SettingsFormKind.CROP, form)
@@ -1372,13 +1439,16 @@ class MainActivity : Activity() {
     }
 
     private fun closeSettings() {
+        if (::viewer.isInitialized) viewer.observeCropPreview(null)
         val child = settingsDialog
         val parent = settingsHomeDialog
         settingsDialog = null
         settingsHomeDialog = null
         settingsChildLoading = false
         orientationSettingsOpen = false
-        orientationFromTools = false
+        orientationPopup?.dismiss()
+        orientationPopup = null
+        quickOrientationOpen = false
         settingsFormKind = null
         editableSettingsForm = null
         pendingLayoutDraft = null
@@ -1553,7 +1623,7 @@ class MainActivity : Activity() {
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)
-        outState.putBoolean("orientationFromTools", orientationFromTools)
+        outState.putBoolean("quickOrientationOpen", quickOrientationOpen)
         val form = editableSettingsForm
         if (form?.dialog?.isShowing == true) {
             outState.putString("settingsForm", settingsFormKind?.name)

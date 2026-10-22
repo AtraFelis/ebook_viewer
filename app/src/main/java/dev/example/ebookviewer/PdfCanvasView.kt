@@ -47,6 +47,38 @@ class PdfCanvasView @JvmOverloads constructor(
     private var pendingPages: List<PageSize>? = null
     private var pageLayout = PageLayoutSettings()
     private var renderingEnabled = true
+    private var cropPreviewTile: Tile? = null
+    private var cropPreviewListener: ((Bitmap?) -> Unit)? = null
+
+    /** Borrow one bounded original-page preview; the dialog must never mutate/recycle it. */
+    internal fun observeCropPreview(listener: ((Bitmap?) -> Unit)?) {
+        if (listener == null && cropPreviewListener == null) return
+        cropPreviewListener = listener
+        cropPreviewTile = if (listener == null) {
+            null
+        } else {
+            val document = layout ?: return
+            val index = readingPosition()?.page ?: return
+            val page = document.pages[index]
+            val scale = 512.0 / max(page.width, page.height)
+            Tile(
+                index,
+                scale,
+                0,
+                0,
+                ceil(page.width * scale).toInt(),
+                ceil(page.height * scale).toInt()
+            )
+        }
+        listener?.invoke(cropPreviewTile?.let(cache::get))
+        requestMissingTiles()
+    }
+
+    private fun requestMissingTiles() {
+        if (!renderingEnabled) return
+        val all = previews + requested + listOfNotNull(cropPreviewTile)
+        request(all.distinct().filter { cache.get(it) == null })
+    }
 
     // Opt-in aggregate instrumentation. Normal reading does not calculate coverage or retain traces.
     var onSharpnessDraw: ((SharpnessDraw) -> Unit)? = null
@@ -357,6 +389,9 @@ class PdfCanvasView @JvmOverloads constructor(
     fun pageForTextReading(): Int? = accessiblePageIndex()
 
     fun reset() {
+        cropPreviewListener?.invoke(null)
+        cropPreviewListener = null
+        cropPreviewTile = null
         stopBackgroundAnalysis(clearColors = true)
         applyOutsideColor(backgroundSettings.customColor)
         scroller.forceFinished(true)
@@ -504,6 +539,7 @@ class PdfCanvasView @JvmOverloads constructor(
 
     fun putTile(tile: Tile, bitmap: Bitmap) {
         cache.put(tile, bitmap)
+        if (tile == cropPreviewTile) cropPreviewListener?.invoke(bitmap)
         updateBackgroundPage()
         if (requested.all { cache.get(it) != null }) fallback = emptyList()
         invalidate()
@@ -700,7 +736,7 @@ class PdfCanvasView @JvmOverloads constructor(
                     ).toInt()
                 )
             }
-            request((previews + visible).distinct().filter { cache.get(it) == null })
+            requestMissingTiles()
         }
         updateBackgroundPage()
     }

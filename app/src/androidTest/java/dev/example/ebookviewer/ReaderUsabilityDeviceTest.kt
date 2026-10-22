@@ -208,8 +208,16 @@ class ReaderUsabilityDeviceTest {
             val parent = ui.onMain { requireNotNull(current(activity)) }
             click(activity, R.string.page_crop_settings)
             val crop = ui.onMain { requireNotNull(current(activity)) }
+            val preview = ui.onMain { crop.findViewById<PageCropPreview>(R.id.crop_page_preview) }
+            ui.await("Actual PDF preview not ready") {
+                PageCropPreview::class.java.getDeclaredField("bitmap").apply {
+                    isAccessible = true
+                }.get(preview) != null
+            }
             ui.onMain {
                 crop.findViewById<SeekBar>(R.id.crop_bottom).progress = 6
+                assertEquals(6, preview.crop.bottom)
+                assertEquals(PageCrop(), view.pageLayoutSettings().crop)
                 crop.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
             }
             ui.await("Crop did not save and return to settings") {
@@ -252,19 +260,20 @@ class ReaderUsabilityDeviceTest {
                 view.performClick()
                 activity.findViewById<View>(R.id.reader_orientation).performClick()
             }
-            ui.await("Quick orientation did not open") { current(activity)?.isShowing == true }
+            ui.await("Quick orientation did not open") { popup(activity)?.isShowing == true }
             ui.onMain {
                 assertNull(field(activity, "settingsHomeDialog"))
-                val list = ui.views(requireNotNull(current(activity)?.window).decorView)
+                val list = ui.views(requireNotNull(popup(activity)).contentView)
                     .filterIsInstance<ListView>().single()
                 val portrait = activity.resources.configuration.orientation ==
                     android.content.res.Configuration.ORIENTATION_PORTRAIT
                 val target = if (portrait) OrientationMode.PORTRAIT else OrientationMode.LANDSCAPE
                 list.performItemClick(null, target.ordinal, target.ordinal.toLong())
-                assertTrue(requireNotNull(current(activity)).isShowing)
+                assertTrue(requireNotNull(popup(activity)).isShowing)
+                assertNull(current(activity))
             }
             ui.await("Direction write did not finish") {
-                val list = ui.views(requireNotNull(current(activity)?.window).decorView)
+                val list = ui.views(requireNotNull(popup(activity)).contentView)
                     .filterIsInstance<ListView>().single()
                 list.isEnabled
             }
@@ -274,7 +283,7 @@ class ReaderUsabilityDeviceTest {
                 val latest = monitor.lastActivity
                 if (latest != null &&
                     latest !== old &&
-                    current(latest)?.window?.decorView?.hasWindowFocus() == true
+                    popup(latest)?.contentView?.hasWindowFocus() == true
                 ) {
                     activity = latest
                     true
@@ -285,11 +294,10 @@ class ReaderUsabilityDeviceTest {
             ui.awaitReady(activity)
             ui.onMain {
                 assertNull(field(activity, "settingsHomeDialog"))
-                val dialog = requireNotNull(current(activity))
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick()
+                requireNotNull(popup(activity)).dismiss()
             }
             ui.await("Quick orientation did not return to reader tools") {
-                current(activity) == null &&
+                popup(activity) == null &&
                     activity.findViewById<View>(R.id.reader_tools).isShown &&
                     activity.hasWindowFocus()
             }
@@ -302,6 +310,9 @@ class ReaderUsabilityDeviceTest {
 
     private fun field(activity: Activity, name: String): Any? =
         MainActivity::class.java.getDeclaredField(name).apply { isAccessible = true }.get(activity)
+
+    private fun popup(activity: Activity): android.widget.PopupWindow? =
+        field(activity, "orientationPopup") as android.widget.PopupWindow?
 
     private fun current(activity: Activity): AlertDialog? =
         field(activity, "settingsDialog") as AlertDialog?
@@ -331,5 +342,91 @@ class ReaderUsabilityDeviceTest {
         }
         assertTrue(latch.await(5, TimeUnit.SECONDS))
         return requireNotNull(result).getOrThrow()
+    }
+
+    @Test
+    fun gapEditorTapShowsNumericKeyboardAndKeepsApplyReachable() {
+        val activity = ui.launch()
+        try {
+            val view = ui.sample(activity)
+            ui.onMain { view.performClick() }
+            click(activity, R.string.settings)
+            click(activity, R.string.page_layout_settings)
+            val dialog = ui.onMain { requireNotNull(current(activity)) }
+            val input = ui.onMain {
+                dialog.findViewById<android.widget.EditText>(R.id.page_gap_input)
+            }
+            ui.await("Gap editor window not focused") { input.hasWindowFocus() }
+            ui.onMain {
+                val flags = requireNotNull(dialog.window).attributes.flags
+                assertEquals(
+                    0,
+                    flags and android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+                )
+                input.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, input.width, input.height),
+                    true
+                )
+            }
+            ui.tap(input)
+            ui.await("Gap editor did not show the keyboard") {
+                android.os.Build.VERSION.SDK_INT >= 30 &&
+                    dialog.window?.decorView?.rootWindowInsets
+                        ?.isVisible(android.view.WindowInsets.Type.ime()) == true
+            }
+            ui.onMain { input.selectAll() }
+            instrumentation.sendStringSync("24")
+            val apply = ui.onMain { dialog.getButton(AlertDialog.BUTTON_POSITIVE) }
+            ui.onMain {
+                apply.requestRectangleOnScreen(
+                    android.graphics.Rect(0, 0, apply.width, apply.height),
+                    true
+                )
+            }
+            ui.await("Apply button is clipped by keyboard") {
+                val bounds = android.graphics.Rect()
+                apply.getGlobalVisibleRect(bounds) && bounds.height() == apply.height
+            }
+            ui.onMain { apply.performClick() }
+            ui.await("Typed gap did not apply") { view.pageLayoutSettings().gap == 24 }
+        } finally {
+            ui.onMain { activity.finish() }
+        }
+    }
+
+    @Test
+    fun actualPreviewUsesBoundedWorkerTileAndMasksWithoutChangingSourcePixels() {
+        ui.onMain {
+            var requests = emptyList<Tile>()
+            val view = PdfCanvasView(instrumentation.targetContext) { requests = it }
+            view.layout(0, 0, 400, 800)
+            view.setPages(listOf(PageSize(800, 1000)))
+            var received: Bitmap? = null
+            view.observeCropPreview { received = it }
+            val tile = requests.single { it.scale == 0.512 }
+            assertTrue(tile.width <= 512 && tile.height <= 512)
+            val page = Bitmap.createBitmap(tile.width, tile.height, Bitmap.Config.ARGB_8888)
+            val output = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+            try {
+                page.eraseColor(Color.GREEN)
+                view.putTile(tile, page)
+                assertTrue(received === page)
+                val preview = PageCropPreview(instrumentation.targetContext)
+                preview.layout(0, 0, 400, 400)
+                preview.showPage(received)
+                preview.crop = PageCrop(bottom = 40)
+                preview.draw(Canvas(output))
+                assertEquals(Color.GREEN, output.getPixel(200, 100))
+                assertTrue(output.getPixel(200, 350) != Color.GREEN)
+                assertEquals(Color.GREEN, page.getPixel(page.width / 2, page.height - 1))
+                view.observeCropPreview(null)
+                assertFalse(requests.any { it.scale == 0.512 })
+                assertTrue(view.renderState().cachedBytes <= 64 * 1024 * 1024)
+            } finally {
+                view.reset()
+                page.recycle()
+                output.recycle()
+            }
+        }
     }
 }

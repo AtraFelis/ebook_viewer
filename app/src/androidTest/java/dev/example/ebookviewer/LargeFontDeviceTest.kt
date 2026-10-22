@@ -133,7 +133,11 @@ class LargeFontDeviceTest {
                 dialog = settingsDialog(activity)
                 dialog !== previous && dialog?.isShowing == true
             }
-            checkControls(requireNotNull(requireNotNull(dialog).window).decorView)
+            try {
+                checkControls(requireNotNull(requireNotNull(dialog).window).decorView)
+            } catch (failure: AssertionError) {
+                throw AssertionError("Settings section=${activity.getString(label)}", failure)
+            }
             ui.onMain { requireNotNull(dialog).dismiss() }
             ui.await("Subsettings did not return to parent") {
                 settingsDialog(activity) === previous

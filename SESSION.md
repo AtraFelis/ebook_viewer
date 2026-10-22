@@ -4,6 +4,8 @@
 
 ## 현재 진행 — 개인 사용 피드백: 배경색·방향·여백
 
+최신 보완: 초기b785042는 Draft PR #31로 게시/첨부했고 아직 CodeRabbit을 호출하지 않았다. 자동 배경색은 사용자 “이제 깜빡임 없어”로 수용했다. 방향은 작은 드롭다운, 여백은 실제 PDF 고정 미리보기로 바꾸고 추가 보고된 간격 숫자 키패드의 공통 Window 차단을 수정했다. 보완 앱25개 통과 뒤 큰 글꼴200% 가로에서 미리보기 높이 회귀를 확인해 수정했다. **최종 앱의 관련9개/실패0·116.4초**(새7/큰 글꼴6조합1/일반방향1), strict debug/계측·unsigned release·단위59개/양 Lint0/0·ktlint 통과다. 최종 app beb69c01/계측e6acd237 설치본 해시 일치·API33·글꼴1.1·두 앱 중지/ADB0 확인. NotificationShade 포커스 두 실패와 실제 높이 회귀/수정은 이력에 보존했다. 아래24개/기기 분리 당시 해시 미확인은 초기 앱의 이력이다. 새 최종 UI 사용자 수용은 다시 요청/대기이며 정식판/개인 키는 사용하지 않았다.
+
 현재 체크아웃은 PR #30 사용자 병합 main b3acea0을 ff-only 연결한 codex/reader-background-orientation-crop이다. [계획](docs/plan/reader-usability-follow-up.md)/[ADR0018](docs/adr/0018-document-crop-and-reading-records-v4.md)대로 자동 배경색 미준비 시 직전 색 유지, 제목 오른쪽 방향 빠른 접근, 문서 전체 공통 원본 보존 여백0~45%/네 방향을 구현했다. 기록v4는v1~v3와 원본 앵커·북마크/줌을 보존한다. 새 의존성/개인 키 접근/정식판 설치 변경은 없다.
 
 strict debug/계측/unsigned release·단위59개 실제 실행·양 Lint(debug0/0/info6·release0/0/info4)·ktlint 통과. 새 합성5개와 기존 관련19개, **고유24개 최종 성공**을 분할 확인했다. 추가로 새 방향 아이콘/여백 슬라이더까지 확장한 기존 큰 글꼴1개(6조합) 재통과·최종 빌드16초다. 첫 방향 검사1개 실패는 Dialog dismiss 콜백 직전 검사였으며 조건/포커스 복귀 대기를 보완했고 앱 수정 없이 재통과했다. 전체91개/20분/성능 재측정은 하지 않았다. [실제 명령·한계](docs/history/2026-10-22-05-reader-usability.md).
