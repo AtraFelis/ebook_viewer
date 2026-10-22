@@ -47,7 +47,7 @@ JUnit4.13.2(EPL-1.0)와 Hamcrest1.3(New BSD/3-clause)는 단위/기기 검사 �
 ## 공개 배포 전에 남은 결정
 
 - 저장소 자체의 LICENSE가 아직 없다. 제3자 Apache-2.0 고지는 앱 자체를 Apache-2.0으로 허가하는 선언이 아니다. 공개 라이선스 선택은 사용자 결정 후 별도로 반영한다.
-- 2026-10-22 사용자가 첨부한 아이콘을 최종 선택했다. 원본은 [선택 아이콘](design-assets/selected-launcher-icon.png)에 보존했다. 런처 리소스 적용과 배포용 출처/권리 기록 정리는 후속이며, 기존 디자인 탐색안을 임의로 적용하지 않는다.
+- 2026-10-22 사용자가 첨부한 아이콘을 최종 선택했고 일반/adaptive/단색 테마 런처 리소스로 적용했다. 원본 [PNG](design-assets/selected-launcher-icon.png)와 대응 [SVG](design-assets/selected-launcher-icon.svg)를 보존하며 APK에는 vector만 넣는다. 출처는 사용자가 선택한 별도 디자인 작업의 자체 SVG 시안이다. 프로젝트 공개 라이선스 결정은 별도이며 선택/적용을 모든 법적 권리 검증으로 확대하지 않는다. [검증 범위](history/2026-10-22-03-launcher-icon.md).
 - applicationId/제품 버전 정책과 release 서명·키 보관/업데이트 방식을 정해야 한다. 현재 debug APK는 개발용, profile APK는 비디버그 계측용이지만 debug 키 서명이며 출시물이 아니다. release는 아직 서명 설정이 없다.
 - release용 버전·서명·최적화 설정을 결정한 다음 해당 **실제 release 산출물**의 설치/업데이트·기능·서명/고지/개인 데이터 제외를 다시 확인한다. debug 통과를 미생성 release의 검증으로 바꾸지 않는다.
 - 외부 배포/스토어 등록·개인정보 안내·대상 API/기기 확장은 현재 개인용 범위와 별도로 결정한다. 실제 게시/릴리스는 사용자 승인 전 진행하지 않는다.

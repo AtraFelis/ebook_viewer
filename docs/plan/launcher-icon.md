@@ -1,0 +1,17 @@
+# 선택 아이콘의 Android 런처 적용
+
+2026-10-22 사용자 승인: 선택한 파란 배경/흰 종이 아이콘을 앱에 적용한다. PR #28 사용자 병합main a58b020을 현재 체크아웃에 ff-only 연결하고 codex/launcher-icon을 사용한다. 사용자 docs/design.md 변경과 기존 미게시 상태 기록을 보존한다.
+
+## 구현과 검증
+
+- 선택 PNG와 기존 SVG 미리보기의 SHA-256 일치를 확인했다. 대응하는 SVG 원본을 함께 보존하고 같은 곡선/도형/색을 Android vector drawable로 옮긴다. 새 그림 생성이나 디자인 변경은 하지 않는다.
+- API23~25용 일반 아이콘과 API26+용 adaptive icon을 제공한다. 배경/전경을 분리하고 adaptive의 108dp 레이어 안 중앙72dp에서 원래 구도가 보이게 조정한다. 종이는 바깥 여유 영역까지 연장해 상하로 이어지는 디자인을 유지한다. 핵심 본문/위치 표시는 중앙66dp 안전 원 안에 배치한다. 원형/둥근 사각형 마스크와 작은 크기 미리보기를 확인한다.
+- Manifest의 launcher icon만 새 리소스로 연결한다. 앱 내 기능/읽기 동작/기록/패키지명/버전/서명 정책·런타임 의존성을 변경하지 않는다. 원래 색상안을 기본으로 적용한다. 첫 Lint의 MonochromeLauncherIcon 지적에 따라 시스템 테마용 단색 리소스도 동일 도형에서 파생한다. 종이 안 본문/위치 표시를 투명 구멍으로 보존하며 새 디자인안을 만들거나 Lint를 억제하지 않는다.
+- strict 빌드·Lint·ktlint와 APK의 manifest/아이콘 리소스·서명을 확인한다. 낮은 영향의 자산 변경이므로 신규 앱 테스트/전체91개/20분 검사를 추가하지 않는다. 연결 기기가 준비돼 있으면 동일 서명 업데이트와 앱 실행만 짧게 확인하고 앱/ADB를 중지한다. 기기 검증과 PC 미리보기의 범위를 구분한다.
+- SESSION/CHECKLIST/history에 실제 결과·한계를 기록하고 별도 PR로 게시한다. 최신 구현/검증을 모은 뒤 CodeRabbit을 한 번 요청하며 한도 응답을 실제 리뷰로 세지 않는다. 사용자 병합과 실제 release는 별도다.
+
+공식 기준: [Android adaptive icons](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive). 원본 PNG/SVG는 개발 기록에만 보존하고 APK에는 vector 리소스만 포함한다.
+
+## 실제 결과
+
+일반/중앙 adaptive를 원본 SVG와 같은1254px로 렌더한 픽셀 차이0, 장식 최대 반경443.61<안전 원574.75, 원형/둥근 사각형/48·32px/단색 테마 미리보기를 확인했다. 첫 Lint의 단색 누락과 다음 실행의 긴 단색 compound path 지적을 해결했다. 단색은 짧은 evenOdd clip 교집합으로 구멍을 보존한다. 최종 strict 빌드·단위·Lint·ktlint7초 성공(단위 캐시 재사용). APK 서명/자원/고지와 API33 -r 설치/실행/해시·글꼴·앱/ADB 종료를 확인했다. 실제 런처 화면 사용자 수용/다른 API 기기/전체 기능 재검사는 미실행이다. [실행 이력](../history/2026-10-22-03-launcher-icon.md).

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1254" height="1254" viewBox="0 0 1254 1254">
+<title>Ebook Viewer — parallel flowing paper</title>
+<rect width="1254" height="1254" fill="#72ACE9"/>
+<path fill="#FFFFFF" d="M382 0 C382 100 355 155 355 285 C355 440 409 500 409 650 C409 780 367 910 367 1100 C367 1170 382 1210 382 1254 L872 1254 C872 1210 857 1170 857 1100 C857 910 899 780 899 650 C899 500 845 440 845 285 C845 155 872 100 872 0 Z"/>
+<g fill="#4086EC">
+<rect x="434" y="275" width="318" height="42" rx="21"/>
+<rect x="440" y="772" width="312" height="42" rx="21"/>
+<rect x="835" y="635" width="30" height="30" rx="4" transform="rotate(45 850 650)"/>
+</g>
+<g fill="#A3C8F2">
+<rect x="439" y="354" width="362" height="42" rx="21"/>
+<rect x="441" y="427" width="364" height="42" rx="21"/>
+<rect x="443" y="498" width="236" height="42" rx="21"/>
+<circle cx="463" cy="650" r="8"/><circle cx="495" cy="650" r="8"/><circle cx="527" cy="650" r="8"/><circle cx="559" cy="650" r="8"/><circle cx="591" cy="650" r="8"/><circle cx="623" cy="650" r="8"/><circle cx="655" cy="650" r="8"/><circle cx="687" cy="650" r="8"/><circle cx="719" cy="650" r="8"/><circle cx="751" cy="650" r="8"/><circle cx="783" cy="650" r="8"/>
+<rect x="442" y="849" width="362" height="42" rx="21"/>
+<rect x="444" y="921" width="363" height="42" rx="21"/>
+<rect x="446" y="990" width="228" height="42" rx="21"/>
+</g></svg>
