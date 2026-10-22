@@ -32,7 +32,7 @@ object ReadingRecordsCodec {
         val data = DataInputStream(input)
         require(data.readInt() == MAGIC) { "Unsupported reading records" }
         val version = data.readInt()
-        require(version in 1..3) { "Unsupported reading records" }
+        require(version in 1..4) { "Unsupported reading records" }
         val count = data.readInt()
         require(count in 0..10_000)
         val records = List(count) {
@@ -59,6 +59,16 @@ object ReadingRecordsCodec {
                             data.readUnsignedByte().also { require(it in 0..1) } == 1
                         } else {
                             false
+                        },
+                        if (version >= 4) {
+                            PageCrop(
+                                data.readUnsignedByte(),
+                                data.readUnsignedByte(),
+                                data.readUnsignedByte(),
+                                data.readUnsignedByte()
+                            )
+                        } else {
+                            PageCrop()
                         }
                     )
                 } else {
@@ -74,7 +84,7 @@ object ReadingRecordsCodec {
         require(records.size <= 10_000 && records.map { it.uri }.distinct().size == records.size)
         val data = DataOutputStream(output)
         data.writeInt(MAGIC)
-        data.writeInt(3)
+        data.writeInt(4)
         data.writeInt(records.size)
         for (record in records) {
             data.writeUTF(record.uri)
@@ -91,6 +101,12 @@ object ReadingRecordsCodec {
             data.writeUTF(record.pageLayout.mode.name)
             data.writeInt(record.pageLayout.gap)
             data.writeByte(if (record.pageLayout.horizontalPanLocked) 1 else 0)
+            record.pageLayout.crop.let {
+                data.writeByte(it.left)
+                data.writeByte(it.top)
+                data.writeByte(it.right)
+                data.writeByte(it.bottom)
+            }
         }
         data.flush()
     }

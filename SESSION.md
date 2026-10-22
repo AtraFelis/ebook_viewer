@@ -2,7 +2,19 @@
 
 최종 갱신: 2026-10-22 (Asia/Seoul)
 
-## 현재 진행 — 개인용 정식판 빌드·서명 준비
+## 현재 진행 — 개인 사용 피드백: 배경색·방향·여백
+
+현재 체크아웃은 PR #30 사용자 병합 main b3acea0을 ff-only 연결한 codex/reader-background-orientation-crop이다. [계획](docs/plan/reader-usability-follow-up.md)/[ADR0018](docs/adr/0018-document-crop-and-reading-records-v4.md)대로 자동 배경색 미준비 시 직전 색 유지, 제목 오른쪽 방향 빠른 접근, 문서 전체 공통 원본 보존 여백0~45%/네 방향을 구현했다. 기록v4는v1~v3와 원본 앵커·북마크/줌을 보존한다. 새 의존성/개인 키 접근/정식판 설치 변경은 없다.
+
+strict debug/계측/unsigned release·단위59개 실제 실행·양 Lint(debug0/0/info6·release0/0/info4)·ktlint 통과. 새 합성5개와 기존 관련19개, **고유24개 최종 성공**을 분할 확인했다. 추가로 새 방향 아이콘/여백 슬라이더까지 확장한 기존 큰 글꼴1개(6조합) 재통과·최종 빌드16초다. 첫 방향 검사1개 실패는 Dialog dismiss 콜백 직전 검사였으며 조건/포커스 복귀 대기를 보완했고 앱 수정 없이 재통과했다. 전체91개/20분/성능 재측정은 하지 않았다. [실제 명령·한계](docs/history/2026-10-22-05-reader-usability.md).
+
+개발용.p0 앱만 -r 설치·검사했고 최종 호스트는 글꼴1.1 유지/앱·계측 force-stop/ADB 종료를 확인했다. 이후 설치본 해시 재대조 때는 기기가 분리되어 재확인하지 못했다. 사용자 디자인128줄/SHA25628ef0cdc는 보존/커밋 제외한다. 사용자에게 개발용 PDF Viewer의 새 기능 수용을 요청했고 응답은 아직 대기다. 다음은 이 묶음 PR/CI·실제 CodeRabbit와 사용자 수용/병합이며 정식 업데이트 서명은 별도 로컬 절차다.
+
+## 앞선 진행 — 개인용 정식판 빌드·서명 준비
+
+최신 확인: PR #30 MERGED b3acea0c701618287ebd59fa728fbc287883d903, CI39735181505/39735168394 모두SUCCESS다. 실제 review/inline API는 빈 배열이므로 CodeRabbit 체크 성공을 완료 리뷰로 세지 않는다. 아래 OPEN/진행 중 표현은 당시 기록이다. 개인용 키/설치의 실제 성공은 비밀번호를 받거나 임의로 파일을 열어 확인하지 않았다.
+
+게시 확인: 5b90164c0e2e838a9137cf6c82d15606cbf01620 일반 push·[PR #30](https://github.com/AtraFelis/ebook_viewer/pull/30) 생성/첨부(OPEN/base main). CI39735181505/39735168394 진행 중이다. 수동 요청6334472989 한 번에 봇6334474290 Review triggered·요약6334469491의21파일 실제 처리 중을 확인했다. 아직 완료 리뷰 API는 비어 있어 완료로 세지 않는다. 리뷰 중 상태 기록만의 재push/중복 요청/자동 예약/에이전트 병합은 하지 않는다. 실제 개인용 키 생성은 사용자 로컬 마스킹 입력 단계로 남겨 두고 기존 앱/휴대폰은 사용하지 않았다.
 
 2026-10-22 사용자는 정식판을 새 기록/설정으로 시작하고 코드 라이선스는 보류하기로 했다. main973f784 기반 현재 체크아웃 codex/release-preparation에서 [계획](docs/plan/personal-release.md)·[ADR0017](docs/adr/0017-personal-release-identity-and-signing.md)을 반영했다. release ID dev.example.ebookviewer, debug/profile .p0 ID 유지, 버전0.1.0/code2(gradle.properties), debug -dev/profile -profile이다. 기존 설치 앱/기록을 제거하거나 새 APK를 설치하지 않았다. 사용자 docs/design.md128줄 변경은 보존/커밋 제외한다.
 

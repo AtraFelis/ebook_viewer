@@ -69,7 +69,10 @@ class PdfCanvasView @JvmOverloads constructor(
         pageLayout = settings
         scroller.forceFinished(true)
         val pages = layout?.pages ?: return
-        if (previous.mode == settings.mode && previous.gap == settings.gap) {
+        if (previous.mode == settings.mode &&
+            previous.gap == settings.gap &&
+            previous.crop == settings.crop
+        ) {
             // A pan policy change must not reproject or recenter the current page anchor.
             layout = DocumentLayout(pages, settings)
             invalidate()
@@ -95,9 +98,8 @@ class PdfCanvasView @JvmOverloads constructor(
     private val commitBackgroundPage = Runnable {
         selectedBackgroundPage = backgroundCandidate
         analyzingPreview = null
-        applyOutsideColor(
-            backgroundColors[selectedBackgroundPage] ?: backgroundSettings.customColor
-        )
+        // A missing result means "not ready", not extraction failure. Keep the last visible color.
+        backgroundColors[selectedBackgroundPage]?.let(::applyOutsideColor)
         analyzeBackgroundPreview()
     }
 
@@ -381,14 +383,15 @@ class PdfCanvasView @JvmOverloads constructor(
             val centerX = (width / 2.0 - viewport.x) / viewport.zoom
             val centerY = (height / 2.0 - viewport.y) / viewport.zoom
             val page = previous.pageAt(centerY)
-            val fractionX = (centerX - previous.left(page)) / previous.pageWidth(page)
+            val fractionX = previous.originalX(page, centerX)
             val offsetY = centerY - previous.tops[page]
-            val fractionY = (offsetY / previous.pageHeight(page)).coerceIn(0.0, 1.0)
+            val pageBottom = previous.tops[page] + previous.pageHeight(page)
+            val fractionY = previous.originalY(page, centerY.coerceAtMost(pageBottom))
             val gapOffset = (offsetY - previous.pageHeight(page)).coerceAtLeast(0.0)
             val document = requireNotNull(layout)
             viewport.x = width / 2.0 -
-                (document.left(page) + fractionX * document.pageWidth(page)) * viewport.zoom
-            val projectedY = document.tops[page] + fractionY * document.pageHeight(page) + gapOffset
+                document.pageX(page, fractionX) * viewport.zoom
+            val projectedY = document.pageY(page, fractionY) + gapOffset
             viewport.y = height / 2.0 - projectedY * viewport.zoom
             constrain()
             return
@@ -406,12 +409,13 @@ class PdfCanvasView @JvmOverloads constructor(
             val document = requireNotNull(layout)
             val page = saved.getInt("page").coerceIn(document.pages.indices)
             val centerX = if (saved.containsKey("fractionX")) {
-                document.left(page) + saved.getDouble("fractionX") * document.pageWidth(page)
+                document.pageX(page, saved.getDouble("fractionX"))
             } else {
                 saved.getDouble("centerX")
             }
             val centerY = if (saved.containsKey("fractionY")) {
-                document.tops[page] + saved.getDouble("fractionY") * document.pageHeight(page)
+                document.pageY(page, saved.getDouble("fractionY"))
+                    .coerceIn(document.tops[page], document.tops[page] + document.pageHeight(page))
             } else {
                 saved.getDouble("centerY")
             }
@@ -429,6 +433,9 @@ class PdfCanvasView @JvmOverloads constructor(
             putString("pageSizeMode", pageLayout.mode.name)
             putInt("pageGap", pageLayout.gap)
             putBoolean("horizontalPanLocked", pageLayout.horizontalPanLocked)
+            pageLayout.crop.let {
+                putIntArray("pageCrop", intArrayOf(it.left, it.top, it.right, it.bottom))
+            }
             putDouble("zoom", viewport.zoom)
             putDouble("centerX", (width / 2.0 - viewport.x) / viewport.zoom)
             putDouble("centerY", (height / 2.0 - viewport.y) / viewport.zoom)
@@ -448,10 +455,14 @@ class PdfCanvasView @JvmOverloads constructor(
         val centerX = (width / 2.0 - viewport.x) / viewport.zoom
         val centerY = (height / 2.0 - viewport.y) / viewport.zoom
         val page = document.pageAt(centerY)
+        val boundedY = centerY.coerceIn(
+            document.tops[page],
+            document.tops[page] + document.pageHeight(page)
+        )
         return ReadingPosition(
             page,
-            (centerX - document.left(page)) / document.pageWidth(page),
-            ((centerY - document.tops[page]) / document.pageHeight(page)).coerceIn(0.0, 1.0),
+            document.originalX(page, centerX),
+            document.originalY(page, boundedY).coerceIn(0.0, 1.0),
             viewport.zoom
         )
     }
@@ -479,7 +490,10 @@ class PdfCanvasView @JvmOverloads constructor(
                     saved.getBoolean("horizontalPanLocked")
                 } else {
                     pageLayout.horizontalPanLocked
-                }
+                },
+                saved.getIntArray("pageCrop")?.let {
+                    PageCrop(it[0], it[1], it[2], it[3])
+                } ?: pageLayout.crop
             )
         } else {
             pageLayout
@@ -743,12 +757,14 @@ class PdfCanvasView @JvmOverloads constructor(
         val document = layout ?: return
         val left = viewport.x + document.left(tile.page) * viewport.zoom
         val top = viewport.y + document.tops[tile.page] * viewport.zoom
+        val sourceLeft = viewport.x + document.sourceLeft(tile.page) * viewport.zoom
+        val sourceTop = viewport.y + document.sourceTop(tile.page) * viewport.zoom
         val ratio = viewport.zoom * document.scale(tile.page) / tile.scale
         destination.set(
-            (left + tile.x * ratio).toFloat(),
-            (top + tile.y * ratio).toFloat(),
-            (left + (tile.x + tile.width) * ratio).toFloat(),
-            (top + (tile.y + tile.height) * ratio).toFloat()
+            (sourceLeft + tile.x * ratio).toFloat(),
+            (sourceTop + tile.y * ratio).toFloat(),
+            (sourceLeft + (tile.x + tile.width) * ratio).toFloat(),
+            (sourceTop + (tile.y + tile.height) * ratio).toFloat()
         )
         val checkpoint = canvas.save()
         canvas.clipRect(

@@ -59,14 +59,17 @@ class MainActivity : Activity() {
     private var settingsHomeDialog: AlertDialog? = null
     private var settingsChildLoading = false
     private var orientationSettingsOpen = false
-    private enum class SettingsFormKind { BACKGROUND, DISPLAY, LAYOUT }
+    private var orientationFromTools = false
+    private enum class SettingsFormKind { BACKGROUND, DISPLAY, LAYOUT, CROP }
     private var settingsFormKind: SettingsFormKind? = null
     private var editableSettingsForm: EditableSettingsForm? = null
     private var pendingLayoutDraft: Bundle? = null
+    private var pendingCropDraft: Bundle? = null
     private var pendingLayoutWrites = 0
     private lateinit var readingHintLabel: TextView
     private val hintState get() = (application as ReaderApplication).readingHint
     private var documentLayoutSetting: Button? = null
+    private var documentCropSetting: Button? = null
     private var bindPageNumberSetting: ((Boolean) -> Unit)? = null
     private var navigationDialog: AlertDialog? = null
     private var pageTextDialog: AlertDialog? = null
@@ -137,6 +140,10 @@ class MainActivity : Activity() {
                     pendingLayoutDraft?.let { draft ->
                         pendingLayoutDraft = null
                         showPageLayoutSettings(draft)
+                    }
+                    pendingCropDraft?.let { draft ->
+                        pendingCropDraft = null
+                        showPageCropSettings(draft)
                     }
                 }
                 applyPendingNavigation()
@@ -226,7 +233,8 @@ class MainActivity : Activity() {
             onDismiss = ::hideTools,
             onScrubBegin = viewer::stopScrolling,
             onScrubPage = { requestPage(it, keepTools = true) },
-            onPanLock = ::toggleHorizontalPanLock
+            onPanLock = ::toggleHorizontalPanLock,
+            onOrientation = { showOrientationSettings(fromTools = true) }
         )
         readerTools = toolsPresentation.view
         pageJumpButton = toolsPresentation.page
@@ -391,16 +399,21 @@ class MainActivity : Activity() {
                 }
             )
         }
-        if (savedInstanceState?.getBoolean("settingsOpen") == true) {
+        if (savedInstanceState?.getBoolean("orientationFromTools") == true &&
+            savedInstanceState.getBoolean("orientationSettingsOpen")
+        ) {
+            showOrientationSettings(fromTools = true)
+        } else if (savedInstanceState?.getBoolean("settingsOpen") == true) {
             showSettings()
             if (savedInstanceState.getBoolean("orientationSettingsOpen")) {
-                showOrientationSettings()
+                showOrientationSettings(savedInstanceState.getBoolean("orientationFromTools"))
             } else {
                 val draft = savedInstanceState.getBundle("settingsDraft")
                 when (savedInstanceState.getString("settingsForm")) {
                     SettingsFormKind.BACKGROUND.name -> showBackgroundSettings(draft)
                     SettingsFormKind.DISPLAY.name -> showDisplaySettings(draft)
                     SettingsFormKind.LAYOUT.name -> pendingLayoutDraft = draft ?: Bundle()
+                    SettingsFormKind.CROP.name -> pendingCropDraft = draft ?: Bundle()
                 }
             }
         }
@@ -831,6 +844,7 @@ class MainActivity : Activity() {
             loaded && reading && pendingLayoutWrites == 0
         )
         documentLayoutSetting?.isEnabled = loaded && reading && pendingLayoutWrites == 0
+        documentCropSetting?.isEnabled = loaded && reading && pendingLayoutWrites == 0
     }
 
     private fun showPageText(selectedPage: Int? = null) {
@@ -1016,7 +1030,7 @@ class MainActivity : Activity() {
     }
 
     private fun showSettings() {
-        if (settingsDialog != null || isDestroyed || isFinishing) return
+        if (settingsDialog != null || settingsChildLoading || isDestroyed || isFinishing) return
         val dialog = readerFormDialog(
             R.string.reader_settings_title,
             settingsControls(),
@@ -1034,11 +1048,20 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
-    private fun showOrientationSettings() {
-        val parent = beginSettingsChild() ?: return
+    private fun showOrientationSettings(fromTools: Boolean = false) {
+        if (isDestroyed || isFinishing) return
+        val parent = if (fromTools) {
+            if (!reading || settingsDialog != null || settingsChildLoading) return
+            settingsChildLoading = true
+            null
+        } else {
+            beginSettingsChild() ?: return
+        }
         orientationSettingsOpen = true
+        orientationFromTools = fromTools
         settings.load { result ->
-            if (!isSettingsParent(parent)) return@load
+            if (isDestroyed || isFinishing || !orientationSettingsOpen) return@load
+            if (parent != null && !isSettingsParent(parent)) return@load
             settingsChildLoading = false
             result.onSuccess { mode ->
                 var confirmed = mode
@@ -1085,9 +1108,24 @@ class MainActivity : Activity() {
                         }
                     }
                 }
-                showSettingsChild(parent, dialog) { orientationSettingsOpen = false }
+                if (parent != null) {
+                    showSettingsChild(parent, dialog) { orientationSettingsOpen = false }
+                } else {
+                    settingsDialog = dialog
+                    dialog.setOnDismissListener {
+                        if (settingsDialog === dialog) {
+                            settingsDialog = null
+                            orientationSettingsOpen = false
+                            orientationFromTools = false
+                            if (reading && loaded) showTools()
+                        }
+                    }
+                    dialog.window?.setWindowAnimations(0)
+                    dialog.show()
+                }
             }.onFailure {
                 orientationSettingsOpen = false
+                orientationFromTools = false
                 reportError(R.string.settings_error)
             }
         }
@@ -1133,6 +1171,12 @@ class MainActivity : Activity() {
             }
         }
         documentLayoutSetting = layoutButton
+        val cropButton = Button(this).apply {
+            setText(R.string.page_crop_settings)
+            isEnabled = loaded && reading && pendingLayoutWrites == 0
+            setOnClickListener { showPageCropSettings() }
+        }
+        documentCropSetting = cropButton
         val backgroundButton = Button(this).apply {
             setText(R.string.background_settings)
             setOnClickListener {
@@ -1171,7 +1215,7 @@ class MainActivity : Activity() {
                 binding = false
             }
         }
-        listOf(orientationButton, displayButton, layoutButton, backgroundButton)
+        listOf(orientationButton, displayButton, layoutButton, cropButton, backgroundButton)
             .forEach(style::styleSettingButton)
         return readerFormBody(
             style.label(R.string.reading_environment, 14f).apply { setTextColor(style.secondary) },
@@ -1181,6 +1225,7 @@ class MainActivity : Activity() {
             displayButton,
             style.label(R.string.current_document, 14f).apply { setTextColor(style.secondary) },
             layoutButton,
+            cropButton,
             style.label(R.string.document_settings_hint, 12f).apply {
                 setTextColor(style.secondary)
             }
@@ -1259,6 +1304,16 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun showPageCropSettings(draft: Bundle? = null) {
+        if (!loaded || !reading || pendingLayoutWrites > 0) return
+        val parent = beginSettingsChild() ?: return
+        val generation = opening
+        val form = pageCropDialog(viewer.pageLayoutSettings(), draft) { selected, done ->
+            savePageLayoutSettings(selected, generation, done)
+        }
+        showEditableSettingsChild(parent, SettingsFormKind.CROP, form)
+    }
+
     private fun savePageLayoutSettings(
         selected: PageLayoutSettings,
         generation: Int,
@@ -1323,10 +1378,13 @@ class MainActivity : Activity() {
         settingsHomeDialog = null
         settingsChildLoading = false
         orientationSettingsOpen = false
+        orientationFromTools = false
         settingsFormKind = null
         editableSettingsForm = null
         pendingLayoutDraft = null
+        pendingCropDraft = null
         documentLayoutSetting = null
+        documentCropSetting = null
         bindPageNumberSetting = null
         child?.setOnDismissListener(null)
         child?.dismiss()
@@ -1495,6 +1553,7 @@ class MainActivity : Activity() {
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)
+        outState.putBoolean("orientationFromTools", orientationFromTools)
         val form = editableSettingsForm
         if (form?.dialog?.isShowing == true) {
             outState.putString("settingsForm", settingsFormKind?.name)
@@ -1502,6 +1561,9 @@ class MainActivity : Activity() {
         } else if (pendingLayoutDraft != null) {
             outState.putString("settingsForm", SettingsFormKind.LAYOUT.name)
             outState.putBundle("settingsDraft", pendingLayoutDraft)
+        } else if (pendingCropDraft != null) {
+            outState.putString("settingsForm", SettingsFormKind.CROP.name)
+            outState.putBundle("settingsDraft", pendingCropDraft)
         }
         saveReading()
         pendingNavigation?.let {
@@ -1519,6 +1581,7 @@ class MainActivity : Activity() {
                     remove("pageSizeMode")
                     remove("pageGap")
                     remove("horizontalPanLocked")
+                    remove("pageCrop")
                 }
             } else {
                 saved

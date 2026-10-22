@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="crop_left" type="id" />
+    <item name="crop_top" type="id" />
+    <item name="crop_right" type="id" />
+    <item name="crop_bottom" type="id" />
+    <item name="reader_orientation" type="id" />
     <item name="horizontal_pan_lock" type="id" />
     <item name="reading_hint" type="id" />
     <item name="settings_save_error" type="id" />

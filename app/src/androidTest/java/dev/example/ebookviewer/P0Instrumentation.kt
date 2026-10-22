@@ -114,6 +114,7 @@ class P0Instrumentation : Instrumentation() {
                 "gestures" -> GestureDeviceTest::class.java
                 "settings" -> SettingsNavigationDeviceTest::class.java
                 "chrome" -> ReaderChromeDeviceTest::class.java
+                "usability" -> ReaderUsabilityDeviceTest::class.java
                 else -> error("Unsupported individual test class")
             }
         }

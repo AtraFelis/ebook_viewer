@@ -26,7 +26,8 @@ internal class ReaderToolsView(
     onDismiss: () -> Unit,
     onScrubBegin: () -> Unit,
     onScrubPage: (Int) -> Unit,
-    onPanLock: () -> Unit = {}
+    onPanLock: () -> Unit = {},
+    onOrientation: () -> Unit = {}
 ) {
     private val style = ReaderStyle(context)
     private var availableHeight = 0
@@ -53,6 +54,16 @@ internal class ReaderToolsView(
         setOnClickListener { onPanLock() }
     }
     val page = action(R.string.go_to_page, onPage)
+    val orientationButton = ImageButton(context).apply {
+        id = R.id.reader_orientation
+        contentDescription = context.getString(R.string.orientation_settings)
+        setImageResource(R.drawable.reader_orientation)
+        imageTintList = ColorStateList.valueOf(style.accent)
+        setPadding(style.dp(13), style.dp(13), style.dp(13), style.dp(13))
+        val circle = InsetDrawable(style.shape(style.accentSoft, 20), style.dp(4))
+        background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
+        setOnClickListener { onOrientation() }
+    }
     val bookmarks = action(R.string.bookmarks, onBookmarks)
     val readText = action(R.string.read_page_text, onReadText).apply {
         id = R.id.read_page_text
@@ -76,6 +87,7 @@ internal class ReaderToolsView(
         setBackgroundColor(style.surface)
         addView(home, LinearLayout.LayoutParams(style.dp(48), style.dp(48)))
         addView(title, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) })
+        addView(orientationButton, LinearLayout.LayoutParams(style.dp(48), style.dp(48)))
         addView(
             panLock,
             LinearLayout.LayoutParams(style.dp(48), style.dp(48)).apply { leftMargin = style.dp(8) }

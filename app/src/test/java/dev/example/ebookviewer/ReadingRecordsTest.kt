@@ -76,21 +76,62 @@ class ReadingRecordsTest {
     }
 
     @Test
-    fun invalidVersionThreeLockFlagAndGapAreRejected() {
+    fun invalidLockFlagAndGapAreRejected() {
         val output = ByteArrayOutputStream()
         ReadingRecordsCodec.write(
             output,
             listOf(ReadingRecord("content://fixture/lock", "Lock", 1))
         )
         for (flag in listOf(2, 255)) {
-            val invalid = output.toByteArray().also { it[it.lastIndex] = flag.toByte() }
+            val invalid = output.toByteArray().also { it[it.lastIndex - 4] = flag.toByte() }
             assertThrows(IllegalArgumentException::class.java) {
                 ReadingRecordsCodec.read(ByteArrayInputStream(invalid))
             }
         }
-        val invalidGap = output.toByteArray().also { it[it.lastIndex - 1] = 73 }
+        val invalidGap = output.toByteArray().also { it[it.lastIndex - 5] = 73 }
         assertThrows(IllegalArgumentException::class.java) {
             ReadingRecordsCodec.read(ByteArrayInputStream(invalidGap))
+        }
+    }
+
+    @Test
+    fun versionThreeKeepsLockAndOriginalAnchorWhileDefaultingToNoCrop() {
+        val record = ReadingRecord(
+            "content://fixture/v3",
+            "V3",
+            1,
+            20,
+            ReadingPosition(10, 0.3, 0.4, 4.0),
+            PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24, true)
+        )
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.write(output, listOf(record))
+        val legacy = output.toByteArray().dropLast(4).toByteArray().also { it[7] = 3 }
+        assertEquals(listOf(record), ReadingRecordsCodec.read(ByteArrayInputStream(legacy)))
+    }
+
+    @Test
+    fun cropRoundTripsPerDocumentAndInvalidOrTrailingDataIsRejected() {
+        val record = ReadingRecord(
+            "content://fixture/crop",
+            "Crop",
+            2,
+            20,
+            ReadingPosition(10, 0.3, 0.4, 4.0),
+            PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24, true, PageCrop(3, 5, 7, 9))
+        )
+        val records = listOf(record, record.copy(uri = "other", pageLayout = PageLayoutSettings()))
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.write(output, records)
+        assertEquals(records, ReadingRecordsCodec.read(ByteArrayInputStream(output.toByteArray())))
+        for (offset in 0..3) {
+            val invalid = output.toByteArray().also { it[it.lastIndex - offset] = 46 }
+            assertThrows(IllegalArgumentException::class.java) {
+                ReadingRecordsCodec.read(ByteArrayInputStream(invalid))
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ReadingRecordsCodec.read(ByteArrayInputStream(output.toByteArray() + byteArrayOf(0)))
         }
     }
 

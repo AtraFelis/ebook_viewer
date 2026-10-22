@@ -104,6 +104,7 @@ class LargeFontDeviceTest {
             R.string.orientation_settings,
             R.string.display_settings,
             R.string.page_layout_settings,
+            R.string.page_crop_settings,
             R.string.background_settings
         )
         for (label in menus) {
@@ -167,9 +168,11 @@ class LargeFontDeviceTest {
                         it is Button ||
                             it is CheckedTextView ||
                             it is EditText ||
+                            it is android.widget.SeekBar ||
                             it.id == R.id.home_record ||
                             it.id == R.id.reader_home ||
                             it.id == R.id.horizontal_pan_lock ||
+                            it.id == R.id.reader_orientation ||
                             it.id == R.id.page_scrubber
                         )
             }.take(limit)
