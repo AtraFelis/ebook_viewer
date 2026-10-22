@@ -47,3 +47,13 @@ Build Tools34.0.0 apksigner verify: Verifies, v1/v2 true·signer1. 기존 AGP ap
 추가 수정 최종 결과: 새 앱81fc92890ab75f7fdb0c36a0b5829914bf36c9090c389dd48e7b4a8c09fc2db4/계측c7d4c190e95e08b6f2eb9ab84e17c9c409be237e7d0b032ab90be41f462bfe5b에서 chrome3/font1/immersive7 합11개/실패0을 확인했다(p3-safe-center.txt/progress.json). strict 앱/계측/Lint/ktlint18초 통과, 설치본 해시 일치·-r 업데이트·앱실행Status ok·원래font_scale1.1·앱/계측/ADB프로세스0을 다시 확인했다. 서명 검증도 통과했다. 실제 MainActivity 배치를 바꾼 뒤에는 원래91개 분할 결과를 이 앱의 전체91개 재실행으로 주장하지 않고 관련11개의 실제 회귀로 구분한다. 이전64b5ceb7의 DEX20개 동일성 설명은 실제 배치 수정 전의 고지 단계 근거다.
 
 PR 최초 head04294fe CI39725961666/39725943014 모두SUCCESS·실제 CodeRabbit5609528462/19파일/지적1개를 확인했다. 검증 전략5행의41/48개를 현재 결과처럼 쓴 지적4344763871은 타당해 과거 표시 설정 당시 결과로 바꿨다. 별도 AutoFix/CLI 설치·실행 지시는 따르지 않았다. 의미 있는 번호 실제 수정과 문서 지적을 모아 같은 PR에 일반 push하며 새 head의 CI/실제 재검토·사용자 병합을 별도 확인한다.
+
+최종 수정 게시: fbbf69af0dd7d570b8fe44255d26d9a50ad4777a 일반 push·PR #27 제목/설명 재작성, 문서 지적 답변4344798198·스레드PRRT_kwDOVLKYJM6vDfvo resolved=true 확인. 새 CI39726988036/39726981978은 IN_PROGRESS다. 완료한 첫 리뷰 뒤 실앱 변경이 모인 새head에 수동 재검토6333342320을 한 번 요청했으나 공식 봇 응답은 아직 없다. 빈 review5609572069의 작성자는AtraFelis이므로 봇 리뷰로 세지 않는다. 동일head 중복 호출·상태 기록만의 재push·앱/ADB 재시작·에이전트 병합은 하지 않는다.
+
+최종 확인: PR #27 OPEN·원격head fbbf69af0dd7d570b8fe44255d26d9a50ad4777a 일치, 수정CI39726988036/39726981978 모두SUCCESS·문서 스레드resolved=true다. 실제 최초 리뷰5609528462는04294fe/19파일/지적1개였고 수정/답변을 마쳤다. 새head 수동 요청6333342320에는 공식 봇6333373867 Action not completed/Review rate limited로 응답했다. 새head 실제 외부 리뷰는 미실행이며 CodeRabbit SUCCESS 체크나 사용자 답변으로 생긴 빈review5609572069를 완료로 세지 않는다. 한도 중 추가 호출/자동 예약·상태 기록만의 재push·앱/ADB 재시작·에이전트 병합 없이 이 기록을 로컬에 모았다. 현재 ADB프로세스0이며 사용자 디자인128줄 변경을 계속 보존한다. 남은 것은 최신 실제 재검토/사용자 병합과 별도로 명시한 미확정 원인·아이콘/라이선스·release 결정이다.
+
+## 사용자 병합 후 상태 확인
+
+2026-10-22 사용자 병합 알림 뒤 gh pr view 27 --json state,mergedAt,mergeCommit,headRefOid,statusCheckRollup으로 MERGED·2026-10-22T05:24:58Z(14:24 KST)·merge4822bc7e4a72f4120d658f54fb670cadef6dc10f·최종head fbbf69a·CI39726988036/39726981978 모두SUCCESS를 확인했다. gh api pulls/27/reviews 및 reviews/5609600927, pulls/27/comments에서 후속 bot review5609600927의 body는 비어 있고 inline4344822196은 기존 문서 지적 수정 확인·해결 답변임을 확인했다. 새head 전체 변경의 재검토 완료로 확대하지 않는다.
+
+SESSION/CHECKLIST에 병합과 리뷰 범위를 기록했다. 다음 후보는 미재현 회전 좌표/부모 복귀/시작 포커스 원인 조사, 최종 아이콘, 자체 LICENSE·버전·서명/배포 결정이다. 남은 작업 안내 요청이므로 앱/ADB·기기 검사·코드 수정·재리뷰 요청·상태 기록 push는 하지 않았다. 사용자 docs/design.md 변경은 보존했다. 문서 상태 기록에 앱 검사를 반복하지 않았다.
