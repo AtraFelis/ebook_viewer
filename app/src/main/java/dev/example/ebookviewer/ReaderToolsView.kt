@@ -208,8 +208,7 @@ internal class ReaderToolsView(
         panLock.setImageResource(
             if (locked) R.drawable.reader_pan_locked else R.drawable.reader_pan_unlocked
         )
-        panLock.imageTintList =
-            ColorStateList.valueOf(if (locked) style.accent else style.secondary)
+        panLock.imageTintList = ColorStateList.valueOf(style.accent)
         panLock.contentDescription = panLock.context.getString(
             if (locked) R.string.unlock_horizontal_pan else R.string.lock_horizontal_pan
         )

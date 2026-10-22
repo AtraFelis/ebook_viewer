@@ -1,6 +1,14 @@
 # 2026-10-22 — 개인 사용 피드백 세 가지
 
+## 가로 이동 잠금 화살표 사전 시안
+
+사용자가 “ㄱㄱ”로 승인해 시안의 path/22dp/선1.8/round cap·join을 locked/unlocked 리소스에 적용했다. 두 상태 tint를 기존 theme accent로 맞췄으며 버튼48dp·선택/잠금·두 손가락 제스처·저장은 변경하지 않았다. `. ./scripts/android-env.ps1` 뒤 `./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck --dependency-verification strict --console=plain` **11초 성공**이다(local-artifacts/reader-pan-arrows-build.txt). 작은 아이콘 교체에 기존 panLock5개를 다시 시작한 것은 범위가 과했다. 사용자 지적 직후 전용 호스트를 종료하고 개발용 앱/계측 force-stop·font_scale1.1·ADB 종료를 확인했다. 검사가 완료되지 않았으므로 통과로 기록하지 않는다. 새 테스트/성능 측정/전체 suite는 추가하지 않으며 향후 같은 변경은 리소스/빌드 확인만 한다. 정식판·개인 키·사용자 디자인 변경은 보존했다.
+
+사용자는 자물쇠 아래 좌우 양방향 화살표를 추가하되 아이콘을 먼저 보여 달라고 했다. 현재 locked/unlocked22dp 벡터·48dp 버튼과 테마 accent를 확인했고, 두 상태의 별도 SVG/PNG·Android XML 시안을 local-artifacts/reader-pan-*-proposal.*에 생성했다. 자물쇠와 화살표 사이를 띄우고 같은1.8 선/round cap·join·기존 파란색#285BC5를 사용했다. PNG의 확대 모양과 버튼 안 크기를 육안 확인했다. 앱 리소스/코드/설치·원격 PR은 변경하지 않았으며 시안 확인 대기다. 빌드/단위/기기 검사는 앱 변경이 없어 실행하지 않았다. 사용자 design.md128줄과 이전 미커밋 게시 기록을 보존했다.
+
 ## 방향 상태 아이콘과 실제 리뷰 보완
+
+게시 확인: b1fcbcaded6266ebc3fe62ff637d6fd066994398 일반 push와 PR #31 OPEN/isDraft=false/원격 head 일치. 설명은 최종 상태 아이콘·실제 리뷰 수정과5개 검사 범위로 갱신했다. 지적2개에 답변4349117220/4349117496을 게시했고 추가 allowance0인 리뷰를 반복·유료 요청하지 않았다. 새 CI두 건은 IN_PROGRESS이며 원격 완료/추가 실제 리뷰·사용자 병합을 완료로 세지 않는다. 이 게시 확인 문서만으로 추가 push하지 않는다.
 
 최종: 요청 아이콘/리뷰2개 보완 앱의 관련5개를 분할해 모두 성공했다. device-4에서 quickOrientation(아이콘 픽셀 완전 일치/tint/선택/재생성/복귀)·actualPreview 기존2개 성공 후 신규 취소 검사가 일반512px preview를 crop 전용 요청으로 오인해 실패했다. normal preview가0.5배이고 crop은0.512배가 되도록400px 화면 조건을 명시해 둘을 구분했고 assertion은 그대로 유지했다. device-final에서 신규1·큰 글꼴1(6조합)·일반 방향1, **3개/실패0·54.8초**를 완료했다. 최종 앱은 전체91개/장시간·프레임 성능/다른 API를 반복하지 않았다.
 
@@ -77,3 +85,5 @@ JVM59개/실패·오류·건너뜀0(새6개 포함)을 실제 실행했다. 여�
 로그(무시 경로): local-artifacts/reader-usability-first-build.txt·build-2~5.txt·build-final.txt·final-all-build.txt, reader-usability-device-first.txt(첫4성공/방향 실패), reader-usability-device-rest.txt(후속20개), reader-usability-font-final.txt(확장font1개)와 개별 usability-*.txt. 테스트 helper는 각 호출 device180초/host200초 상한, 실패 시 중단/finally 글꼴 복원·앱/계측/ADB 종료다. 최종 보완 font 외 기존 성공 검사는 반복하지 않았다.
 
 사용자에게 개발용 PDF Viewer에서 자동색 빠른 스크롤·방향 아이콘·문서 공통 여백/확대·이어 읽기 수용을 요청했다. 응답/PR/CI/실제 리뷰는 대기다. 현재 결과를 전체91개/20분/성능·모든 PDF/다른 API 검증이나 정식판 배포 완료로 세지 않는다. release 버전/개인 키 서명·설치는 사용자 수용/병합 뒤 별도 업데이트 절차이며 이번에 서명하지 않았다.
+
+승인 시안과 실제 벡터 path/stroke 일치를 확인했고 개발용 APK install Success 뒤 앱/ADB를 종료했다. 추가 동작 검사는 수행하지 않았다.
