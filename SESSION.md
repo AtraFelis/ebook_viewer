@@ -4,6 +4,10 @@
 
 ## 현재 진행 — 개인 사용 피드백: 배경색·방향·여백
 
+아이콘 최종 적용: 사용자가 회전 화살표 시안을 승인해 reader_orientation.xml에 동일 path/2dp stroke/round cap·join을 반영했다. 48dp 버튼 위치/크기·테마 tint·동작은 그대로다. SVG/Android 벡터 토큰·stroke 동일 확인, strict debug/계측 빌드·Lint0/0·ktlint7초와 개발용 앱의 기존 방향 드롭다운/재생성/복귀1개·실패0(44.3초)을 확인했다. app6ef11855/계측e6acd237, 원래 글꼴1.1·앱/계측 중지/ADB 종료. 이전9개/전체91개/성능은 반복하지 않았다. 모든 기능의 사용자 수용과 아이콘 시안 승인은 끝났으며 다음은 같은 PR에 아이콘 반영/CI·실제 리뷰 결과다. 사용자 디자인128줄은 보존/제외한다.
+
+게시/수용 최신: f803154248045772ef59c37488446d49dce9b66c 일반 push·PR #31 OPEN/Draft·원격 head 일치. CI39785514412/39785508866 진행 중이며 수동6341732725 한 번에 봇6341735307 Review triggered·요약6341184734 실제 처리 중을 확인했다. 실제 review/inline API는 아직 비어 있다. 사용자는 방향 드롭다운/실제 PDF 미리보기/키패드를 수용했고, 방향 아이콘만 회전 화살표로 바꾸되 적용 전에 시안을 보여 달라고 했다. local-artifacts/orientation-rotate-arrow-proposal.svg/png 시안만 만들고 앱 리소스는 변경하지 않았다. 다음은 아이콘 시안 승인 후 적용·관련 검증, 실제 CI/리뷰 결과 대응이다. 리뷰 중 상태 기록만의 push/중복 요청은 하지 않는다.
+
 최신 보완: 초기b785042는 Draft PR #31로 게시/첨부했고 아직 CodeRabbit을 호출하지 않았다. 자동 배경색은 사용자 “이제 깜빡임 없어”로 수용했다. 방향은 작은 드롭다운, 여백은 실제 PDF 고정 미리보기로 바꾸고 추가 보고된 간격 숫자 키패드의 공통 Window 차단을 수정했다. 보완 앱25개 통과 뒤 큰 글꼴200% 가로에서 미리보기 높이 회귀를 확인해 수정했다. **최종 앱의 관련9개/실패0·116.4초**(새7/큰 글꼴6조합1/일반방향1), strict debug/계측·unsigned release·단위59개/양 Lint0/0·ktlint 통과다. 최종 app beb69c01/계측e6acd237 설치본 해시 일치·API33·글꼴1.1·두 앱 중지/ADB0 확인. NotificationShade 포커스 두 실패와 실제 높이 회귀/수정은 이력에 보존했다. 아래24개/기기 분리 당시 해시 미확인은 초기 앱의 이력이다. 새 최종 UI 사용자 수용은 다시 요청/대기이며 정식판/개인 키는 사용하지 않았다.
 
 현재 체크아웃은 PR #30 사용자 병합 main b3acea0을 ff-only 연결한 codex/reader-background-orientation-crop이다. [계획](docs/plan/reader-usability-follow-up.md)/[ADR0018](docs/adr/0018-document-crop-and-reading-records-v4.md)대로 자동 배경색 미준비 시 직전 색 유지, 제목 오른쪽 방향 빠른 접근, 문서 전체 공통 원본 보존 여백0~45%/네 방향을 구현했다. 기록v4는v1~v3와 원본 앵커·북마크/줌을 보존한다. 새 의존성/개인 키 접근/정식판 설치 변경은 없다.

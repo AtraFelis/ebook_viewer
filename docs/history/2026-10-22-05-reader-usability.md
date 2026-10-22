@@ -1,5 +1,11 @@
 # 2026-10-22 — 개인 사용 피드백 세 가지
 
+최신 아이콘 승인/적용: 사용자가 “좋아 이걸로 해줘”로 사전 시안을 승인했다. reader_orientation.xml을 같은 경로·strokeWidth2/round cap/round join의 회전 화살표로 교체하고 버튼48dp/위치/색상 tint/동작은 보존했다. 저장해 둔 SVG와 Android path를 토큰 비교해 기하/선 일치를 확인했다. 새 의존성/다른 사용자 변경은 없다.
+
+`. ./scripts/android-env.ps1` 후 `./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck --dependency-verification strict --console=plain` 7초 성공·Lint 오류/경고0/정보6. 개발용 앱 -r 업데이트 후 기존 quickOrientationRestoresItsOwnRouteWithoutOpeningSettingsHome **1개/실패0·44.3초**를 확인했다. 단위/이전9개/전체91개/장시간·성능은 자원만 바꾼 이번에 반복하지 않았다. 로그 reader-orientation-icon-build.txt·reader-orientation-icon-device.txt(무시 경로), 로컬 앱6ef11855a6535516e27462da3f794014a4e0714ded4644e27b69ea9508d43a29/계측e6acd237e640a11eadd5568c558e98f3cadd6a705dbb3ac2e6015557c23d49db다. 원래 글꼴1.1 유지·앱/계측 force-stop/ADB 종료 확인. 정식판과 개인 키는 사용하지 않았다.
+
+최신 게시/사용자 수용: f803154248045772ef59c37488446d49dce9b66c 일반 push·PR #31 OPEN/Draft·원격 head 일치. CI39785514412/39785508866 진행 중, 수동 요청6341732725 한 번에 봇6341735307 Review triggered/요약6341184734 실제 처리 중을 확인했다. 실제 review/inline API는 아직 빈 배열이다. 사용자는 드롭다운/여백 실제 미리보기/숫자 키패드를 수용했다. 추가 요청은 제목 오른쪽 방향 아이콘을 회전 화살표로 바꾸되 적용 전 시안을 먼저 보여 달라는 것이다. 무시 경로 local-artifacts/orientation-rotate-arrow-proposal.svg/png에 직접 작성한 벡터 시안/48dp 버튼 미리보기만 생성해 보여 주며 앱 리소스는 변경하지 않는다. 승인·아이콘 반영/검증·CI/실제 리뷰는 남겨 둔다. 상태 기록만의 push·중복 리뷰 요청·사용자 디자인 문서 변경은 하지 않았다.
+
 ## 후속 사용자 피드백과 같은 PR의 보완
 
 초기 구현b785042를 일반 push하고 [Draft PR #31](https://github.com/AtraFelis/ebook_viewer/pull/31)을 생성/채팅 첨부했다. 리뷰는 아직 요청하지 않았다. 사용자는 자동 색에 대해 “이제 깜빡임 없어”로 수용했으며 방향 버튼 위치는 유지하되 드롭다운을, 여백은 실제 PDF를 보며 조절하도록 요청했다. 이후 페이지 크기·간격에서 키패드가 안 나온다는 오류를 추가했다. 아래 초기24개/도식 미리보기 결과는 초기 앱의 이력이며 이 보완 앱으로 합산하지 않는다.
