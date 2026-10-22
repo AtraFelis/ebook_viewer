@@ -2,7 +2,17 @@
 
 최종 갱신: 2026-10-22 (Asia/Seoul)
 
-## 현재 진행 — 회전·설정 전환 제한 조사와 아이콘 최종 선택
+## 현재 진행 — 선택 아이콘 런처 적용
+
+PR #28 사용자 병합main a58b0207c058e05a687594249801ca92a2bfd845(2026-10-22 14:45 KST)·최종 CI두 건 SUCCESS·실제 리뷰/inline 없음과 CodeRabbit 한도 응답을 확인했다. 기존 체크아웃을 ff-only 연결하고 codex/launcher-icon에서 [아이콘 적용 계획](docs/plan/launcher-icon.md)을 수행했다. 기존 사용자 docs/design.md128줄 변경은 보존/커밋 제외한다.
+
+선택 PNG와 바이트 동일한 기존 SVG 미리보기를 확인하고 대응 SVG를 보존했다. 같은 곡선/도형/색을 일반 vector/API26+ adaptive 아이콘으로 옮겼다. adaptive 중앙72dp에 원래 구도를 유지하고 종이를108dp 전체로 연장했다. Lint 지적에 따라 같은 도형의 단색 테마 리소스도 추가했으며 검사 억제는 없다. 원본 SVG/일반/중앙 adaptive 미리보기 픽셀 차이0, 본문/위치 표시 안전 원 안·원형/둥근 사각형·48/32px 시각 확인을 마쳤다.
+
+strict 앱/계측·단위·Lint·ktlint7초 통과(단위53개는 UP-TO-DATE 재사용, Lint 오류·경고0/정보6). 최종 앱5e918346 동일서명 -r 업데이트·설치 해시 일치/실행Status ok·font_scale1.1 불변·앱/계측/ADB0 확인. APK의 실제 아이콘4개/서명/고지3개 동일성을 확인했다. 앱/stdlib DEX는 이전과 같으며 generated R 전용 DEX만 자원 변경에 맞게 달라졌다. 새 앱 테스트/전체91개/20분은 실행하지 않았다. 실제 런처 화면·시스템 테마 수용/다른 API 기기는 미확인이다. [실행 이력](docs/history/2026-10-22-03-launcher-icon.md).
+
+## 앞선 진행 — 회전·설정 전환 제한 조사와 아이콘 최종 선택
+
+게시 확인: 4a29cfe3fdcc55dc160341da43e5bc7339932f85 일반 push·[PR #28](https://github.com/AtraFelis/ebook_viewer/pull/28) 생성/첨부(OPEN/isDraft=false/base main). CI39729182282/39729163714은 진행 중이다. 수동 요청6333623029 한 번에 공식 봇6333624181 Action not completed/Review rate limited·요약6333622716 Review limit reached(당시26분 뒤 재개 표시)를 확인했다. 실제 리뷰 API는 비어 있어 SUCCESS 체크를 리뷰 완료로 세지 않는다. 한도 중 추가 호출/자동 예약/상태 기록 재push/앱·ADB 재시작/에이전트 병합은 하지 않는다. 사용자 디자인 문서 변경만 커밋 제외했으며 다음은 CI 완료/실제 리뷰와 아이콘 적용이다.
 
 2026-10-22 사용자 지시로 [제한 조사 계획](docs/plan/p3-rotation-focus-stability.md)을 수행했다. fetch 후 현재 체크아웃을 origin/main4822bc7에 ff-only 연결하고 codex/p3-rotation-focus-stability를 사용한다. 원래 세 검사(고배율 회전/설정 적용·회전·부모 복귀/번호 창 시작)는 기존 계측으로3개/실패0·65초, 진단 보완 뒤 역순으로3개/실패0·60초였다. 세 고유 검사의 총6회 실행이며 새6개 검사나 전체91개 실행이 아니다. 원인은 미재현/미확정으로 유지하고 추가 반복하지 않았다.
 
