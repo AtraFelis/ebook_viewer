@@ -256,7 +256,8 @@ class MainActivity : Activity() {
             addView(homeScroll, FrameLayout.LayoutParams(-1, -1))
             addView(
                 pageIndicator,
-                FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+                // A full safe-area width avoids CENTER_HORIZONTAL doubling asymmetric margins.
+                FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM)
             )
             addView(readerTools, FrameLayout.LayoutParams(-1, -1))
             setOnApplyWindowInsetsListener { _, insets ->

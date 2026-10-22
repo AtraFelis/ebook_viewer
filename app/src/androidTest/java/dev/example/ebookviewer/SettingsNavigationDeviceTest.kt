@@ -214,7 +214,7 @@ class SettingsNavigationDeviceTest {
             val layout = openChild(activity, parent, R.string.page_layout_settings)
             ui.onMain { layout.getButton(AlertDialog.BUTTON_POSITIVE).performClick() }
             awaitParent(activity, parent)
-            assertAnchor(before, ui.state(viewer))
+            assertTopEdgeAnchor(before, ui.state(viewer), viewer)
             val orientation = openChild(activity, parent, R.string.orientation_settings)
             val portrait = activity.resources.configuration.orientation ==
                 Configuration.ORIENTATION_PORTRAIT
@@ -253,7 +253,7 @@ class SettingsNavigationDeviceTest {
                 ui.views(requireNotNull(restored.window).decorView)
                     .filterIsInstance<android.widget.Switch>().single().isChecked
             }
-            assertAnchor(before, ui.state(viewer))
+            assertTopEdgeAnchor(before, ui.state(viewer), viewer)
             ui.onMain { restoredChild.getButton(AlertDialog.BUTTON_NEGATIVE).performClick() }
             awaitParent(activity, restored)
             ui.onMain { restored.getButton(AlertDialog.BUTTON_NEGATIVE).performClick() }
@@ -301,8 +301,17 @@ class SettingsNavigationDeviceTest {
     }
 
     private fun awaitParent(activity: Activity, parent: AlertDialog) {
-        ui.await("Subsettings did not return to same parent") {
-            current(activity) === parent && parent.window?.decorView?.hasWindowFocus() == true
+        try {
+            ui.await("Subsettings did not return to same parent") {
+                current(activity) === parent && parent.window?.decorView?.hasWindowFocus() == true
+            }
+        } catch (error: AssertionError) {
+            val state = ui.onMain {
+                "destroyed=${activity.isDestroyed}, finishing=${activity.isFinishing}, " +
+                    "same=${current(activity) === parent}, showing=${parent.isShowing}, " +
+                    "focus=${parent.window?.decorView?.hasWindowFocus()}"
+            }
+            throw AssertionError("Settings parent state: $state", error)
         }
     }
 
@@ -319,10 +328,18 @@ class SettingsNavigationDeviceTest {
         return field.get(activity) as AlertDialog?
     }
 
-    private fun assertAnchor(before: Bundle, after: Bundle) {
+    private fun assertTopEdgeAnchor(before: Bundle, after: Bundle, viewer: PdfCanvasView) {
+        assertEquals("This fixture starts at the document top", 0, before.getInt("page"))
+        val minimumY = ui.onMain { viewer.height / (2 * after.getDouble("zoom")) }
         assertEquals(before.getDouble("zoom"), after.getDouble("zoom"), 0.00001)
         assertEquals(before.getDouble("centerX"), after.getDouble("centerX"), 2.0)
-        assertEquals(before.getDouble("centerY"), after.getDouble("centerY"), 2.0)
+        assertEquals(
+            // A taller cutout-adjusted viewport cannot keep its center above the document top.
+            "Synthetic viewport minimum center Y=$minimumY",
+            before.getDouble("centerY").coerceAtLeast(minimumY),
+            after.getDouble("centerY"),
+            2.0
+        )
     }
 
     private fun <T> setting(action: ((Result<T>) -> Unit) -> Unit): T {

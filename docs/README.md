@@ -1,5 +1,7 @@
 # 문서 목차
 
+현재 Windows의 [빌드·설치·라이선스/배포 준비](release-preparation.md)와 [P3 최종 통합 점검](history/2026-10-22-01-p3-final-verification.md)을 먼저 확인합니다. [이번 범위/종료 조건](plan/p3-final-verification-and-release-preparation.md)은 아이콘 선택·실제 release 배포와 분리합니다.
+
 2026-10-20 P2의 기능·자동 통합 검사·사용자 수용과 PR #17 병합 완료 근거는 [P2 마무리](history/2026-10-20-01-p2-completion.md)를 확인합니다. 완료 문서 PR 반영 후 종료를 확정하며 기기/메모리·리뷰 범위의 한계를 함께 기록합니다.
 
 현재 페이지 본문 읽기의 [격리/중단·접근성 결정](adr/0015-bounded-current-page-text-and-accessibility.md)과 [실제 검사·미결](history/2026-10-19-03-page-text-accessibility.md)을 확인합니다. 2026-10-19 사용자 결정으로 선택/복사 UI는 후속 보류하고 본문 읽기 안전성·TalkBack/큰 글꼴·최종 통합 검증은 유지합니다.

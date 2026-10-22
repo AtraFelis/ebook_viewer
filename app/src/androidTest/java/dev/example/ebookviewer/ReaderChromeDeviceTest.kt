@@ -88,8 +88,13 @@ class ReaderChromeDeviceTest {
             }
             ui.onMain {
                 val params = label.layoutParams as FrameLayout.LayoutParams
-                assertEquals(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, params.gravity)
-                val center = (root.width + params.leftMargin - params.rightMargin) / 2.0
+                assertEquals(Gravity.BOTTOM, params.gravity)
+                assertEquals(FrameLayout.LayoutParams.MATCH_PARENT, params.width)
+                // Check the safe area's center, independently of centered-child margin semantics.
+                val center = (
+                    root.width + root.paddingLeft - root.paddingRight +
+                        params.leftMargin - params.rightMargin
+                    ) / 2.0
                 assertEquals(center, label.left + label.width / 2.0, 1.0)
                 assertTrue(params.bottomMargin >= ReaderStyle(activity).dp(12))
                 assertTrue(label.bottom < root.height)

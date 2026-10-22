@@ -40,6 +40,7 @@ class P0Instrumentation : Instrumentation() {
     private var sharpnessOnly = false
     private var sharpnessPixelsOnly = false
     private var accessMethod: String? = null
+    private var methodClass: Class<*>? = null
     var restartPhase: String? = null
         private set
     var probeSeconds = 30
@@ -108,13 +109,24 @@ class P0Instrumentation : Instrumentation() {
         autoBackground = arguments?.getString("autoBackground") == "true"
         require(!autoBackground || probe)
         accessMethod = arguments?.getString("method")
-        require(accessMethod == null || accessOnly)
-        val validMethod = DocumentAccessDeviceTest::class.java.declaredMethods.any {
+        methodClass = arguments?.getString("methodClass")?.let {
+            when (it) {
+                "gestures" -> GestureDeviceTest::class.java
+                "settings" -> SettingsNavigationDeviceTest::class.java
+                "chrome" -> ReaderChromeDeviceTest::class.java
+                else -> error("Unsupported individual test class")
+            }
+        }
+        require(methodClass == null || (suite == null && !probe && accessMethod != null))
+        require(accessMethod == null || accessOnly || methodClass != null)
+        val allowedClass = methodClass ?: DocumentAccessDeviceTest::class.java
+        val validMethod = allowedClass.declaredMethods.any {
             it.name == accessMethod && it.isAnnotationPresent(org.junit.Test::class.java)
         }
         require(accessMethod == null || validMethod)
         restartPhase = arguments?.getString("libraryRestart")
         require(restartPhase == null || restartPhase in listOf("seed", "verify"))
+        require(methodClass == null || restartPhase == null)
         require(!probe || restartPhase == null)
         require(!immersiveOnly || (!probe && restartPhase == null))
         require(!backgroundOnly || (!probe && restartPhase == null))
@@ -144,6 +156,8 @@ class P0Instrumentation : Instrumentation() {
             probe -> probeSeconds * probeRuns + 120
             sharpnessOnly -> 1_200
             readingSoakOnly -> 1_320
+            // The expanded 91-test UI suite outgrew the former 12-minute whole-run budget.
+            suite == null && methodClass == null && restartPhase == null -> 900
             else -> 720
         }
         val deadlineSeconds = arguments?.getString("deadlineSeconds")?.let {
@@ -205,7 +219,10 @@ class P0Instrumentation : Instrumentation() {
                 sendStatus(if (failure == null) 0 else -2, result)
             }
         })
-        val result = if (chromeOnly) {
+        val individualClass = methodClass
+        val result = if (individualClass != null) {
+            core.run(Request.method(individualClass, requireNotNull(accessMethod)))
+        } else if (chromeOnly) {
             core.run(ReaderChromeDeviceTest::class.java)
         } else if (guidanceOnly) {
             core.run(ReadingGuidanceDeviceTest::class.java)
