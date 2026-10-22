@@ -35,4 +35,9 @@
     <item name="background_automatic" type="id" />
     <item name="page_number_input" type="id" />
     <item name="page_indicator" type="id" />
+    <item name="invert_pdf" type="id" />
+    <item name="bookshelf_filter" type="id" />
+    <item name="bookshelf_name" type="id" />
+    <item name="library_selection" type="id" />
+    <item name="select_document" type="id" />
 </resources>

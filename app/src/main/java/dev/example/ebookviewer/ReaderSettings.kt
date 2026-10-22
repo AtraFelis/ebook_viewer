@@ -18,7 +18,37 @@ class ReaderSettingsRepository(private val file: () -> File) : java.io.Closeable
     private var stored: OrientationMode? = null
     private var storedBackground: BackgroundSettings? = null
     private var storedPageNumbers: Boolean? = null
+    private var storedInversion: Boolean? = null
     private var storedDisplay: DisplaySettings? = null
+
+    private fun inversionFile(): File = file().let { File(it.parentFile, "${it.name}.inversion") }
+
+    fun loadInversion(complete: (Result<Boolean>) -> Unit) = submit(complete) { readInversion() }
+
+    private fun readInversion(): Boolean = storedInversion ?: run {
+        val path = inversionFile()
+        try {
+            AtomicFile(path).openRead().use(PdfColorsCodec::read)
+        } catch (error: FileNotFoundException) {
+            if (path.exists()) throw error
+            false
+        }
+    }.also { storedInversion = it }
+
+    fun saveInversion(value: Boolean, complete: (Result<Boolean>) -> Unit) = submit(complete) {
+        readInversion()
+        val atomic = AtomicFile(inversionFile())
+        val stream = atomic.startWrite()
+        try {
+            PdfColorsCodec.write(stream, value)
+            atomic.finishWrite(stream)
+            storedInversion = value
+            value
+        } catch (error: Exception) {
+            atomic.failWrite(stream)
+            throw error
+        }
+    }
 
     private fun displayFile(): File = file().let { File(it.parentFile, "${it.name}.display") }
 

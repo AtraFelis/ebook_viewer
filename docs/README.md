@@ -62,3 +62,6 @@ PR #1 병합 이후 [몰입형 읽기/방향 ADR](adr/0003-immersive-reader-and-
 사용자 지정 [PR 수동 리뷰·수정 절차](rule/git.md)와 [PR #5 실제 대응 이력](history/2026-10-17-07-pr-review-workflow.md)을 확인합니다. 봇의 리뷰 건너뜀 성공과 실제 리뷰 완료를 구분합니다.
 
 후속 [페이지 크기·간격/기록 v2 ADR](adr/0006-page-layout-and-reading-records-v2.md)과 [로컬·API 33 검증 결과](history/2026-10-17-08-page-layout.md)를 확인합니다.
+
+- [PDF 색반전·책장 계획](plan/library-management-and-inversion.md)
+- [ADR0019: PDF 색반전과 책장 관리](adr/0019-pdf-colors-and-bookshelves.md)

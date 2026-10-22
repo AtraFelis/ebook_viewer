@@ -27,7 +27,8 @@ internal class ReaderToolsView(
     onScrubBegin: () -> Unit,
     onScrubPage: (Int) -> Unit,
     onPanLock: () -> Unit = {},
-    onOrientation: () -> Unit = {}
+    onOrientation: () -> Unit = {},
+    onInvert: () -> Unit = {}
 ) {
     private val style = ReaderStyle(context)
     private var availableHeight = 0
@@ -53,6 +54,16 @@ internal class ReaderToolsView(
         background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
         setOnClickListener { onPanLock() }
     }
+    val invert = action(R.string.invert_pdf_on, onInvert).apply {
+        id = R.id.invert_pdf
+        isEnabled = false
+    }
+    fun updateInversion(inverted: Boolean, available: Boolean) {
+        invert.isSelected = inverted
+        invert.isEnabled = available
+        invert.setText(if (inverted) R.string.invert_pdf_off else R.string.invert_pdf_on)
+    }
+
     val page = action(R.string.go_to_page, onPage)
     val orientationButton = ImageButton(context).apply {
         id = R.id.reader_orientation
@@ -127,6 +138,7 @@ internal class ReaderToolsView(
             },
             LinearLayout.LayoutParams(-1, -2)
         )
+        addView(invert, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(8) })
         addView(readText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(8) })
         dismissBlankTaps(onDismiss)
     }

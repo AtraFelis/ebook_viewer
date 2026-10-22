@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.Bundle
@@ -38,6 +39,17 @@ class PdfCanvasView @JvmOverloads constructor(
     // At document edges or small zoom, a requested page cannot always be centered geometrically.
     private var accessiblePage: Int? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+    var colorsInverted: Boolean = false
+        private set
+
+    fun setColorsInverted(inverted: Boolean) {
+        if (colorsInverted == inverted) return
+        colorsInverted = inverted
+        paint.colorFilter = if (inverted) ColorMatrixColorFilter(pdfInversionMatrix()) else null
+        // Raw cached pixels and automatic outside-color analysis remain unchanged.
+        invalidate()
+    }
+
     private var requested = emptyList<Tile>()
     private var previews = emptyList<Tile>()
 

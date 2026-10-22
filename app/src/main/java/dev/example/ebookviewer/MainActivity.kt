@@ -45,6 +45,11 @@ class MainActivity : Activity() {
     )
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
+    private lateinit var libraryManagement: LibraryManagement
+    private var inversionReady = false
+    private var inversionSaving = false
+    private var importShelf: String? = null
+    private var importRunning = false
     private lateinit var homePresentation: ReaderHomeView
     private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
@@ -210,6 +215,13 @@ class MainActivity : Activity() {
                 pickDocument()
             }
         }
+        libraryManagement = LibraryManagement(
+            this,
+            library,
+            { !reading },
+            ::refreshLibrary,
+            { reportError(R.string.library_change_error) }
+        )
         homePresentation = ReaderHomeView(
             this,
             homeStatus,
@@ -222,8 +234,14 @@ class MainActivity : Activity() {
             },
             onSample = { openSample() },
             onOpen = { openDocument(Uri.parse(it.uri)) },
-            onRemove = ::confirmRemoveRecord
+            onRemove = ::confirmRemoveRecord,
+            onRemoveMany = libraryManagement::remove,
+            onMove = libraryManagement::move,
+            onReorder = libraryManagement::reorder,
+            onShelves = libraryManagement::shelves
         )
+        homePresentation.restoreState(savedInstanceState?.getBundle("libraryUi"))
+        importShelf = savedInstanceState?.getString("importShelf")
         homeScreen = homePresentation.view
         toolsPresentation = ReaderToolsView(
             this,
@@ -237,7 +255,8 @@ class MainActivity : Activity() {
             onScrubBegin = viewer::stopScrolling,
             onScrubPage = { requestPage(it, keepTools = true) },
             onPanLock = ::toggleHorizontalPanLock,
-            onOrientation = ::showQuickOrientation
+            onOrientation = ::showQuickOrientation,
+            onInvert = ::toggleInversion
         )
         readerTools = toolsPresentation.view
         pageJumpButton = toolsPresentation.page
@@ -363,6 +382,14 @@ class MainActivity : Activity() {
                 if (it != OrientationMode.AUTO) applyOrientation(it)
             }.onFailure { reportError(R.string.settings_error) }
         }
+        settings.loadInversion { result ->
+            if (isDestroyed) return@loadInversion
+            result.onSuccess {
+                inversionReady = true
+                viewer.setColorsInverted(it)
+                toolsPresentation.updateInversion(it, true)
+            }.onFailure { reportError(R.string.settings_error) }
+        }
         settings.loadBackground { result ->
             if (isDestroyed) return@loadBackground
             result.onSuccess(viewer::setBackgroundSettings)
@@ -423,9 +450,12 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION")
     private fun pickDocument() {
+        if (importRunning) return
+        importShelf = homePresentation.shelfFilter?.takeIf { it.isNotEmpty() }
         startActivityForResult(
             Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 type = "application/pdf"
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, reselectRecord == null)
                 addCategory(Intent.CATEGORY_OPENABLE)
                 addFlags(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
@@ -441,9 +471,69 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == OPEN_PDF && resultCode != RESULT_OK) reselectRecord = null
         if (requestCode == OPEN_PDF && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-            openDocument(uri, grantFlags = data.flags, relink = reselectRecord?.uri)
+            val uris = data?.selectedPdfUris().orEmpty()
+            val reselect = reselectRecord
             reselectRecord = null
+            if (uris.isEmpty() || data == null) return
+            if (reselect != null) {
+                if (uris.size ==
+                    1
+                ) {
+                    openDocument(uris.single(), grantFlags = data.flags, relink = reselect.uri)
+                } else {
+                    reportError(R.string.reselect_one_pdf)
+                }
+            } else {
+                importDocuments(uris, data.flags)
+            }
+        }
+    }
+
+    internal fun importDocuments(uris: List<Uri>, flags: Int) {
+        if (importRunning) return
+        importRunning = true
+        setStatus(R.string.importing_pdfs)
+        val resolver = applicationContext.contentResolver
+        val shelf = importShelf
+        val fallbackTitle = getString(R.string.untitled_pdf)
+        library.execute({ store ->
+            importPdfs(store, resolver, uris, flags, shelf, fallbackTitle)
+        }) { result ->
+            if (isDestroyed) return@execute
+            importRunning = false
+            if (!reading) {
+                result.onSuccess {
+                    clearFailedOpen()
+                    setStatus(
+                        getString(
+                            R.string.pdf_import_result,
+                            it.added,
+                            it.existing,
+                            it.failed,
+                            it.temporary
+                        )
+                    )
+                    refreshLibrary()
+                }.onFailure { reportError(R.string.library_change_error) }
+            }
+        }
+    }
+
+    private fun toggleInversion() {
+        if (!inversionReady || inversionSaving) return
+        val previous = viewer.colorsInverted
+        val value = !previous
+        inversionSaving = true
+        viewer.setColorsInverted(value)
+        toolsPresentation.updateInversion(value, false)
+        settings.saveInversion(value) { result ->
+            if (isDestroyed) return@saveInversion
+            inversionSaving = false
+            result.onFailure {
+                viewer.setColorsInverted(previous)
+                reportError(R.string.settings_error)
+            }
+            toolsPresentation.updateInversion(viewer.colorsInverted, true)
         }
     }
 
@@ -455,6 +545,7 @@ class MainActivity : Activity() {
         grantFlags: Int = 0,
         relink: String? = null
     ) {
+        libraryManagement.close()
         closePageText()
         saveReading()
         clearFailedOpen()
@@ -669,7 +760,7 @@ class MainActivity : Activity() {
     }
 
     private fun refreshLibrary() {
-        library.execute({ it.list() }) { result ->
+        library.execute({ it.snapshot() }) { result ->
             if (isDestroyed || viewer.visibility == View.VISIBLE) return@execute
             result.onSuccess(homePresentation::render)
                 .onFailure { reportError(R.string.library_error) }
@@ -1565,6 +1656,7 @@ class MainActivity : Activity() {
             reading && toolsPresentation.scrubber.cancelPreview() -> Unit
             reading && readerTools.visibility == View.VISIBLE -> hideTools()
             reading -> showLibrary()
+            homePresentation.finishManaging() -> Unit
             else -> finish()
         }
     }
@@ -1604,6 +1696,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         toolsPresentation.scrubber.cancelPreview()
+        libraryManagement.close()
         closePageText()
         resumed = false
         updateDisplayWindow()
@@ -1625,6 +1718,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        libraryManagement.close()
         closePageText()
         resumed = false
         updateDisplayWindow()
@@ -1641,6 +1735,8 @@ class MainActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         toolsPresentation.scrubber.cancelPreview()
+        outState.putBundle("libraryUi", homePresentation.saveState())
+        outState.putString("importShelf", importShelf)
         outState.putString("displayTheme", displaySettings.theme.name)
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
