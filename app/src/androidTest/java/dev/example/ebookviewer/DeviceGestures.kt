@@ -37,21 +37,37 @@ class DeviceGestures(
             )
             keepAwake(activity)
             var stableSince = SystemClock.uptimeMillis()
-            await("Activity did not settle after launch") {
-                val latest = monitor.lastActivity ?: activity
-                if (latest !== activity) {
-                    activity = latest
-                    stableSince = SystemClock.uptimeMillis()
-                    if (keepScreenAwake) {
-                        activity.window.addFlags(
-                            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                        )
+            var replacements = 0
+            try {
+                await("Activity did not settle after launch") {
+                    val latest = monitor.lastActivity ?: activity
+                    if (latest !== activity) {
+                        activity = latest
+                        replacements++
+                        stableSince = SystemClock.uptimeMillis()
+                        if (keepScreenAwake) {
+                            activity.window.addFlags(
+                                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                            )
+                        }
                     }
+                    !activity.isDestroyed &&
+                        !activity.isFinishing &&
+                        activity.window.decorView.hasWindowFocus() &&
+                        SystemClock.uptimeMillis() - stableSince >= 250
                 }
-                !activity.isDestroyed &&
-                    !activity.isFinishing &&
-                    activity.window.decorView.hasWindowFocus() &&
-                    SystemClock.uptimeMillis() - stableSince >= 250
+            } catch (error: AssertionError) {
+                val state = onMain {
+                    val decor = activity.window.decorView
+                    "destroyed=${activity.isDestroyed}, finishing=${activity.isFinishing}, " +
+                        "focus=${decor.hasWindowFocus()}, attached=${decor.isAttachedToWindow}, " +
+                        "shown=${decor.isShown}, replacements=$replacements, " +
+                        "requested=${activity.requestedOrientation}, " +
+                        "configuration=${activity.resources.configuration.orientation}"
+                }
+                // launch() may fail before the caller owns an Activity to close in its finally.
+                onMain { activity.finish() }
+                throw AssertionError("Activity launch state: $state", error)
             }
             return activity
         } finally {

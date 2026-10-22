@@ -112,6 +112,8 @@ class GestureDeviceTest {
             repeat(6) { ui.pinch(view) }
             repeat(4) { ui.drag(view, true) }
             val before = ui.state(view)
+            val beforeMotion = ui.onMain { scrollFinished(view) }
+            val beforeBounds = ui.onMain { "${view.width}x${view.height}" }
             assertTrue(before.getDouble("zoom") > 8.0)
             val requested = if (view.width <
                 view.height
@@ -124,11 +126,29 @@ class GestureDeviceTest {
             activity = requireNotNull(instrumentation.waitForMonitorWithTimeout(monitor, 10_000))
             val restored = ui.awaitReady(activity)
             val after = ui.state(restored)
-            assertEquals(before.getDouble("zoom"), after.getDouble("zoom"), 0.000001)
-            assertEquals(before.getDouble("centerY"), after.getDouble("centerY"), 2.0)
+            val diagnostic = ui.onMain {
+                val beforeMode = before.getString("pageSizeMode")
+                val afterMode = after.getString("pageSizeMode")
+                "Synthetic rotation: bounds=$beforeBounds->${restored.width}x${restored.height}, " +
+                    "scrollFinished=$beforeMotion->${scrollFinished(restored)}, " +
+                    "page=${before.getInt("page")}->${after.getInt("page")}, " +
+                    "mode=$beforeMode->$afterMode, " +
+                    "gap=${before.getInt("pageGap")}->${after.getInt("pageGap")}, " +
+                    "zoom=${before.getDouble("zoom")}->${after.getDouble("zoom")}, " +
+                    "y=${before.getDouble("centerY")}->${after.getDouble("centerY")}, " +
+                    "focus=${restored.hasWindowFocus()}"
+            }
+            assertEquals(diagnostic, before.getDouble("zoom"), after.getDouble("zoom"), 0.000001)
+            assertEquals(diagnostic, before.getDouble("centerY"), after.getDouble("centerY"), 2.0)
         } finally {
             instrumentation.removeMonitor(monitor)
             instrumentation.runOnMainSync { activity.finish() }
         }
+    }
+
+    private fun scrollFinished(view: PdfCanvasView): Boolean {
+        val field = PdfCanvasView::class.java.getDeclaredField("scroller")
+        field.isAccessible = true
+        return (field.get(view) as android.widget.OverScroller).isFinished
     }
 }
