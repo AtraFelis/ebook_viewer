@@ -4,6 +4,8 @@
 
 ## 현재 진행 — PDF 색반전·여러 파일·책장
 
+사용자 요청으로 구현620cfd0을 전용 브랜치에 일반 push하고 [PR #32](https://github.com/AtraFelis/ebook_viewer/pull/32)를 생성했다(OPEN/ready). 최초 PR CI39827236504 성공, 수동6347641116/봇6347643658의 실제29파일 리뷰 완료(PRR_kwDOVLKYJM8AAAABTuegTg)를 확인했다. 타당한 선택 패널 초기 가시성 지적1개를 수정했고, 독립 점검으로 늦은 책장 응답의 대화상자 수명도 보완했다. 수정 코드의 strict 앱/계측/unsigned release·단위69개/실패0·양 Lint issue0·ktlint49초 통과다. 포함 리뷰 잔여0이므로 유료/중복 재요청은 하지 않는다. 수정은 같은 PR 브랜치에 일반 push하고 CI/스레드 해결을 확인한다. 리뷰 결과와 대응은 [게시/리뷰 이력](docs/history/2026-10-22-07-library-pr-review.md)에 이어 기록한다.
+
 사용자 추가 기능을 `feat/pdf-inversion-and-bookshelves`에서 구현했다. 기반은 GitHub main/b6df772이며 최초 work의 변경을 보존해 전용 브랜치로 분리했다. 새 런타임 의존성은 없다.
 
 - 읽기 도구의 PDF 색반전 토글과 전체 문서 공통 설정 저장. PDF paint만 반전하며 외부 배경·자동 분석 원본·줌/캐시 유지.

@@ -15,23 +15,36 @@ internal class LibraryManagement(
     private val failed: () -> Unit
 ) {
     private var dialog: AlertDialog? = null
+    private var dialogGeneration = 0L
     private fun live(): Boolean = !activity.isDestroyed && !activity.isFinishing && available()
 
     fun close() {
-        dialog?.dismiss()
+        dialogGeneration++
+        val previous = dialog
         dialog = null
+        previous?.dismiss()
     }
 
     private fun show(value: AlertDialog) {
         close()
         if (!live()) return
         dialog = value
+        value.setOnDismissListener {
+            if (dialog === value) {
+                dialog = null
+                dialogGeneration++
+            }
+        }
         value.show()
     }
 
     private fun catalog(complete: (LibraryCatalog) -> Unit) {
+        val generation = ++dialogGeneration
         repository.execute({ it.snapshot() }) { result ->
-            if (live()) result.onSuccess(complete).onFailure { failed() }
+            // A dismissed or superseded request must not reopen an old management dialog.
+            if (live() && generation == dialogGeneration) {
+                result.onSuccess(complete).onFailure { failed() }
+            }
         }
     }
 
@@ -143,11 +156,16 @@ internal class LibraryManagement(
                     }) { result ->
                         if (live()) {
                             result.onSuccess {
-                                close()
+                                // The save can complete after the user opened a different dialog.
+                                if (dialog === current) close()
                                 refresh()
                             }.onFailure {
-                                current.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = true
-                                input.error = activity.getString(R.string.library_change_error)
+                                if (dialog === current && current.isShowing) {
+                                    current.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = true
+                                    input.error = activity.getString(R.string.library_change_error)
+                                } else {
+                                    failed()
+                                }
                             }
                         }
                     }

@@ -58,6 +58,7 @@ internal class ReaderHomeView(
     private val remove = style.button(R.string.remove_selected) { onRemoveMany(selected.toSet()) }
     private val selection = column().apply {
         id = R.id.library_selection
+        visibility = View.GONE
         spaced(selectionCount, 8)
         spaced(
             style.button(R.string.select_all_documents) {

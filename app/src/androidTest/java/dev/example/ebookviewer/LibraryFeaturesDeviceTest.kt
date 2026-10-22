@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.net.Uri
+import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
@@ -137,6 +138,10 @@ class LibraryFeaturesDeviceTest {
                     {}, {}, {}, { opened = true }, {}, { removed = it }, {}, { _, _, _ -> }, {}
                 )
                 val home = createHome()
+                assertEquals(
+                    View.GONE,
+                    home.view.findViewById<View>(R.id.library_selection).visibility
+                )
                 home.render(LibraryCatalog(records))
                 ui.views(home.view).filterIsInstance<Button>().first {
                     it.text == activity.getString(R.string.manage_documents)
