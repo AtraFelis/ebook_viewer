@@ -39,3 +39,11 @@ Build Tools34.0.0 apksigner verify: Verifies, v1/v2 true·signer1. 기존 AGP ap
 최종 앱64b5ceb7369945f106eac6ce860214ec9b85a8323055cac3fed67ae8dc4c3d8d/계측f0e5d3288188a1983dea84882af9ce9b084a820879016480a42077d03b7fe14e 설치본 해시 일치, -r 업데이트(앱 삭제/데이터 초기화 없음), am start -W Status: ok·원래font_scale1.1·앱/계측 force-stop·ADB프로세스0을 확인했다. 원문 라이선스 바이트는 .gitattributes의 해당 txt LF 규칙으로 Windows checkout에서도 보존한다. 사용자 디자인은 이후128줄로 늘었으며 이번 커밋에서 제외한다.
 
 이번 검증/고지·문서 정리는 완료했지만 단일91개 전체 실행 성공·위 미확정 원인·실제 OOM/다른 기기/API·최종 아이콘/프로젝트 라이선스·release서명/실제배포는 완료가 아니다. 새 런타임 의존성/앱 Kotlin 실행 코드/저장 형식 변경 없이 별도 PR로 게시하고 실제 리뷰/CI·사용자 병합은 후속 확인한다.
+
+게시: 04294fe00a60f717713f6a5867c18fa8731bd97c 일반 push·PR #27 OPEN/isDraft=false/base main 생성/채팅 첨부. 수동 요청6333176748 한 번에 봇6333178154 Review triggered·요약6333176392의 실제19파일 처리 중을 확인했다. CI39725961666/39725943014은 IN_PROGRESS이며 완료 리뷰 API는 아직 비어 있다. 동일 head 중복 호출·리뷰 처리 중 상태 기록만의 재push·앱/ADB 재시작·에이전트 병합은 하지 않는다. 게시 상태는 로컬에 모으며 실제 리뷰/타당한 수정·CI와 사용자 병합이 남아 있다.
+
+추가 정정/실제 UI 수정: PR 최초 head04294fe의 번호 기대값을 FrameLayout 구현 식으로 맞춘 것만으로는 의미적인 안전 영역 중앙을 검증하지 못했다. 원래 안전 영역 식은 타당했고 실제 CENTER_HORIZONTAL/비대칭 전체 margin 적용이 번호를 두 배 치우치게 하는 구현 문제도 있었다. 이 판단을 정정하고 MainActivity 번호 overlay를 safe margin 안의 MATCH_PARENT 너비/BOTTOM으로 최소 변경했다. PageNumberView의 투명 바탕·중앙 glyph/외곽선/터치는 유지한다. 테스트는 기존1px 조건의 안전 영역 중앙 계산으로 되돌렸고 배치 너비/중력 조건을 새 구조에 맞춘다. 단순 구현 모방으로 실패를 숨기지 않는다. 새 strict 앱/계측·Lint·ktlint18초 통과, chrome3/font1/immersive7 관련11개를 실행 중이며 원래91개/20분은 반복하지 않는다.
+
+추가 수정 최종 결과: 새 앱81fc92890ab75f7fdb0c36a0b5829914bf36c9090c389dd48e7b4a8c09fc2db4/계측c7d4c190e95e08b6f2eb9ab84e17c9c409be237e7d0b032ab90be41f462bfe5b에서 chrome3/font1/immersive7 합11개/실패0을 확인했다(p3-safe-center.txt/progress.json). strict 앱/계측/Lint/ktlint18초 통과, 설치본 해시 일치·-r 업데이트·앱실행Status ok·원래font_scale1.1·앱/계측/ADB프로세스0을 다시 확인했다. 서명 검증도 통과했다. 실제 MainActivity 배치를 바꾼 뒤에는 원래91개 분할 결과를 이 앱의 전체91개 재실행으로 주장하지 않고 관련11개의 실제 회귀로 구분한다. 이전64b5ceb7의 DEX20개 동일성 설명은 실제 배치 수정 전의 고지 단계 근거다.
+
+PR 최초 head04294fe CI39725961666/39725943014 모두SUCCESS·실제 CodeRabbit5609528462/19파일/지적1개를 확인했다. 검증 전략5행의41/48개를 현재 결과처럼 쓴 지적4344763871은 타당해 과거 표시 설정 당시 결과로 바꿨다. 별도 AutoFix/CLI 설치·실행 지시는 따르지 않았다. 의미 있는 번호 실제 수정과 문서 지적을 모아 같은 PR에 일반 push하며 새 head의 CI/실제 재검토·사용자 병합을 별도 확인한다.
