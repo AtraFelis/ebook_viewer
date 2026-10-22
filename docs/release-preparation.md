@@ -1,6 +1,6 @@
 # 빌드·설치·라이선스와 배포 준비
 
-2026-10-22 (Asia/Seoul). 개인용 API33 기기의 현재 구성을 점검한 문서다. 이번에는 debug APK의 고지·빌드·설치 절차를 정리하며 release 빌드/키 생성/실제 배포는 실행하지 않는다. 검증 결과와 APK별 범위는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)을 따른다.
+2026-10-22 (Asia/Seoul). P3 debug APK의 고지·설치 점검을 바탕으로 개인용 release 준비를 보완했다. [현재 개인용 빌드·키 생성·업데이트 절차](personal-release.md)를 먼저 따른다. 실제 개인용 키/설치는 미실행이며 임시 키 검증과 구분한다. 이전 APK 검증 범위는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)을 따른다.
 
 ## 현재 산출물과 다시 빌드하기
 
@@ -13,7 +13,7 @@ Set-Location 'C:\Users\cotjs\workspace\ebook_viewer'
 Get-FileHash ./app/build/outputs/apk/debug/app-debug.apk -Algorithm SHA256
 ```
 
-앱은 `app/build/outputs/apk/debug/app-debug.apk`, 계측 APK는 `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`다. 기기/사용자에게 제공하는 앱 APK와 개발 검사 전용 APK를 구분한다. 현재 applicationId는 `dev.example.ebookviewer.p0`, versionCode1/versionName `0.1.0-p0`이며 이번 점검에서 변경하지 않는다. 테스트·Lint의 up-to-date 재사용과 실제 새 실행을 이력에서 구분한다.
+앱은 `app/build/outputs/apk/debug/app-debug.apk`, 계측 APK는 `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`다. 개발용 debug/profile ID `dev.example.ebookviewer.p0`는 유지하고 새 정식판 ID는 `dev.example.ebookviewer`다. 버전은 gradle.properties의0.1.0/code2, debug/profile suffix는-dev/-profile이다. 이전 P3 기기 점검의 code1/0.1.0-p0와 새 빌드/새 정식판을 구분하며 up-to-date 결과를 새 검사 실행으로 보고하지 않는다.
 
 ## 개인 기기 설치와 업데이트
 
@@ -46,9 +46,9 @@ JUnit4.13.2(EPL-1.0)와 Hamcrest1.3(New BSD/3-clause)는 단위/기기 검사 �
 
 ## 공개 배포 전에 남은 결정
 
-- 저장소 자체의 LICENSE가 아직 없다. 제3자 Apache-2.0 고지는 앱 자체를 Apache-2.0으로 허가하는 선언이 아니다. 공개 라이선스 선택은 사용자 결정 후 별도로 반영한다.
+- 저장소 자체의 LICENSE는 사용자 결정으로 보류했다. 사용자는 앱 사용 허가와 코드 수정·재배포 허가를 구분한 뒤 코드 라이선스를 적용하지 않기로 했다. 제3자 Apache-2.0 고지가 앱 자체의 라이선스를 정하지는 않는다.
 - 2026-10-22 사용자가 첨부한 아이콘을 최종 선택했고 일반/adaptive/단색 테마 런처 리소스로 적용했다. 원본 [PNG](design-assets/selected-launcher-icon.png)와 대응 [SVG](design-assets/selected-launcher-icon.svg)를 보존하며 APK에는 vector만 넣는다. 출처는 사용자가 선택한 별도 디자인 작업의 자체 SVG 시안이다. 프로젝트 공개 라이선스 결정은 별도이며 선택/적용을 모든 법적 권리 검증으로 확대하지 않는다. [검증 범위](history/2026-10-22-03-launcher-icon.md).
-- applicationId/제품 버전 정책과 release 서명·키 보관/업데이트 방식을 정해야 한다. 현재 debug APK는 개발용, profile APK는 비디버그 계측용이지만 debug 키 서명이며 출시물이 아니다. release는 아직 서명 설정이 없다.
+- applicationId/버전과 명시적 로컬 release 서명·직접 APK 업데이트 절차는 [ADR0017](adr/0017-personal-release-identity-and-signing.md)로 정했다. debug는 개발용, profile은 debug 키 서명의 비디버그 계측용이며 정식판이 아니다. 실제 개인용 키 생성·백업·그 키의 APK 설치/수용은 아직 남아 있다.
 - release용 버전·서명·최적화 설정을 결정한 다음 해당 **실제 release 산출물**의 설치/업데이트·기능·서명/고지/개인 데이터 제외를 다시 확인한다. debug 통과를 미생성 release의 검증으로 바꾸지 않는다.
 - 외부 배포/스토어 등록·개인정보 안내·대상 API/기기 확장은 현재 개인용 범위와 별도로 결정한다. 실제 게시/릴리스는 사용자 승인 전 진행하지 않는다.
 

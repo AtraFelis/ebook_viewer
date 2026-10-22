@@ -6,10 +6,20 @@
 
 ## 문서 기반
 
+- [x] 개인용 정식판 새 기록/설정·코드 라이선스 보류 사용자 결정 반영. main973f784 기반 codex/release-preparation·기존 사용자 변경 보존/디자인 문서 제외.
+- [x] ADR0017·정식판 ID dev.example.ebookviewer/개발용·profile ID .p0 유지·0.1.0/code2·버전 중앙 관리와 SecureString/환경변수 로컬 서명/개인 키 보호·unsigned CI/실제 APK 식별자 검사 구현.
+- [x] strict debug/계측/profile/unsigned release·단위·양 Lint·ktlint17초 통과. 단위53개 캐시 재사용, Lint debug0/0/info6·release0/0/info4. APK 식별자/버전/debuggable/고지·개인 파일 제외 확인.
+- [x] 임시 키 서명 생성/재사용/검증·기존 키 보호/잘못된 비밀번호/저장소 경로 거부/출력 충돌 보존/환경 복원/자격 누락 실패/unsigned 복원 검증 exit0. 최종 내부 빌드7/7/7/8초. 일회용 키 디렉터리0·ADB0·기기/실제 개인용 키 미사용.
+- [ ] 실제 개인용 키 생성·백업/해당 키 APK 설치·기능 수용: 사용자가 로컬 마스킹 입력으로 키 생성 후 진행. 코드 LICENSE는 보류, 외부 배포/스토어 업로드 미실행.
+
 - [x] PR #28 사용자 병합a58b020·CI두 건 SUCCESS 확인. 실제 외부 리뷰는 한도로 미실행 이력 유지. 현재 체크아웃 ff-only·codex/launcher-icon·사용자 디자인 변경 제외/보존.
 - [x] 선택 아이콘의 일치 SVG 원본 보존·일반/adaptive/단색 테마 vector 적용. 원본/일반/중앙 adaptive 미리보기 픽셀 차이0·핵심 표시 안전 원 내·원형/둥근 사각형/48·32px 시각 확인.
 - [x] 아이콘 strict 앱·계측·단위·Lint·ktlint7초 통과. 단위53개는 캐시 재사용·Lint 오류/경고0/정보6. APK manifest/아이콘4개·서명·고지3개 불변 확인. 앱/stdlib DEX 동일·generated R 전용 DEX만 변경.
 - [x] API33 최종 앱5e918346 동일 서명 -r 설치·해시 일치/실행Status ok·font_scale1.1 불변·앱/계측/ADB0. 기존 데이터 초기화/새 앱 테스트/전체91개/20분 없음. 실제 런처 화면·시스템 테마 사용자 수용/다른 API 기기는 미확인.
+- [x] 설치된 홈/앱 목록 색상 아이콘 사용자 수용: “새 아이콘이 잘 보여요”. 앞선 미확인을 갱신하며 시스템 단색 테마/다른 API 수용은 미확인으로 유지한다. 봇6333924577 후속 rate limited/실제 리뷰 API 비어 있음 확인, 한도 중 재호출/상태 기록 재push/기기 검사 없음.
+- [x] 아이콘7566f21 일반 push·PR #29 생성/첨부·수동6333923316 한 번/봇6333924577 Review triggered 응답 확인. 사용자 디자인 변경 제외/보존.
+- [x] PR #29 CI39731267009/39731254725 모두SUCCESS·사용자 병합973f784(2026-10-22 15:12 KST). 현재 체크아웃 ff-only·사용자 변경 보존. 색상 아이콘 구현/설치/사용자 수용/병합 완료.
+- [ ] PR #29 실제 외부 리뷰: 한도 응답 뒤 실제 review/inline API가 비어 있어 미실행 이력으로 유지한다. 성공 체크를 실제 완료로 세지 않으며 병합 뒤 재호출하지 않는다.
 
 - [x] PR #27 사용자 병합 후 origin/main4822bc7 ff-only·현재 체크아웃 codex/p3-rotation-focus-stability·기존 변경 보존. [제한 조사 계획](docs/plan/p3-rotation-focus-stability.md) 작성.
 - [x] 원래 세 검사 정순3/실패0·65초, 진단 보완 뒤 역순3/실패0·60초. 총6회/고유3개이며 전체91개/20분 반복 없음. 앱81fc9289 불변·계측29545cf8 설치본 확인·font_scale1.1 복원·앱/계측/ADB 종료.
