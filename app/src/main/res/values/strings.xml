@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="view_settings">보기 설정</string>
+    <string name="read_text_short">본문 읽기</string>
+    <string name="automatic_short">자동</string>
+    <string name="color_soft_green">연한 초록색</string>
+    <string name="color_sky_blue">연한 하늘색</string>
+    <string name="custom_color_short">직접 입력</string>
+    <string name="brightness_short">밝기</string>
+    <string name="invert_pdf_label">PDF 색반전</string>
     <string name="page_crop_settings">페이지 여백 자르기</string>
     <string name="crop_description" formatted="false">위 PDF 미리보기에서 파란색으로 표시한 여백을 숨깁니다. 이 문서 전체에 원본 크기의 비율로 적용합니다(0~45%). 적용 전에는 저장되지 않으며 원본 파일과 본문 읽기는 바뀌지 않습니다.</string>
     <string name="crop_preview_loading">PDF 미리보기 준비 중…</string>
@@ -24,7 +32,6 @@
     <string name="manage_documents">문서 관리</string>
     <string name="finish_managing">관리 마침</string>
     <string name="resume_document">%1$s 이어 읽기</string>
-    <string name="remove_document_record">%1$s 기록에서 삭제</string>
     <string name="document_metadata">%1$d / %2$d페이지 · %3$s</string>
     <string name="home_welcome">읽기를 시작해 볼까요?</string>
     <string name="home_local_description">기기의 PDF를 열어 보세요. 읽던 위치는 이 기기에 저장돼요.</string>
@@ -39,7 +46,7 @@
     <string name="page_text_memory">여유 메모리가 부족해 본문 읽기를 시작하지 않았습니다. PDF 읽기는 계속할 수 있습니다.</string>
     <string name="page_text_unsupported">이 Android 환경에서는 페이지 본문 읽기를 지원하지 않습니다. PDF 읽기는 계속할 수 있습니다.</string>
     <string name="app_name">PDF Viewer</string>
-    <string name="open_pdf">PDF 열기</string>
+    <string name="open_pdf">PDF 추가 · 여러 파일 선택</string>
     <string name="sample_pdf">합성 100페이지</string>
     <string name="ready">PDF를 열거나 합성 문서로 렌더링을 확인하세요.</string>
     <string name="loading">문서를 준비하고 있습니다…</string>
@@ -57,8 +64,7 @@
     <string name="document_ready">준비된 %1$d페이지 · 핀치 확대 / 자유 이동</string>
     <string name="viewer_description">연속 PDF 읽기 영역</string>
     <string name="continue_reading">이어 읽기</string>
-    <string name="recent_documents">최근 문서</string>
-    <string name="no_documents">아직 읽은 문서가 없습니다.</string>
+    <string name="no_documents">이 목록에 등록한 문서가 없습니다.</string>
     <string name="untitled_pdf">PDF 문서</string>
     <string name="reading_entry">%1$s · %2$d / %3$d페이지</string>
     <string name="select_again">파일 다시 선택</string>
@@ -67,7 +73,7 @@
     <string name="save_error">읽기 위치를 저장하지 못했습니다. 저장 공간을 확인해 주세요.</string>
     <string name="remove_record">기록에서 삭제</string>
     <string name="remove_record_message">목록과 읽기 위치를 삭제할까요? 원본 PDF 파일은 삭제하지 않습니다.</string>
-    <string name="remove_record_hint">항목을 길게 누르면 원본 파일을 유지하고 기록만 삭제할 수 있습니다.</string>
+    <string name="remove_record_hint">문서 관리에서 여러 권을 선택해 이동하거나 삭제할 수 있어요. 원본 PDF 파일은 유지합니다.</string>
     <string name="settings">설정</string>
     <string name="display_settings">테마·밝기·화면 유지</string>
     <string name="app_theme">앱 테마</string>
@@ -104,7 +110,6 @@
     <string name="color_paper">종이색</string>
     <string name="show_page_numbers">읽는 동안 페이지 번호 표시</string>
     <string name="current_page">%1$d / %2$d</string>
-    <string name="page_scrub_preview">현재 %1$d / %2$d · 이동할 %3$d</string>
     <string name="go_to_page">페이지 이동</string>
     <string name="page_number_hint">1~%1$d 사이의 페이지 번호를 입력하세요.</string>
     <string name="page_number_value">%1$d</string>
@@ -122,4 +127,27 @@
     <string name="bookmarks_error">북마크를 읽거나 저장하지 못했습니다. 기존 파일은 유지합니다.</string>
     <string name="close_settings">닫기</string>
     <string name="reader_gesture_hint">읽는 중 화면 중앙을 탭하면 설정과 문서 목록을 열 수 있습니다.</string>
+    <string name="library_documents">등록한 문서</string>
+    <string name="all_documents">전체 문서</string>
+    <string name="uncategorized">미분류</string>
+    <string name="manage_bookshelves">책장 관리</string>
+    <string name="add_bookshelf">책장 추가</string>
+    <string name="rename_bookshelf">책장 이름 변경</string>
+    <string name="delete_bookshelf">책장 삭제</string>
+    <string name="delete_bookshelf_message">책장을 삭제할까요? 안의 문서는 미분류로 이동하며 원본 파일과 읽기 기록은 유지합니다.</string>
+    <string name="bookshelf_name_hint">책장 이름 (최대 100자)</string>
+    <string name="bookshelf_name_required">책장 이름을 입력하세요.</string>
+    <string name="select_document">%1$s 선택</string>
+    <string name="select_all_documents">현재 목록 전체 선택 / 해제</string>
+    <string name="no_selection">선택한 문서 없음</string>
+    <string name="documents_selected">%1$d권 선택</string>
+    <string name="move_to_bookshelf">선택한 문서 책장 이동</string>
+    <string name="remove_selected">선택한 문서 삭제</string>
+    <string name="remove_selected_message">선택한 %1$d권을 목록과 읽기 기록에서 삭제할까요? 원본 PDF 파일은 삭제하지 않습니다.</string>
+    <string name="move_document_up">위로 이동</string>
+    <string name="move_document_down">아래로 이동</string>
+    <string name="library_change_error">문서 목록을 저장하지 못했습니다. 기존 목록을 유지했어요. 저장 공간을 확인하고 다시 시도하세요.</string>
+    <string name="reselect_one_pdf">다시 연결할 PDF 한 개를 선택하세요.</string>
+    <string name="importing_pdfs">PDF를 목록에 추가하고 있습니다…</string>
+    <string name="pdf_import_result">%1$d권 추가 · 기존 %2$d권 · 실패 %3$d권 · 임시 권한 %4$d권. 임시 권한 문서는 재시작 후 다시 선택해야 할 수 있습니다.</string>
 </resources>

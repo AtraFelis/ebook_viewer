@@ -197,7 +197,19 @@ class SettingsNavigationDeviceTest {
         var activity = ui.launch()
         try {
             var viewer = ui.sample(activity)
-            ui.pinch(viewer)
+            // Fix the top-edge fixture independently of the device's initial orientation/fit zoom.
+            ui.onMain {
+                val catalog = PdfCanvasView::class.java.getDeclaredField("layout").apply {
+                    isAccessible = true
+                }.get(viewer) as DocumentLayout
+                viewer.reset()
+                viewer.restorePosition(ReadingPosition(0, 0.5, 0.0, 4.0))
+                // Only a fresh catalog consumes restoration; later batches preserve the live anchor.
+                viewer.setPages(catalog.pages)
+            }
+            ui.await("Top-edge fixture did not restore") {
+                viewer.readingPosition()?.let { it.page == 0 && it.zoom == 4.0 } == true
+            }
             val before = ui.state(viewer)
             val parent = openRoot(activity, viewer)
             val background = openChild(activity, parent, R.string.background_settings)

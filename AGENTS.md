@@ -14,7 +14,7 @@
 | 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
 | 앱 UI | 플랫폼 Activity + View/Canvas, P1 전체 화면/중앙 탭 도구/방향 설정. Compose 셸 최종 선택은 후속 비교 |
 | PDF | P0 PdfRenderer 승인. API 33 합성 문서·test provider 계측 완료, 다른 기기 미검증. 본문 읽기는 플랫폼 PdfRenderer/PreV의 요청별 isolated process(ADR 0015). 범위·제한은 ADR 0001/0007/0015. 비탐색 파일은 취소/256MiB 상한의 익명 임시 복사 |
-| 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v4는 문서별 크기/간격·가로 이동 잠금·원본을 보존하는 공통 여백을 저장하고 v1/v2/v3를 읽음(ADR 0006/0016/0018). 배경색 v2는 자동/수동 선택을 추가하고 v1 수동색을 읽음(ADR 0004/0013/0018). 테마/읽기 밝기/화면 유지는 별도 v1(ADR 0014). 북마크/방향/번호 표시는 별도 v1(ADR 0002/0003/0005). 추가 저장 라이브러리 없음 |
+| 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v5는 책장·소속·사용자 순서를 추가하고 v1~v4를 읽음(ADR 0019). v4 필드는 문서별 크기/간격·가로 이동 잠금·원본을 보존하는 공통 여백을 저장하고 v1/v2/v3를 읽음(ADR 0006/0016/0018). 배경색 v2는 자동/수동 선택을 추가하고 v1 수동색을 읽음(ADR 0004/0013/0018). 테마/읽기 밝기/화면 유지는 별도 v1(ADR 0014). 북마크/방향/번호 표시는 별도 v1(ADR 0002/0003/0005). PDF 색반전은 별도 v1 설정(ADR 0019). 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
 | 개인용 배포 준비 | ADR0017: debug/profile ID dev.example.ebookviewer.p0 유지, release dev.example.ebookviewer 별도 설치·새 기록. versionCode/Name은 gradle.properties. 명시적 로컬 서명만 사용하고 실제 개인용 키/설치·프로젝트 코드 LICENSE는 아직 미완료/보류 |
@@ -28,9 +28,9 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 여백/원본 앵커·타일·기록v1/v2/v3→v4·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·슬라이더·첫 안내 상태59개 통과 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 여백/원본 앵커·타일·기록v1/v2/v3→v4·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·슬라이더·첫 안내 상태 및 책장/색반전·보기 설정 상태 포함73개 통과(클라우드/Windows 단위 실행; 기기 검증과 별도) |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API33 기본91개 고유 검사를 분할 보완한 뒤 번호 실제 배치 수정 앱의 관련11개/실패0 확인. 수정 앱의 전체91개 재실행 아님. 최초81통과/3실패/7미완료와 미재현 회전·포커스 이력은 [P3 최종 기록](docs/history/2026-10-22-01-p3-final-verification.md)에 보존. 전체 제한900초/개별 선택 지원, 실제 OOM/다른 API 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API33 책장/배경 관련12개 성공 뒤 작은 읽기 도구 관련 고유14개 분할 보완, 이후 버튼 배경 제거/새 색상 관련2개 성공(2026-10-23). 마지막 한 APK의 전체 재실행 아님. [본문 UI 결과](docs/history/2026-10-23-02-compact-reader-tools.md)·[최신 시각 보완](docs/history/2026-10-23-03-plain-reader-actions.md). 기본 기대96개 전체 미실행. [로컬 결과](docs/history/2026-10-23-01-local-library-validation.md), 이전91개 분할/실패 이력은 [P3 기록](docs/history/2026-10-22-01-p3-final-verification.md)에 보존. 전체 제한900초/개별 선택 지원, 실제 OOM/다른 API 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 

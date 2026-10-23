@@ -2,16 +2,21 @@ package dev.example.ebookviewer
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.os.Bundle
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.view.Gravity
 import android.view.View
 import android.view.View.AccessibilityDelegate
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams
 import android.widget.ProgressBar
+import android.widget.Spinner
 import android.widget.TextView
 
 /** Presentation of existing records only; opening, removal and persistence stay in the Activity. */
@@ -24,7 +29,11 @@ internal class ReaderHomeView(
     onPick: () -> Unit,
     onSample: () -> Unit,
     private val onOpen: (ReadingRecord) -> Unit,
-    private val onRemove: (ReadingRecord) -> Unit
+    private val onRemove: (ReadingRecord) -> Unit,
+    private val onRemoveMany: (Set<String>) -> Unit,
+    private val onMove: (Set<String>) -> Unit,
+    private val onReorder: (String, Int, String?) -> Unit,
+    onShelves: () -> Unit
 ) {
     val view = LinearLayout(context)
     private val style = ReaderStyle(context)
@@ -32,10 +41,68 @@ internal class ReaderHomeView(
     private val recent = column()
     private val manage = style.button(R.string.manage_documents) {
         managing = !managing
-        render(records)
+        selected.clear()
+        render(catalog)
     }
     private var records: List<ReadingRecord> = emptyList()
+    private var displayedRecords: List<ReadingRecord> = emptyList()
     private var managing = false
+    private var catalog = LibraryCatalog()
+    private val selected = linkedSetOf<String>()
+    var shelfFilter: String? = null
+        private set
+    private val shelfPicker = Spinner(context).apply { id = R.id.bookshelf_filter }
+    private var bindingShelves = false
+    private val selectionCount = secondaryLabel(R.string.no_selection)
+    private val move = style.button(R.string.move_to_bookshelf) { onMove(selected.toSet()) }
+    private val remove = style.button(R.string.remove_selected) { onRemoveMany(selected.toSet()) }
+    private val selection = column().apply {
+        id = R.id.library_selection
+        visibility = View.GONE
+        spaced(selectionCount, 8)
+        spaced(
+            style.button(R.string.select_all_documents) {
+                val visible = catalog.visible(shelfFilter).map { it.uri }
+                if (selected.containsAll(visible)) {
+                    selected.removeAll(visible.toSet())
+                } else {
+                    selected.addAll(visible)
+                }
+                render(catalog)
+            },
+            8
+        )
+        spaced(move, 8)
+        spaced(remove, 8)
+    }
+
+    fun finishManaging(): Boolean {
+        if (!managing) return false
+        managing = false
+        selected.clear()
+        render(catalog)
+        return true
+    }
+
+    fun saveState(): Bundle = Bundle().apply {
+        putBoolean("managing", managing)
+        putString("shelf", shelfFilter)
+        putStringArrayList("selected", ArrayList(selected))
+    }
+
+    fun restoreState(state: Bundle?) {
+        if (state == null) return
+        managing = state.getBoolean("managing")
+        shelfFilter = state.getString("shelf")
+        selected.addAll(state.getStringArrayList("selected").orEmpty())
+    }
+
+    private fun updateSelection() {
+        selection.visibility = if (managing) View.VISIBLE else View.GONE
+        selectionCount.text = context.getString(R.string.documents_selected, selected.size)
+        move.isEnabled = selected.isNotEmpty()
+        remove.isEnabled = selected.isNotEmpty()
+    }
 
     init {
         view.id = R.id.home_screen
@@ -72,9 +139,12 @@ internal class ReaderHomeView(
                     },
                     0
                 )
-                spaced(style.label(R.string.recent_documents, 18f, true), 24)
-                spaced(recent, 16)
+                spaced(style.label(R.string.library_documents, 18f, true), 24)
+                spaced(shelfPicker, 8)
+                spaced(style.button(R.string.manage_bookshelves, onClick = onShelves), 8)
                 spaced(manage, 16)
+                spaced(selection, 8)
+                spaced(recent, 16)
                 spaced(secondaryLabel(R.string.remove_record_hint, 12f), 12)
                 spaced(style.button(R.string.sample_pdf, onClick = onSample), 24)
                 spaced(secondaryLabel(R.string.reader_gesture_hint, 12f), 12)
@@ -83,11 +153,53 @@ internal class ReaderHomeView(
         )
     }
 
-    fun render(values: List<ReadingRecord>) {
-        records = values
+    fun render(value: LibraryCatalog) {
+        catalog = value
+        records = value.records
+        if (records.isEmpty()) {
+            managing = false
+        }
+        if (shelfFilter != null &&
+            shelfFilter != "" &&
+            value.shelves.none { it.id == shelfFilter }
+        ) {
+            shelfFilter = null
+        }
+        selected.retainAll(value.records.map { it.uri }.toSet())
+        bindingShelves = true
+        val choices = listOf(null, "") + value.shelves.map { it.id }
+        val labels =
+            listOf(
+                context.getString(R.string.all_documents),
+                context.getString(R.string.uncategorized)
+            ) +
+                value.shelves.map { it.name }
+        shelfPicker.adapter =
+            ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, labels)
+        shelfPicker.setSelection(choices.indexOf(shelfFilter).coerceAtLeast(0))
+        shelfPicker.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val filter = choices[position]
+                if (bindingShelves || filter == shelfFilter) return
+                shelfFilter = filter
+                selected.clear()
+                render(catalog)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+        bindingShelves = false
+        val values = value.visible(shelfFilter)
+        displayedRecords = values
+        selected.retainAll(values.map { it.uri }.toSet())
+        resume.visibility = if (managing) View.GONE else View.VISIBLE
         resume.removeAllViews()
         recent.removeAllViews()
-        val last = values.firstOrNull { it.position != null }
+        val last = records.firstOrNull { it.position != null }
         if (last != null) {
             resume.addView(secondaryLabel(R.string.last_read_document, 14f))
             resume.spaced(resumeCard(last), 16)
@@ -102,13 +214,13 @@ internal class ReaderHomeView(
         // The list always contains every record, including the resume card's document.
         // Management reveals explicit removal without making a long press the only route.
         if (values.isEmpty()) {
-            managing = false
             recent.addView(secondaryLabel(R.string.no_documents))
         }
-        values.forEach { record ->
-            recent.spaced(documentRow(record), if (recent.childCount == 0) 0 else 16)
+        values.forEachIndexed { index, record ->
+            recent.spaced(documentRow(record, index), if (recent.childCount == 0) 0 else 16)
         }
-        manage.isEnabled = values.isNotEmpty()
+        manage.isEnabled = records.isNotEmpty()
+        updateSelection()
         manage.setText(if (managing) R.string.finish_managing else R.string.manage_documents)
     }
 
@@ -146,7 +258,7 @@ internal class ReaderHomeView(
         )
     }
 
-    private fun documentRow(record: ReadingRecord): LinearLayout = card(0).apply {
+    private fun documentRow(record: ReadingRecord, index: Int): LinearLayout = card(0).apply {
         addView(
             column().apply {
                 id = R.id.home_record
@@ -156,9 +268,18 @@ internal class ReaderHomeView(
                 spaced(metadata(record), 8)
                 contentDescription = entryDescription(record)
                 isFocusable = true
-                setOnClickListener { onOpen(record) }
+                setOnClickListener {
+                    if (managing) {
+                        if (!selected.add(record.uri)) selected.remove(record.uri)
+                        render(catalog)
+                    } else {
+                        onOpen(record)
+                    }
+                }
                 setOnLongClickListener {
-                    onRemove(record)
+                    managing = true
+                    selected.add(record.uri)
+                    render(catalog)
                     true
                 }
                 val selectable = context.obtainStyledAttributes(
@@ -183,10 +304,34 @@ internal class ReaderHomeView(
         )
         if (managing) {
             spaced(
-                style.button(R.string.remove_record) { onRemove(record) }.apply {
-                    contentDescription = context.getString(
-                        R.string.remove_document_record,
-                        record.title
+                CheckBox(context).apply {
+                    id = R.id.select_document
+                    minHeight = style.dp(48)
+                    text = context.getString(R.string.select_document, record.title)
+                    isChecked = record.uri in selected
+                    buttonTintList = ColorStateList.valueOf(style.accent)
+                    setTextColor(style.text)
+                    setOnCheckedChangeListener { _, checked ->
+                        if (checked) selected.add(record.uri) else selected.remove(record.uri)
+                        updateSelection()
+                    }
+                },
+                0
+            )
+            val visible = displayedRecords
+            spaced(
+                LinearLayout(context).apply {
+                    addView(
+                        style.button(R.string.move_document_up) {
+                            onReorder(record.uri, -1, shelfFilter)
+                        }.apply { isEnabled = index > 0 },
+                        LayoutParams(0, -2, 1f)
+                    )
+                    addView(
+                        style.button(R.string.move_document_down) {
+                            onReorder(record.uri, 1, shelfFilter)
+                        }.apply { isEnabled = index < visible.lastIndex },
+                        LayoutParams(0, -2, 1f)
                     )
                 },
                 0

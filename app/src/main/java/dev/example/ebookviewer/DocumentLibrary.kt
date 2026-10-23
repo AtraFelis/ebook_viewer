@@ -11,38 +11,65 @@ import java.util.concurrent.Executors
 /** All methods belong to the repository's single IO thread, including construction. */
 class DocumentLibrary(file: File) {
     private val atomic = AtomicFile(file)
-    private var records = try {
-        atomic.openRead().use(ReadingRecordsCodec::read)
+    private var catalog = try {
+        atomic.openRead().use(ReadingRecordsCodec::readCatalog)
     } catch (error: FileNotFoundException) {
         // A missing file is an empty library; unreadable existing data must not be overwritten.
         if (file.exists()) throw error
-        emptyList()
+        LibraryCatalog()
     }
 
-    fun list(): List<ReadingRecord> = records.toList()
+    fun list(): List<ReadingRecord> = catalog.records.toList()
+
+    fun snapshot(): LibraryCatalog = catalog
 
     fun put(record: ReadingRecord, replacedUri: String? = null) {
-        val updated = (records.filter { it.uri != record.uri && it.uri != replacedUri } + record)
-            .sortedByDescending { it.openedAt }
-        write(updated)
+        write(catalog.put(record, replacedUri))
     }
 
-    fun remove(uri: String) {
-        write(records.filter { it.uri != uri })
+    fun addAll(records: List<ReadingRecord>, shelf: String?) {
+        // A destination removed while the system picker was open falls back to uncategorized.
+        write(catalog.addAll(records, shelf?.takeIf { id -> catalog.shelves.any { it.id == id } }))
+    }
+
+    fun remove(uri: String) = removeAll(setOf(uri))
+
+    fun removeAll(uris: Set<String>) {
+        write(catalog.remove(uris))
+    }
+
+    fun moveToShelf(uris: Set<String>, shelf: String?) {
+        write(catalog.moveToShelf(uris, shelf))
+    }
+
+    fun moveBy(uri: String, direction: Int, filter: String?) {
+        write(catalog.moveBy(uri, direction, filter))
+    }
+
+    fun addShelf(shelf: Bookshelf) {
+        write(catalog.addShelf(shelf))
+    }
+
+    fun renameShelf(id: String, name: String) {
+        write(catalog.renameShelf(id, name))
+    }
+
+    fun removeShelf(id: String) {
+        write(catalog.removeShelf(id))
     }
 
     fun updatePosition(uri: String, position: ReadingPosition) {
-        val current = records.firstOrNull { it.uri == uri } ?: return
+        val current = catalog.records.firstOrNull { it.uri == uri } ?: return
         // Merge on the IO queue after pending settings succeed or roll back; never resurrect deletion.
         put(current.copy(position = position))
     }
 
-    private fun write(updated: List<ReadingRecord>) {
+    private fun write(updated: LibraryCatalog) {
         val stream = atomic.startWrite()
         try {
-            ReadingRecordsCodec.write(stream, updated)
+            ReadingRecordsCodec.writeCatalog(stream, updated)
             atomic.finishWrite(stream)
-            records = updated
+            catalog = updated
         } catch (error: Exception) {
             atomic.failWrite(stream)
             throw error

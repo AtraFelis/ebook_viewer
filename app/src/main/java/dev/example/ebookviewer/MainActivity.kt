@@ -18,7 +18,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -45,6 +44,10 @@ class MainActivity : Activity() {
     )
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
+    private lateinit var libraryManagement: LibraryManagement
+    private var importShelf: String? = null
+    private var importRunning = false
+    private var pendingImportMessage: String? = null
     private lateinit var homePresentation: ReaderHomeView
     private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
@@ -52,6 +55,10 @@ class MainActivity : Activity() {
     private lateinit var readingWindow: ReadingWindow
     private lateinit var displayWindow: DisplayWindow
     private var displaySettings = DisplaySettings()
+    private var displayPreview: DisplaySettings? = null
+    private var viewSettingsDialog: ViewSettingsDialog? = null
+    private var viewSettingsOpen = false
+    private var viewSettingsGeneration = 0
     private var appliedDarkTheme = false
     private var resumed = false
     private lateinit var root: FrameLayout
@@ -77,7 +84,6 @@ class MainActivity : Activity() {
     private lateinit var pageTextClient: PageTextClient
     private lateinit var readPageButton: Button
     private lateinit var pageIndicator: PageNumberView
-    private lateinit var pageJumpButton: Button
     private lateinit var bookmarksButton: Button
     private var pageNumbersVisible = false
     private data class PageTarget(val page: Int, val y: Double? = null)
@@ -135,7 +141,7 @@ class MainActivity : Activity() {
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
                 if (first) {
-                    if (quickOrientationOpen) showTools() else hideTools()
+                    if (quickOrientationOpen || viewSettingsOpen) showTools() else hideTools()
                 }
                 if (first) {
                     hintState.documentOpened()
@@ -160,6 +166,7 @@ class MainActivity : Activity() {
                         getString(R.string.temporary_access, it.size)
                     }
                 )
+                status.visibility = if (!durableAccess) View.VISIBLE else View.GONE
                 if (pendingNavigation == null) {
                     if (first) saveReading() else scheduleSave()
                 }
@@ -210,6 +217,13 @@ class MainActivity : Activity() {
                 pickDocument()
             }
         }
+        libraryManagement = LibraryManagement(
+            this,
+            library,
+            { !reading },
+            ::refreshLibrary,
+            { reportError(R.string.library_change_error) }
+        )
         homePresentation = ReaderHomeView(
             this,
             homeStatus,
@@ -222,15 +236,21 @@ class MainActivity : Activity() {
             },
             onSample = { openSample() },
             onOpen = { openDocument(Uri.parse(it.uri)) },
-            onRemove = ::confirmRemoveRecord
+            onRemove = ::confirmRemoveRecord,
+            onRemoveMany = libraryManagement::remove,
+            onMove = libraryManagement::move,
+            onReorder = libraryManagement::reorder,
+            onShelves = libraryManagement::shelves
         )
+        homePresentation.restoreState(savedInstanceState?.getBundle("libraryUi"))
+        importShelf = savedInstanceState?.getString("importShelf")
         homeScreen = homePresentation.view
         toolsPresentation = ReaderToolsView(
             this,
             status,
             onHome = ::showLibrary,
             onSettings = ::showSettings,
-            onPage = ::showPageJump,
+            onViewSettings = { showViewSettings() },
             onBookmarks = ::showBookmarks,
             onReadText = { showPageText() },
             onDismiss = ::hideTools,
@@ -240,7 +260,6 @@ class MainActivity : Activity() {
             onOrientation = ::showQuickOrientation
         )
         readerTools = toolsPresentation.view
-        pageJumpButton = toolsPresentation.page
         bookmarksButton = toolsPresentation.bookmarks
         readPageButton = toolsPresentation.readText
         pageIndicator = PageNumberView(this).apply {
@@ -363,6 +382,12 @@ class MainActivity : Activity() {
                 if (it != OrientationMode.AUTO) applyOrientation(it)
             }.onFailure { reportError(R.string.settings_error) }
         }
+        settings.loadInversion { result ->
+            if (isDestroyed) return@loadInversion
+            result.onSuccess {
+                viewer.setColorsInverted(it)
+            }.onFailure { reportError(R.string.settings_error) }
+        }
         settings.loadBackground { result ->
             if (isDestroyed) return@loadBackground
             result.onSuccess(viewer::setBackgroundSettings)
@@ -379,11 +404,16 @@ class MainActivity : Activity() {
         reselectRecord = savedInstanceState?.getString("reselectUri")?.let { uri ->
             ReadingRecord(uri, getString(R.string.untitled_pdf), 0)
         }
+        pendingImportMessage = savedInstanceState?.getString("pendingImportMessage")
         if (savedInstanceState?.getBoolean("synthetic") == true) {
             openSample(savedInstanceState.getBundle("viewport"))
         } else {
             val uri = savedInstanceState?.getString("sourceUri")
             if (uri == null) {
+                pendingImportMessage?.let {
+                    setStatus(it)
+                    pendingImportMessage = null
+                }
                 refreshLibrary()
             } else {
                 openDocument(
@@ -403,7 +433,10 @@ class MainActivity : Activity() {
                 }
             )
         }
-        if (savedInstanceState?.getBoolean("quickOrientationOpen") == true) {
+        if (savedInstanceState?.getBoolean("viewSettingsOpen") == true) {
+            val draft = savedInstanceState.getBundle("viewSettingsDraft")
+            root.post { if (!isDestroyed) showViewSettings(draft) }
+        } else if (savedInstanceState?.getBoolean("quickOrientationOpen") == true) {
             root.post { if (!isDestroyed) showQuickOrientation() }
         } else if (savedInstanceState?.getBoolean("settingsOpen") == true) {
             showSettings()
@@ -423,9 +456,12 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION")
     private fun pickDocument() {
+        if (importRunning) return
+        importShelf = homePresentation.shelfFilter?.takeIf { it.isNotEmpty() }
         startActivityForResult(
             Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 type = "application/pdf"
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, reselectRecord == null)
                 addCategory(Intent.CATEGORY_OPENABLE)
                 addFlags(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
@@ -441,9 +477,59 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == OPEN_PDF && resultCode != RESULT_OK) reselectRecord = null
         if (requestCode == OPEN_PDF && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-            openDocument(uri, grantFlags = data.flags, relink = reselectRecord?.uri)
+            val uris = data?.selectedPdfUris().orEmpty()
+            val reselect = reselectRecord
             reselectRecord = null
+            if (uris.isEmpty() || data == null) return
+            if (reselect != null) {
+                if (uris.size == 1) {
+                    openDocument(uris.single(), grantFlags = data.flags, relink = reselect.uri)
+                } else {
+                    reportError(R.string.reselect_one_pdf)
+                }
+            } else {
+                importDocuments(uris, data.flags)
+            }
+        }
+    }
+
+    internal fun importDocuments(uris: List<Uri>, flags: Int) {
+        if (importRunning) return
+        importRunning = true
+        setStatus(R.string.importing_pdfs)
+        val resolver = applicationContext.contentResolver
+        val shelf = importShelf
+        val fallbackTitle = getString(R.string.untitled_pdf)
+        library.execute({ store ->
+            importPdfs(store, resolver, uris, flags, shelf, fallbackTitle)
+        }) { result ->
+            if (isDestroyed) return@execute
+            importRunning = false
+            result.onSuccess {
+                val message = getString(
+                    R.string.pdf_import_result,
+                    it.added,
+                    it.existing,
+                    it.failed,
+                    it.temporary
+                )
+                if (reading) {
+                    pendingImportMessage = message
+                    if (it.failed > 0) Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                } else {
+                    clearFailedOpen()
+                    setStatus(message)
+                    refreshLibrary()
+                }
+            }.onFailure {
+                if (reading) {
+                    val message = getString(R.string.library_change_error)
+                    pendingImportMessage = message
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                } else {
+                    reportError(R.string.library_change_error)
+                }
+            }
         }
     }
 
@@ -455,6 +541,7 @@ class MainActivity : Activity() {
         grantFlags: Int = 0,
         relink: String? = null
     ) {
+        libraryManagement.close()
         closePageText()
         saveReading()
         clearFailedOpen()
@@ -625,7 +712,8 @@ class MainActivity : Activity() {
         homeScroll.visibility = View.VISIBLE
         hideTools()
         readingWindow.apply(false)
-        setStatus(R.string.ready)
+        setStatus(pendingImportMessage ?: getString(R.string.ready))
+        pendingImportMessage = null
         updatePageIndicator()
         refreshLibrary()
     }
@@ -669,7 +757,7 @@ class MainActivity : Activity() {
     }
 
     private fun refreshLibrary() {
-        library.execute({ it.list() }) { result ->
+        library.execute({ it.snapshot() }) { result ->
             if (isDestroyed || viewer.visibility == View.VISIBLE) return@execute
             result.onSuccess(homePresentation::render)
                 .onFailure { reportError(R.string.library_error) }
@@ -742,6 +830,7 @@ class MainActivity : Activity() {
 
     private fun setStatus(message: CharSequence) {
         status.text = message
+        status.visibility = if (reading && !loaded) View.VISIBLE else View.GONE
         homeStatus.text = message
         homeStatus.visibility = if (message == getString(R.string.ready)) {
             View.GONE
@@ -754,6 +843,7 @@ class MainActivity : Activity() {
 
     private fun reportError(resource: Int) {
         setStatus(resource)
+        status.visibility = View.VISIBLE
         Toast.makeText(this, resource, Toast.LENGTH_LONG).show()
     }
 
@@ -835,10 +925,6 @@ class MainActivity : Activity() {
             expectedPages,
             loaded && pendingNavigation == null
         )
-        pageJumpButton.isEnabled = loaded &&
-            position != null &&
-            expectedPages > 1 &&
-            pendingNavigation == null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
         if (::readPageButton.isInitialized) readPageButton.isEnabled = loaded && position != null
         toolsPresentation.updatePanLock(
@@ -900,18 +986,6 @@ class MainActivity : Activity() {
         previous?.setOnDismissListener(null)
         previous?.findViewById<TextView>(R.id.page_text_content)?.text = ""
         previous?.dismiss()
-    }
-
-    private fun showPageJump() {
-        if (!loaded ||
-            expectedPages <= 1 ||
-            pendingNavigation != null ||
-            navigationDialog != null
-        ) {
-            return
-        }
-        val current = viewer.readingPosition() ?: return
-        trackNavigationDialog(pageJumpDialog(current.page, expectedPages) { requestPage(it) })
     }
 
     private fun requestPage(page: Int, y: Double? = null, keepTools: Boolean = false) {
@@ -1048,6 +1122,101 @@ class MainActivity : Activity() {
         }
         dialog.window?.setWindowAnimations(0)
         dialog.show()
+    }
+
+    private fun showViewSettings(draft: Bundle? = null) {
+        if (!reading ||
+            viewSettingsOpen ||
+            settingsDialog != null ||
+            isDestroyed ||
+            isFinishing
+        ) {
+            return
+        }
+        viewSettingsOpen = true
+        showTools()
+        val generation = ++viewSettingsGeneration
+        fun live() =
+            !isDestroyed && !isFinishing && viewSettingsOpen && generation == viewSettingsGeneration
+        fun failed() {
+            if (live()) {
+                viewSettingsOpen = false
+                reportError(R.string.settings_error)
+            }
+        }
+        settings.loadBackground { background ->
+            if (!live()) return@loadBackground
+            background.onSuccess { currentBackground ->
+                settings.loadDisplay { display ->
+                    if (!live()) return@loadDisplay
+                    display.onSuccess { currentDisplay ->
+                        settings.loadInversion { inversion ->
+                            if (!live()) return@loadInversion
+                            inversion.onSuccess { inverted ->
+                                val panel = ViewSettingsDialog(
+                                    this,
+                                    ViewSettings(currentBackground, currentDisplay, inverted),
+                                    draft,
+                                    saveBackground = { value, done ->
+                                        settings.saveBackground(value) { saved ->
+                                            if (!isDestroyed) {
+                                                saved.onSuccess(viewer::setBackgroundSettings)
+                                            }
+                                            done(saved.isSuccess)
+                                        }
+                                    },
+                                    saveDisplay = { value, done ->
+                                        settings.saveDisplay(value) { saved ->
+                                            if (!isDestroyed) {
+                                                saved.onSuccess(::applyDisplaySettings)
+                                            }
+                                            done(saved.isSuccess)
+                                        }
+                                    },
+                                    saveInversion = { value, done ->
+                                        settings.saveInversion(value) { saved ->
+                                            if (!isDestroyed) {
+                                                saved.onSuccess(viewer::setColorsInverted)
+                                            }
+                                            done(saved.isSuccess)
+                                        }
+                                    },
+                                    preview = { value ->
+                                        if (live()) {
+                                            viewer.setBackgroundSettings(value.background)
+                                            viewer.setColorsInverted(value.inverted)
+                                            displayPreview = value.display
+                                            updateDisplayWindow()
+                                        }
+                                    },
+                                    closed = { confirmed ->
+                                        if (live()) {
+                                            viewer.setBackgroundSettings(confirmed.background)
+                                            viewer.setColorsInverted(confirmed.inverted)
+                                            displaySettings = confirmed.display
+                                            displayPreview = null
+                                            viewSettingsDialog = null
+                                            viewSettingsOpen = false
+                                            updateDisplayWindow()
+                                        }
+                                    }
+                                )
+                                viewSettingsDialog = panel
+                                panel.show()
+                            }.onFailure { failed() }
+                        }
+                    }.onFailure { failed() }
+                }
+            }.onFailure { failed() }
+        }
+    }
+
+    private fun closeViewSettings() {
+        viewSettingsDialog?.dismiss()
+        viewSettingsDialog = null
+        viewSettingsOpen = false
+        viewSettingsGeneration++
+        displayPreview = null
     }
 
     private fun showOrientationSettings() {
@@ -1306,46 +1475,6 @@ class MainActivity : Activity() {
         )
     }
 
-    private fun readerListAdapter(
-        labels: List<String>,
-        singleChoice: Boolean = false,
-        icons: List<Int>? = null
-    ) = object : ArrayAdapter<String>(
-        this,
-        if (singleChoice) {
-            android.R.layout.simple_list_item_single_choice
-        } else {
-            android.R.layout.simple_list_item_1
-        },
-        labels
-    ) {
-        override fun getView(
-            position: Int,
-            convertView: View?,
-            parent: android.view.ViewGroup
-        ): View = super.getView(position, convertView, parent).apply {
-            val style = ReaderStyle(this@MainActivity)
-            minimumHeight = style.dp(64)
-            // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
-            layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
-            (this as TextView).apply {
-                textSize = 16f
-                setTextColor(style.text)
-                isSingleLine = false
-                includeFontPadding = true
-                val icon = icons?.get(position)?.let {
-                    getDrawable(it)?.mutate()?.apply {
-                        setTint(style.accent)
-                        setBounds(0, 0, style.dp(24), style.dp(24))
-                    }
-                }
-                setCompoundDrawablesRelative(icon, null, null, null)
-                compoundDrawablePadding = style.dp(12)
-            }
-        }
-    }
-
     private fun beginSettingsChild(): AlertDialog? {
         val parent = settingsHomeDialog ?: return null
         if (settingsDialog !== parent || settingsChildLoading) return null
@@ -1460,6 +1589,7 @@ class MainActivity : Activity() {
     }
 
     private fun closeSettings() {
+        closeViewSettings()
         if (::viewer.isInitialized) viewer.observeCropPreview(null)
         val child = settingsDialog
         val parent = settingsHomeDialog
@@ -1539,7 +1669,7 @@ class MainActivity : Activity() {
     }
 
     private fun updateDisplayWindow() {
-        displayWindow.apply(displaySettings, reading && loaded, resumed)
+        displayWindow.apply(displayPreview ?: displaySettings, reading && loaded, resumed)
     }
 
     /** Synthetic fixture only. File IO and generation run on the PDF worker. */
@@ -1565,6 +1695,7 @@ class MainActivity : Activity() {
             reading && toolsPresentation.scrubber.cancelPreview() -> Unit
             reading && readerTools.visibility == View.VISIBLE -> hideTools()
             reading -> showLibrary()
+            homePresentation.finishManaging() -> Unit
             else -> finish()
         }
     }
@@ -1604,6 +1735,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         toolsPresentation.scrubber.cancelPreview()
+        libraryManagement.close()
         closePageText()
         resumed = false
         updateDisplayWindow()
@@ -1625,6 +1757,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        libraryManagement.close()
         closePageText()
         resumed = false
         updateDisplayWindow()
@@ -1641,7 +1774,12 @@ class MainActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         toolsPresentation.scrubber.cancelPreview()
+        outState.putBundle("libraryUi", homePresentation.saveState())
+        outState.putString("importShelf", importShelf)
+        outState.putString("pendingImportMessage", pendingImportMessage)
         outState.putString("displayTheme", displaySettings.theme.name)
+        outState.putBoolean("viewSettingsOpen", viewSettingsOpen)
+        viewSettingsDialog?.let { outState.putBundle("viewSettingsDraft", it.capture()) }
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)

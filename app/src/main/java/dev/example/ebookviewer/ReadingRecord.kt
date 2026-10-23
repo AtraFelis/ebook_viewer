@@ -28,11 +28,13 @@ data class ReadingRecord(
 
 /** Versioned, bounded metadata only. PDFs and page pixels never enter this file. */
 object ReadingRecordsCodec {
-    fun read(input: InputStream): List<ReadingRecord> {
+    fun read(input: InputStream): List<ReadingRecord> = readCatalog(input).records
+
+    fun readCatalog(input: InputStream): LibraryCatalog {
         val data = DataInputStream(input)
         require(data.readInt() == MAGIC) { "Unsupported reading records" }
         val version = data.readInt()
-        require(version in 1..4) { "Unsupported reading records" }
+        require(version in 1..5) { "Unsupported reading records" }
         val count = data.readInt()
         require(count in 0..10_000)
         val records = List(count) {
@@ -76,15 +78,38 @@ object ReadingRecordsCodec {
                 }
             )
         }
-        require(records.map { it.uri }.distinct().size == records.size && data.read() == -1)
-        return records.sortedByDescending { it.openedAt }
+        val catalog = if (version >= 5) {
+            val shelfCount = data.readInt().also { require(it in 0..1_000) }
+            val shelves = List(shelfCount) { Bookshelf(data.readUTF(), data.readUTF()) }
+            val orderCount = data.readInt().also { require(it == count) }
+            val order = List(orderCount) { data.readUTF() }
+            val memberCount = data.readInt().also { require(it in 0..count) }
+            val entries = List(memberCount) { data.readUTF() to data.readUTF() }
+            require(entries.map { it.first }.distinct().size == entries.size)
+            LibraryCatalog(
+                records.sortedByDescending {
+                    it.openedAt
+                },
+                shelves,
+                order,
+                entries.toMap()
+            )
+        } else {
+            LibraryCatalog(records.sortedByDescending { it.openedAt })
+        }
+        require(data.read() == -1)
+        return catalog
     }
 
     fun write(output: OutputStream, records: List<ReadingRecord>) {
-        require(records.size <= 10_000 && records.map { it.uri }.distinct().size == records.size)
+        writeCatalog(output, LibraryCatalog(records))
+    }
+
+    fun writeCatalog(output: OutputStream, catalog: LibraryCatalog) {
+        val records = catalog.records
         val data = DataOutputStream(output)
         data.writeInt(MAGIC)
-        data.writeInt(4)
+        data.writeInt(5)
         data.writeInt(records.size)
         for (record in records) {
             data.writeUTF(record.uri)
@@ -107,6 +132,18 @@ object ReadingRecordsCodec {
                 data.writeByte(it.right)
                 data.writeByte(it.bottom)
             }
+        }
+        data.writeInt(catalog.shelves.size)
+        catalog.shelves.forEach {
+            data.writeUTF(it.id)
+            data.writeUTF(it.name)
+        }
+        data.writeInt(catalog.order.size)
+        catalog.order.forEach(data::writeUTF)
+        data.writeInt(catalog.memberships.size)
+        catalog.memberships.forEach { (uri, shelf) ->
+            data.writeUTF(uri)
+            data.writeUTF(shelf)
         }
         data.flush()
     }

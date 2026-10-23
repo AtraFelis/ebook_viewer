@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="reader_view_settings" type="id" />
+    <item name="view_settings_panel" type="id" />
+    <item name="view_background_presets" type="id" />
+    <item name="view_settings_retry" type="id" />
     <item name="crop_page_preview" type="id" />
     <item name="quick_orientation_choices" type="id" />
     <item name="crop_left" type="id" />
@@ -35,4 +39,9 @@
     <item name="background_automatic" type="id" />
     <item name="page_number_input" type="id" />
     <item name="page_indicator" type="id" />
+    <item name="invert_pdf" type="id" />
+    <item name="bookshelf_filter" type="id" />
+    <item name="bookshelf_name" type="id" />
+    <item name="library_selection" type="id" />
+    <item name="select_document" type="id" />
 </resources>

@@ -1,5 +1,11 @@
 # 문서 목차
 
+사용자 후속 [버튼 배경 제거·초록/하늘색 추가](history/2026-10-23-03-plain-reader-actions.md)는 관련2개만 별도 검증했다.
+
+본문을 덜 가리는 [작은 읽기 도구·보기 설정 계획](plan/compact-reader-tools.md)과 [구현/검증 이력](history/2026-10-23-02-compact-reader-tools.md): 페이지 슬라이더·작은 버튼 한 줄, 배경색/색반전/밝기/화면 유지 패널. 책장 UI 개편은 별도 논의 뒤 진행한다.
+
+PDF 색반전·다중 추가·책장의 [Windows 인계/컨벤션·기기 검증](history/2026-10-23-01-local-library-validation.md): 관련12개 기기 성공, 원래 사용자 변경/버전 보존, 실제 SAF 사용자 수용과 원격 CI·리뷰는 별도 판정한다.
+
 [개인 사용 피드백 계획](plan/reader-usability-follow-up.md)·[문서 여백/기록v4 결정](adr/0018-document-crop-and-reading-records-v4.md): 자동 배경색 대기 중 색 유지, 읽기 도구 방향 버튼, 원본을 보존하는 문서 전체 공통 여백을 진행한다. 실제 실행 결과는 [이번 이력](history/2026-10-22-05-reader-usability.md)을 따른다.
 
 [개인용 정식 APK 준비](personal-release.md)·[범위/종료 기준](plan/personal-release.md)·[앱 식별자와 서명 결정](adr/0017-personal-release-identity-and-signing.md): 기존 개발용 앱/데이터를 유지하며 별도 정식판으로 시작한다. 실제 개인용 키/설치와 코드 라이선스 보류를 구분한다.
@@ -62,3 +68,6 @@ PR #1 병합 이후 [몰입형 읽기/방향 ADR](adr/0003-immersive-reader-and-
 사용자 지정 [PR 수동 리뷰·수정 절차](rule/git.md)와 [PR #5 실제 대응 이력](history/2026-10-17-07-pr-review-workflow.md)을 확인합니다. 봇의 리뷰 건너뜀 성공과 실제 리뷰 완료를 구분합니다.
 
 후속 [페이지 크기·간격/기록 v2 ADR](adr/0006-page-layout-and-reading-records-v2.md)과 [로컬·API 33 검증 결과](history/2026-10-17-08-page-layout.md)를 확인합니다.
+
+- [PDF 색반전·책장 계획](plan/library-management-and-inversion.md)
+- [ADR0019: PDF 색반전과 책장 관리](adr/0019-pdf-colors-and-bookshelves.md)

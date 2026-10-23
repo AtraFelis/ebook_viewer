@@ -78,10 +78,7 @@ class ReadingRecordsTest {
     @Test
     fun invalidLockFlagAndGapAreRejected() {
         val output = ByteArrayOutputStream()
-        ReadingRecordsCodec.write(
-            output,
-            listOf(ReadingRecord("content://fixture/lock", "Lock", 1))
-        )
+        writeLegacyVersionFour(output, listOf(ReadingRecord("content://fixture/lock", "Lock", 1)))
         for (flag in listOf(2, 255)) {
             val invalid = output.toByteArray().also { it[it.lastIndex - 4] = flag.toByte() }
             assertThrows(IllegalArgumentException::class.java) {
@@ -105,7 +102,7 @@ class ReadingRecordsTest {
             PageLayoutSettings(PageSizeMode.UNIFORM_WIDTH, 24, true)
         )
         val output = ByteArrayOutputStream()
-        ReadingRecordsCodec.write(output, listOf(record))
+        writeLegacyVersionFour(output, listOf(record))
         val legacy = output.toByteArray().dropLast(4).toByteArray().also { it[7] = 3 }
         assertEquals(listOf(record), ReadingRecordsCodec.read(ByteArrayInputStream(legacy)))
     }
@@ -122,7 +119,7 @@ class ReadingRecordsTest {
         )
         val records = listOf(record, record.copy(uri = "other", pageLayout = PageLayoutSettings()))
         val output = ByteArrayOutputStream()
-        ReadingRecordsCodec.write(output, records)
+        writeLegacyVersionFour(output, records)
         assertEquals(records, ReadingRecordsCodec.read(ByteArrayInputStream(output.toByteArray())))
         for (offset in 0..3) {
             val invalid = output.toByteArray().also { it[it.lastIndex - offset] = 46 }
