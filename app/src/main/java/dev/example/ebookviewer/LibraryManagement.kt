@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.text.InputFilter
 import android.widget.EditText
+import android.widget.ListView
 import java.util.UUID
 
 /** UI orchestration only; all catalog changes run on the existing serialized library queue. */
@@ -48,17 +49,51 @@ internal class LibraryManagement(
         }
     }
 
+    private fun confirm(message: String, action: Int, change: (DocumentLibrary) -> Unit) {
+        val explanation = ReaderStyle(activity).label(action).apply { text = message }
+        show(
+            activity.readerFormDialog(
+                action,
+                activity.readerFormBody(explanation),
+                positive = action,
+                onConfirm = { current ->
+                    current.dismiss()
+                    mutate(change)
+                }
+            )
+        )
+    }
+
+    private fun choices(
+        title: Int,
+        labels: List<String>,
+        heading: String? = null,
+        selected: (Int) -> Unit
+    ) {
+        val list = ListView(activity).apply {
+            adapter = activity.readerListAdapter(labels)
+            divider = null
+        }
+        val value = activity.readerFormDialog(
+            title,
+            list,
+            negative = R.string.close_settings,
+            scrollContent = false
+        )
+        heading?.let(value::setTitle)
+        list.setOnItemClickListener { _, _, index, _ ->
+            close()
+            selected(index)
+        }
+        show(value)
+    }
+
     fun remove(uris: Set<String>) {
         if (uris.isEmpty()) return
-        show(
-            AlertDialog.Builder(activity)
-                .setMessage(activity.getString(R.string.remove_selected_message, uris.size))
-                .setPositiveButton(R.string.remove_selected) { _, _ ->
-                    mutate { it.removeAll(uris) }
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .create()
-        )
+        confirm(
+            activity.getString(R.string.remove_selected_message, uris.size),
+            R.string.remove_selected
+        ) { it.removeAll(uris) }
     }
 
     fun reorder(uri: String, direction: Int, filter: String?) = mutate {
@@ -68,61 +103,40 @@ internal class LibraryManagement(
     fun move(uris: Set<String>) {
         if (uris.isEmpty()) return
         catalog { value ->
-            val choices =
+            val labels =
                 listOf(activity.getString(R.string.uncategorized)) + value.shelves.map { it.name }
-            show(
-                AlertDialog.Builder(activity)
-                    .setTitle(R.string.move_to_bookshelf)
-                    .setItems(choices.toTypedArray()) { _, index ->
-                        mutate { it.moveToShelf(uris, value.shelves.getOrNull(index - 1)?.id) }
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .create()
-            )
+            choices(R.string.move_to_bookshelf, labels) { index ->
+                mutate { it.moveToShelf(uris, value.shelves.getOrNull(index - 1)?.id) }
+            }
         }
     }
 
     fun shelves() = catalog { value ->
-        val choices =
+        val labels =
             listOf(activity.getString(R.string.add_bookshelf)) + value.shelves.map { it.name }
-        show(
-            AlertDialog.Builder(activity)
-                .setTitle(R.string.manage_bookshelves)
-                .setItems(choices.toTypedArray()) { _, index ->
-                    if (index == 0) name(null) else shelfActions(value.shelves[index - 1])
-                }
-                .setNegativeButton(R.string.close_settings, null)
-                .create()
-        )
+        choices(R.string.manage_bookshelves, labels) { index ->
+            if (index == 0) name(null) else shelfActions(value.shelves[index - 1])
+        }
     }
 
     private fun shelfActions(shelf: Bookshelf) {
-        show(
-            AlertDialog.Builder(activity)
-                .setTitle(shelf.name)
-                .setItems(
-                    arrayOf(
-                        activity.getString(R.string.rename_bookshelf),
-                        activity.getString(R.string.delete_bookshelf)
-                    )
-                ) { _, index ->
-                    if (index == 0) {
-                        name(shelf)
-                    } else {
-                        show(
-                            AlertDialog.Builder(activity)
-                                .setMessage(R.string.delete_bookshelf_message)
-                                .setPositiveButton(R.string.delete_bookshelf) { _, _ ->
-                                    mutate { it.removeShelf(shelf.id) }
-                                }
-                                .setNegativeButton(android.R.string.cancel, null)
-                                .create()
-                        )
-                    }
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .create()
-        )
+        choices(
+            R.string.manage_bookshelves,
+            listOf(
+                activity.getString(R.string.rename_bookshelf),
+                activity.getString(R.string.delete_bookshelf)
+            ),
+            heading = shelf.name
+        ) { index ->
+            if (index == 0) {
+                name(shelf)
+            } else {
+                confirm(
+                    activity.getString(R.string.delete_bookshelf_message),
+                    R.string.delete_bookshelf
+                ) { it.removeShelf(shelf.id) }
+            }
+        }
     }
 
     private fun name(shelf: Bookshelf?) {
@@ -135,6 +149,7 @@ internal class LibraryManagement(
             setTextColor(style.text)
             setHintTextColor(style.secondary)
             maxLines = 2
+            style.styleInput(this)
         }
         val form = activity.readerFormDialog(
             if (shelf == null) R.string.add_bookshelf else R.string.rename_bookshelf,

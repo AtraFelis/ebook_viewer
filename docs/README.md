@@ -1,5 +1,7 @@
 # 문서 목차
 
+PDF 색반전·다중 추가·책장의 [Windows 인계/컨벤션·기기 검증](history/2026-10-23-01-local-library-validation.md): 관련12개 기기 성공, 원래 사용자 변경/버전 보존, 실제 SAF 사용자 수용과 원격 CI·리뷰는 별도 판정한다.
+
 [개인 사용 피드백 계획](plan/reader-usability-follow-up.md)·[문서 여백/기록v4 결정](adr/0018-document-crop-and-reading-records-v4.md): 자동 배경색 대기 중 색 유지, 읽기 도구 방향 버튼, 원본을 보존하는 문서 전체 공통 여백을 진행한다. 실제 실행 결과는 [이번 이력](history/2026-10-22-05-reader-usability.md)을 따른다.
 
 [개인용 정식 APK 준비](personal-release.md)·[범위/종료 기준](plan/personal-release.md)·[앱 식별자와 서명 결정](adr/0017-personal-release-identity-and-signing.md): 기존 개발용 앱/데이터를 유지하며 별도 정식판으로 시작한다. 실제 개인용 키/설치와 코드 라이선스 보류를 구분한다.

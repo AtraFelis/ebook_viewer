@@ -65,9 +65,7 @@ data class LibraryCatalog(
         return copy(
             records = (records + added).sortedByDescending { it.openedAt },
             order = order + added.map { it.uri },
-            memberships = if (shelf ==
-                null
-            ) {
+            memberships = if (shelf == null) {
                 memberships
             } else {
                 memberships + added.associate { it.uri to shelf }

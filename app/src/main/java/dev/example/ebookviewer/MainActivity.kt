@@ -18,7 +18,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -476,9 +475,7 @@ class MainActivity : Activity() {
             reselectRecord = null
             if (uris.isEmpty() || data == null) return
             if (reselect != null) {
-                if (uris.size ==
-                    1
-                ) {
+                if (uris.size == 1) {
                     openDocument(uris.single(), grantFlags = data.flags, relink = reselect.uri)
                 } else {
                     reportError(R.string.reselect_one_pdf)
@@ -1395,46 +1392,6 @@ class MainActivity : Activity() {
                 setTextColor(style.secondary)
             }
         )
-    }
-
-    private fun readerListAdapter(
-        labels: List<String>,
-        singleChoice: Boolean = false,
-        icons: List<Int>? = null
-    ) = object : ArrayAdapter<String>(
-        this,
-        if (singleChoice) {
-            android.R.layout.simple_list_item_single_choice
-        } else {
-            android.R.layout.simple_list_item_1
-        },
-        labels
-    ) {
-        override fun getView(
-            position: Int,
-            convertView: View?,
-            parent: android.view.ViewGroup
-        ): View = super.getView(position, convertView, parent).apply {
-            val style = ReaderStyle(this@MainActivity)
-            minimumHeight = style.dp(64)
-            // Platform list rows have a fixed preferred height; padding otherwise clips glyphs.
-            layoutParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            setPadding(style.dp(24), style.dp(16), style.dp(24), style.dp(16))
-            (this as TextView).apply {
-                textSize = 16f
-                setTextColor(style.text)
-                isSingleLine = false
-                includeFontPadding = true
-                val icon = icons?.get(position)?.let {
-                    getDrawable(it)?.mutate()?.apply {
-                        setTint(style.accent)
-                        setBounds(0, 0, style.dp(24), style.dp(24))
-                    }
-                }
-                setCompoundDrawablesRelative(icon, null, null, null)
-                compoundDrawablePadding = style.dp(12)
-            }
-        }
     }
 
     private fun beginSettingsChild(): AlertDialog? {

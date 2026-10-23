@@ -1,8 +1,12 @@
 # SESSION.md — 세션 인수인계
 
-최종 갱신: 2026-10-22 (Asia/Seoul)
+최종 갱신: 2026-10-23 (Asia/Seoul)
 
 ## 현재 진행 — PDF 색반전·여러 파일·책장
+
+로컬 최종 검사: 공통 책장창·색반전 재생성 복원을 포함한 LibraryFeatures5개와 background6개·큰 글꼴6조합1개, **12개/실패0·93.9초**다. strict 앱/계측/unsigned release·단위69개 실제 실행/실패0·양 Lint0/0·ktlint17초 통과. 기본 기대96개 전체/장시간·성능/다른 API는 실행하지 않았다. 개발용 앱만 설치했고 마지막 앱/계측 중지·font1.1 복원·ADB 종료. 실제 SAF 다중 선택/개인 사용 수용은 사용자 응답 대기이며 같은 PR에 수정 게시/CI·리뷰를 이어 진행한다. 아래 검증 중/미실행은 이전 시점이다.
+
+Windows 인계: 사용자 요청 브랜치7f4426a를 현재 체크아웃으로 가져와 pull --ff-only 완료했다. 기존 변경5파일은 stash20fbf558/무시 경로 backup에 보존하고 디자인128줄·0.1.1/code3를 바이트 동일하게 복원했다. 사용자 파일은 커밋 제외한다. 공통 ReaderFormDialog/ReaderStyle 입력·ReaderListAdapter 재사용으로 책장창 컨벤션을 통일하고 간단한 조건 줄바꿈을 정리했다. strict 앱/계측/unsigned release·단위69개/양 Lint0/0·ktlint17초 통과. 기기는 새 LibraryFeatures5개/기본 기대96개 중 관련12개만 선별 검증 중이다. 초기 배열 객체 비교 실패는 엄격한 원소 비교로 수정했고 완전한 기기 결과는 아직 판정 전이다. [로컬 검증 이력](docs/history/2026-10-23-01-local-library-validation.md)을 따른다. 아래 클라우드의 기기 미실행/기본94개는 당시 상태다.
 
 사용자 요청으로 구현620cfd0을 전용 브랜치에 일반 push하고 [PR #32](https://github.com/AtraFelis/ebook_viewer/pull/32)를 생성했다(OPEN/ready). 최초 PR CI39827236504 성공, 수동6347641116/봇6347643658의 실제29파일 리뷰 완료(PRR_kwDOVLKYJM8AAAABTuegTg)를 확인했다. 타당한 선택 패널 초기 가시성 지적1개를 수정했고, 독립 점검으로 늦은 책장 응답의 대화상자 수명도 보완했다. 수정 코드의 strict 앱/계측/unsigned release·단위69개/실패0·양 Lint issue0·ktlint49초 통과다. 포함 리뷰 잔여0이므로 유료/중복 재요청은 하지 않는다. 수정493cb90을 같은 PR 브랜치에 일반 push했고 PR CI39829495755 성공·리뷰 답변4351892290/스레드 해결·봇 수정 확인4351896400을 확인했다. 마지막 후속 기록은 Markdown만 보존하며 앱 코드는493cb90과 동일하다. PR은OPEN/ready, 사용자 병합 대기다. 리뷰 결과와 대응은 [게시/리뷰 이력](docs/history/2026-10-22-07-library-pr-review.md)에 이어 기록한다.
 
