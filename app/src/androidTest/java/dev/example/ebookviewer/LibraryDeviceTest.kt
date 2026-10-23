@@ -3,6 +3,8 @@ package dev.example.ebookviewer
 import android.app.Activity
 import android.net.Uri
 import android.util.AtomicFile
+import android.widget.Button
+import android.widget.GridView
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -151,17 +153,37 @@ class LibraryDeviceTest {
     }
 
     private fun selectRecent(activity: Activity, title: String) {
-        ui.await("Saved document not shown in list") {
-            ui.views(activity.window.decorView).any {
-                it.id == R.id.home_record && it.contentDescription?.startsWith(title) == true
+        ui.onMain {
+            ui.views(activity.window.decorView).filterIsInstance<Button>().first {
+                it.text == activity.getString(R.string.all_documents)
+            }.performClick()
+        }
+        ui.await("Saved document missing from recycled adapter") {
+            val grid = activity.findViewById<GridView>(R.id.library_grid)
+            (0 until grid.count).any {
+                (grid.adapter.getItem(it) as? ReadingRecord)?.title == title
             }
         }
-        instrumentation.runOnMainSync {
-            ui.views(activity.window.decorView)
-                .first {
-                    it.id == R.id.home_record && it.contentDescription?.startsWith(title) == true
-                }
-                .performClick()
+        ui.onMain {
+            val grid = activity.findViewById<GridView>(R.id.library_grid)
+            val index = (0 until grid.count).first {
+                (grid.adapter.getItem(it) as? ReadingRecord)?.title == title
+            }
+            grid.setSelection(index)
+        }
+        ui.await("Saved document not shown in grid") {
+            ui.views(activity.window.decorView).any {
+                it.id == R.id.home_record &&
+                    it.isShown &&
+                    it.contentDescription?.startsWith(title) == true
+            }
+        }
+        ui.onMain {
+            ui.views(activity.window.decorView).first {
+                it.id == R.id.home_record &&
+                    it.isShown &&
+                    it.contentDescription?.startsWith(title) == true
+            }.performClick()
         }
     }
 

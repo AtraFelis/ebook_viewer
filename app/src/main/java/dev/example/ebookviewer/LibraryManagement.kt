@@ -3,6 +3,8 @@ package dev.example.ebookviewer
 import android.app.Activity
 import android.app.AlertDialog
 import android.text.InputFilter
+import android.widget.ArrayAdapter
+import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ListView
 import java.util.UUID
@@ -100,6 +102,72 @@ internal class LibraryManagement(
         it.moveBy(uri, direction, filter)
     }
 
+    fun reorderShelf(id: String, direction: Int) = mutate { it.moveShelfBy(id, direction) }
+
+    fun removeFromShelf(uris: Set<String>, id: String) = mutate { it.removeFromShelf(uris, id) }
+
+    fun add(uris: Set<String>) {
+        if (uris.isEmpty()) return
+        catalog { value ->
+            if (value.shelves.isEmpty()) {
+                name(null)
+                return@catalog
+            }
+            val style = ReaderStyle(activity)
+            val body = ListView(activity).apply {
+                choiceMode = ListView.CHOICE_MODE_MULTIPLE
+                divider = null
+                adapter = object : ArrayAdapter<String>(
+                    activity,
+                    android.R.layout.simple_list_item_multiple_choice,
+                    value.shelves.map { it.name }
+                ) {
+                    override fun getView(
+                        position: Int,
+                        convertView: android.view.View?,
+                        parent: android.view.ViewGroup
+                    ): android.view.View = super.getView(position, convertView, parent).apply {
+                        (this as CheckedTextView).setTextColor(style.text)
+                        minHeight = style.dp(48)
+                        background = style.plainButtonBackground()
+                    }
+                }
+            }
+            show(
+                activity.readerFormDialog(
+                    R.string.add_to_bookshelves,
+                    body,
+                    positive = R.string.apply_settings,
+                    scrollContent = false,
+                    onConfirm = { current ->
+                        val destinations = value.shelves.filterIndexed { index, _ ->
+                            body.isItemChecked(index)
+                        }.map { it.id }.toSet()
+                        if (destinations.isNotEmpty()) {
+                            body.isEnabled = false
+                            current.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = false
+                            repository.execute({ it.addToShelves(uris, destinations) }) { result ->
+                                if (live()) {
+                                    result.onSuccess {
+                                        if (dialog === current) close()
+                                        refresh()
+                                    }.onFailure {
+                                        body.isEnabled = true
+                                        current.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
+                                            true
+                                        failed()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+            )
+        }
+    }
+
+    fun createShelf() = name(null)
+
     fun move(uris: Set<String>) {
         if (uris.isEmpty()) return
         catalog { value ->
@@ -119,7 +187,7 @@ internal class LibraryManagement(
         }
     }
 
-    private fun shelfActions(shelf: Bookshelf) {
+    fun shelfActions(shelf: Bookshelf) {
         choices(
             R.string.manage_bookshelves,
             listOf(

@@ -36,7 +36,10 @@ class LibraryCatalogTest {
         val updated = initial.addAll(listOf(a.copy(position = null), b, b, c), shelf.id)
         assertEquals(listOf("a", "b", "c"), updated.order)
         assertEquals(a, updated.records.single { it.uri == "a" })
-        assertEquals(mapOf("b" to "s1", "c" to "s1"), updated.memberships)
+        assertEquals(
+            mapOf("a" to setOf("s1"), "b" to setOf("s1"), "c" to setOf("s1")),
+            updated.memberships
+        )
         assertEquals(updated, updated.addAll(listOf(a, b, c), null))
     }
 
@@ -48,7 +51,7 @@ class LibraryCatalogTest {
             a.copy(openedAt = 100, position = ReadingPosition(10, 0.4, 0.8, 3.0))
         )
         assertEquals(listOf("b", "a"), saved.order)
-        assertEquals(mapOf("a" to "s1"), saved.memberships)
+        assertEquals(mapOf("a" to setOf("s1")), saved.memberships)
         assertEquals("a", saved.records.first().uri)
     }
 
@@ -57,7 +60,7 @@ class LibraryCatalogTest {
         val initial = LibraryCatalog(listOf(a, b)).addShelf(shelf).moveToShelf(setOf("a"), shelf.id)
         val relinked = initial.put(a.copy(uri = "new"), "a")
         assertEquals(listOf("new", "b"), relinked.order)
-        assertEquals(mapOf("new" to "s1"), relinked.memberships)
+        assertEquals(mapOf("new" to setOf("s1")), relinked.memberships)
         val deduped = initial.put(b.copy(openedAt = 100), "a")
         assertEquals(listOf("b"), deduped.order)
         assertTrue(deduped.memberships.isEmpty())
@@ -108,7 +111,7 @@ class LibraryCatalogTest {
     @Test
     fun invalidMembershipsDuplicateOrderAndTrailingDataAreRejected() {
         assertThrows(IllegalArgumentException::class.java) {
-            LibraryCatalog(listOf(a), memberships = mapOf("a" to "missing"))
+            LibraryCatalog(listOf(a), memberships = mapOf("a" to setOf("missing")))
         }
         assertThrows(IllegalArgumentException::class.java) {
             LibraryCatalog(listOf(a, b), order = listOf("a", "a"))

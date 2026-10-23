@@ -15,7 +15,6 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import java.io.File
 import java.io.FileDescriptor
@@ -311,10 +310,7 @@ class PdfRendererDeviceTest {
         val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         try {
             instrumentation.runOnMainSync {
-                descendants(activity.window.decorView).filterIsInstance<Button>()
-                    .single {
-                        it.text.toString() == activity.getString(R.string.sample_pdf)
-                    }.performClick()
+                (activity as MainActivity).openSample()
             }
             val viewer = awaitSynthetic(activity)
             var before = 0.0

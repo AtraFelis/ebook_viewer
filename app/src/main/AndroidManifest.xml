@@ -11,6 +11,11 @@
         android:supportsRtl="true"
         android:theme="@style/ReaderLight">
         <service
+            android:name=".BookCoverService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":book_cover" />
+        <service
             android:name=".PageTextService"
             android:exported="false"
             android:isolatedProcess="true"

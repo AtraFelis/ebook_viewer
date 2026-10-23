@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.util.AtomicFile
+import java.io.DataInputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.concurrent.Executors
@@ -17,6 +18,16 @@ class DocumentLibrary(file: File) {
         // A missing file is an empty library; unreadable existing data must not be overwritten.
         if (file.exists()) throw error
         LibraryCatalog()
+    }
+    private val beforeVersionSix = AtomicFile(File(file.parentFile, "${file.name}.before-v6"))
+    private var backupRequired = try {
+        atomic.openRead().use {
+            val data = DataInputStream(it)
+            data.readInt()
+            data.readInt() in 1..5
+        }
+    } catch (_: FileNotFoundException) {
+        false
     }
 
     fun list(): List<ReadingRecord> = catalog.records.toList()
@@ -42,6 +53,30 @@ class DocumentLibrary(file: File) {
         write(catalog.moveToShelf(uris, shelf))
     }
 
+    fun addToShelves(uris: Set<String>, shelves: Set<String>) {
+        write(catalog.addToShelves(uris, shelves))
+    }
+
+    fun transferToShelf(uris: Set<String>, source: String, target: String, keepSource: Boolean) {
+        write(catalog.transferToShelf(uris, source, target, keepSource))
+    }
+
+    fun reorderShelves(ids: List<String>) {
+        write(catalog.reorderShelves(ids))
+    }
+
+    fun removeShelves(ids: Set<String>) {
+        write(catalog.removeShelves(ids))
+    }
+
+    fun removeFromShelf(uris: Set<String>, shelf: String) {
+        write(catalog.removeFromShelf(uris, shelf))
+    }
+
+    fun moveShelfBy(id: String, direction: Int) {
+        write(catalog.moveShelfBy(id, direction))
+    }
+
     fun moveBy(uri: String, direction: Int, filter: String?) {
         write(catalog.moveBy(uri, direction, filter))
     }
@@ -65,6 +100,20 @@ class DocumentLibrary(file: File) {
     }
 
     private fun write(updated: LibraryCatalog) {
+        if (backupRequired) {
+            // Preserve the pre-migration bytes inside app-private storage; never export them.
+            if (!beforeVersionSix.baseFile.exists()) {
+                val backup = beforeVersionSix.startWrite()
+                try {
+                    atomic.openRead().use { it.copyTo(backup) }
+                    beforeVersionSix.finishWrite(backup)
+                } catch (error: Exception) {
+                    beforeVersionSix.failWrite(backup)
+                    throw error
+                }
+            }
+            backupRequired = false
+        }
         val stream = atomic.startWrite()
         try {
             ReadingRecordsCodec.writeCatalog(stream, updated)
@@ -106,5 +155,8 @@ class ReaderApplication : Application() {
     }
     val library: LibraryRepository by lazy {
         LibraryRepository { File(filesDir, "reading-records.bin") }
+    }
+    internal val libraryPreferences: LibraryPreferencesRepository by lazy {
+        LibraryPreferencesRepository { File(filesDir, "library-preferences.bin") }
     }
 }
