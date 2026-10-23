@@ -69,6 +69,9 @@ internal class ReaderStyle(private val context: Context) {
         cornerRadius = dp(radius).toFloat()
     }
 
+    fun plainButtonBackground(radius: Int = 12): RippleDrawable =
+        RippleDrawable(ColorStateList.valueOf(accentSoft), null, shape(-1, radius))
+
     fun button(resource: Int, primary: Boolean = false, onClick: () -> Unit): Button =
         Button(context).apply {
             setText(resource)

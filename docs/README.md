@@ -1,5 +1,7 @@
 # 문서 목차
 
+사용자 후속 [버튼 배경 제거·초록/하늘색 추가](history/2026-10-23-03-plain-reader-actions.md)는 관련2개만 별도 검증했다.
+
 본문을 덜 가리는 [작은 읽기 도구·보기 설정 계획](plan/compact-reader-tools.md)과 [구현/검증 이력](history/2026-10-23-02-compact-reader-tools.md): 페이지 슬라이더·작은 버튼 한 줄, 배경색/색반전/밝기/화면 유지 패널. 책장 UI 개편은 별도 논의 뒤 진행한다.
 
 PDF 색반전·다중 추가·책장의 [Windows 인계/컨벤션·기기 검증](history/2026-10-23-01-local-library-validation.md): 관련12개 기기 성공, 원래 사용자 변경/버전 보존, 실제 SAF 사용자 수용과 원격 CI·리뷰는 별도 판정한다.

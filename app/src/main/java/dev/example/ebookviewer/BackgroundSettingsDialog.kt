@@ -54,7 +54,9 @@ internal fun Activity.backgroundSettingsDialog(
             R.string.color_white to "#FFFFFF",
             R.string.color_black to "#000000",
             R.string.color_gray to "#444444",
-            R.string.color_paper to "#F4ECD8"
+            R.string.color_paper to "#F4ECD8",
+            R.string.color_soft_green to "#DCEBD6",
+            R.string.color_sky_blue to "#DEEFF7"
         )
         colors.chunked(2).forEach { rowColors ->
             addView(

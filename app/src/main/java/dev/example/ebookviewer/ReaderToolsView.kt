@@ -2,8 +2,6 @@ package dev.example.ebookviewer
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.drawable.InsetDrawable
-import android.graphics.drawable.RippleDrawable
 import android.text.TextUtils
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -43,15 +41,13 @@ internal class ReaderToolsView(
         setImageResource(R.drawable.reader_back)
         imageTintList = ColorStateList.valueOf(style.text)
         setPadding(style.dp(14), style.dp(14), style.dp(14), style.dp(14))
-        val circle = InsetDrawable(style.shape(style.background, 20), style.dp(4))
-        background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
+        background = style.plainButtonBackground(20)
         setOnClickListener { onHome() }
     }
     val panLock = ImageButton(context).apply {
         id = R.id.horizontal_pan_lock
         setPadding(style.dp(13), style.dp(13), style.dp(13), style.dp(13))
-        val circle = InsetDrawable(style.shape(style.accentSoft, 20), style.dp(4))
-        background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
+        background = style.plainButtonBackground(20)
         setOnClickListener { onPanLock() }
     }
     val viewSettings = action(
@@ -67,8 +63,7 @@ internal class ReaderToolsView(
         setImageResource(R.drawable.reader_orientation)
         imageTintList = ColorStateList.valueOf(style.accent)
         setPadding(style.dp(13), style.dp(13), style.dp(13), style.dp(13))
-        val circle = InsetDrawable(style.shape(style.accentSoft, 20), style.dp(4))
-        background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
+        background = style.plainButtonBackground(20)
         setOnClickListener { onOrientation() }
     }
     fun updateOrientation(mode: OrientationMode) {
@@ -241,6 +236,7 @@ internal class ReaderToolsView(
 
     private fun action(label: Int, icon: Int, click: () -> Unit): Button =
         style.button(label, onClick = click).apply {
+            background = style.plainButtonBackground()
             textSize = 11f
             isSingleLine = true
             ellipsize = TextUtils.TruncateAt.END

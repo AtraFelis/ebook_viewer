@@ -123,7 +123,7 @@ class ReaderChromeDeviceTest {
     }
 
     @Test
-    fun readingActionsHaveDistinctTintedEnabledAndDisabledFillsInBothThemes() {
+    fun readingActionsStayTransparentAndExposeDisabledStateInBothThemes() {
         val activity = ui.launch()
         try {
             for (theme in listOf(R.style.ReaderLight, R.style.ReaderDark)) {
@@ -176,14 +176,22 @@ class ReaderChromeDeviceTest {
                 assertEquals(
                     "Action=${button.text} scroll=${button.scrollX},${button.scrollY} " +
                         "size=${button.width}x${button.height} bounds=${button.background.bounds}",
-                    style.accentSoft,
-                    enabled
+                    0,
+                    Color.alpha(enabled)
                 )
-                assertTrue("Tint blends into the footer", enabled != style.surface)
+                val enabledText = button.currentTextColor
                 button.isEnabled = false
                 button.jumpDrawablesToCurrentState()
+                bitmap.eraseColor(Color.TRANSPARENT)
                 drawButton(button, bitmap)
-                assertTrue(enabled != bitmap.getPixel(bitmap.width / 4, bitmap.height / 2))
+                assertEquals(0, Color.alpha(bitmap.getPixel(bitmap.width / 4, bitmap.height / 2)))
+                assertTrue(enabledText != button.currentTextColor)
+                button.isEnabled = true
+                button.isSelected = true
+                button.jumpDrawablesToCurrentState()
+                bitmap.eraseColor(Color.TRANSPARENT)
+                drawButton(button, bitmap)
+                assertEquals(0, Color.alpha(bitmap.getPixel(bitmap.width / 4, bitmap.height / 2)))
             } finally {
                 bitmap.recycle()
             }

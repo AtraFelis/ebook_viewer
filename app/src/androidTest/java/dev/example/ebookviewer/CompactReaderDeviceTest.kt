@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.view.ContextThemeWrapper
 import android.view.MotionEvent
@@ -126,6 +127,23 @@ class CompactReaderDeviceTest {
             ui.onMain {
                 val content = root.findViewById<View>(R.id.view_settings_panel)
                 assertTrue(content.height <= (activity.window.decorView.height * 0.66).toInt())
+            }
+            for ((label, color) in listOf(
+                R.string.color_soft_green to 0xffdcebd6.toInt(),
+                R.string.color_sky_blue to 0xffdeeff7.toInt()
+            )) {
+                ui.onMain {
+                    ui.views(root).filterIsInstance<Button>().single {
+                        it.contentDescription == activity.getString(label)
+                    }.performClick()
+                }
+                ui.await("New background preset did not save") {
+                    root.findViewById<View>(R.id.background_automatic).isEnabled &&
+                        viewer.outsideBackgroundColor() == color
+                }
+                assertEquals(color, setting(settings::loadBackground).customColor)
+            }
+            ui.onMain {
                 ui.views(root).filterIsInstance<Button>().first {
                     it.contentDescription == activity.getString(R.string.color_black)
                 }.performClick()
@@ -155,6 +173,12 @@ class CompactReaderDeviceTest {
                 root.findViewById<Switch>(R.id.keep_screen_on).isEnabled
             }
             val saved = setting(settings::loadDisplay)
+            ui.onMain {
+                for (id in listOf(R.id.invert_pdf, R.id.keep_screen_on)) {
+                    val background = root.findViewById<View>(id).background as ColorDrawable
+                    assertEquals(Color.TRANSPARENT, background.color)
+                }
+            }
             assertFalse(saved.systemBrightness)
             assertEquals(!originalDisplay.keepScreenOn, saved.keepScreenOn)
             assertEquals(Color.BLACK, setting(settings::loadBackground).customColor)

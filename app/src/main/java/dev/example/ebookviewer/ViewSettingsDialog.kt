@@ -102,7 +102,7 @@ internal class ViewSettingsDialog(
     private val backgroundState = LiveSetting(initial.background, saveBackground, ::bind)
     private val displayState = LiveSetting(initial.display, saveDisplay, ::bind)
     private val inversionState = LiveSetting(initial.inverted, saveInversion, ::bind)
-    private val automatic = style.button(R.string.automatic_short) {
+    private val automatic = button(R.string.automatic_short) {
         backgroundState.choose(backgroundState.value.copy(automatic = true))
     }.apply { id = R.id.background_automatic }
     private val input = EditText(activity).apply {
@@ -114,7 +114,7 @@ internal class ViewSettingsDialog(
         setText(String.format(Locale.ROOT, "#%06X", initial.background.customColor and 0xffffff))
         style.styleInput(this)
     }
-    private val customApply = style.button(R.string.apply_settings) {
+    private val customApply = button(R.string.apply_settings) {
         val color = parseBackgroundColor(input.text.toString())
         if (color == null) {
             input.error = activity.getString(R.string.background_invalid_color)
@@ -135,6 +135,8 @@ internal class ViewSettingsDialog(
         for ((label, color) in listOf(
             R.string.color_white to Color.WHITE,
             R.string.color_paper to 0xfff4ecd8.toInt(),
+            R.string.color_soft_green to 0xffdcebd6.toInt(),
+            R.string.color_sky_blue to 0xffdeeff7.toInt(),
             R.string.color_gray to 0xff444444.toInt(),
             R.string.color_black to Color.BLACK
         )) {
@@ -150,14 +152,14 @@ internal class ViewSettingsDialog(
             addView(button, LinearLayout.LayoutParams(style.dp(48), style.dp(48)))
         }
         addView(
-            style.button(R.string.custom_color_short) {
+            button(R.string.custom_color_short) {
                 custom.visibility =
                     if (custom.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             },
             LinearLayout.LayoutParams(-2, style.dp(48))
         )
     }
-    private val system = style.button(R.string.automatic_short) {
+    private val system = button(R.string.automatic_short) {
         val value = displayState.value
         displayState.choose(value.copy(systemBrightness = !value.systemBrightness))
     }.apply { id = R.id.system_brightness }
@@ -180,12 +182,14 @@ internal class ViewSettingsDialog(
         id = R.id.invert_pdf
         setText(R.string.invert_pdf_label)
         style.styleChoice(this)
+        background = ColorDrawable(Color.TRANSPARENT)
         setOnCheckedChangeListener { _, value -> if (!binding) inversionState.choose(value) }
     }
     private val keep = Switch(activity).apply {
         id = R.id.keep_screen_on
         setText(R.string.keep_screen_on)
         style.styleChoice(this)
+        background = ColorDrawable(Color.TRANSPARENT)
         setOnCheckedChangeListener { _, value ->
             if (!binding) displayState.choose(displayState.value.copy(keepScreenOn = value))
         }
@@ -193,7 +197,7 @@ internal class ViewSettingsDialog(
     private val notice = style.label(R.string.settings_save_failed, 12f).apply {
         id = R.id.settings_save_error
     }
-    private val retry = style.button(R.string.retry_settings_save) {
+    private val retry = button(R.string.retry_settings_save) {
         if (backgroundState.failed) backgroundState.save()
         if (displayState.failed) displayState.save()
         if (inversionState.failed) inversionState.save()
@@ -323,8 +327,12 @@ internal class ViewSettingsDialog(
         binding = true
         automatic.isEnabled = !backgroundState.busy
         automatic.isSelected = backgroundState.value.automatic
-        automatic.background = style.shape(
-            if (backgroundState.value.automatic) style.accentSoft else style.surface
+        automatic.setText(
+            if (backgroundState.value.automatic) {
+                R.string.automatic_selected
+            } else {
+                R.string.automatic_short
+            }
         )
         for ((button, color) in presetButtons) {
             button.isEnabled = !backgroundState.busy
@@ -347,8 +355,12 @@ internal class ViewSettingsDialog(
         brightness.isEnabled = !displayState.busy && !displayState.value.systemBrightness
         system.isEnabled = !displayState.busy
         system.isSelected = displayState.value.systemBrightness
-        system.background = style.shape(
-            if (displayState.value.systemBrightness) style.accentSoft else style.surface
+        system.setText(
+            if (displayState.value.systemBrightness) {
+                R.string.automatic_selected
+            } else {
+                R.string.automatic_short
+            }
         )
         keep.isEnabled = !displayState.busy
         keep.isChecked = displayState.value.keepScreenOn
@@ -375,4 +387,7 @@ internal class ViewSettingsDialog(
         }
         preview(ViewSettings(backgroundState.value, displayState.value, inversionState.value))
     }
+
+    private fun button(label: Int, click: () -> Unit): Button =
+        style.button(label, onClick = click).apply { background = style.plainButtonBackground() }
 }
