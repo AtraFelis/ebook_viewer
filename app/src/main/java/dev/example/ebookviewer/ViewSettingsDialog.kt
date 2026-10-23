@@ -327,12 +327,8 @@ internal class ViewSettingsDialog(
         binding = true
         automatic.isEnabled = !backgroundState.busy
         automatic.isSelected = backgroundState.value.automatic
-        automatic.setText(
-            if (backgroundState.value.automatic) {
-                R.string.automatic_selected
-            } else {
-                R.string.automatic_short
-            }
+        automatic.setTextColor(
+            if (backgroundState.value.automatic) style.accent else style.secondary
         )
         for ((button, color) in presetButtons) {
             button.isEnabled = !backgroundState.busy
@@ -355,12 +351,8 @@ internal class ViewSettingsDialog(
         brightness.isEnabled = !displayState.busy && !displayState.value.systemBrightness
         system.isEnabled = !displayState.busy
         system.isSelected = displayState.value.systemBrightness
-        system.setText(
-            if (displayState.value.systemBrightness) {
-                R.string.automatic_selected
-            } else {
-                R.string.automatic_short
-            }
+        system.setTextColor(
+            if (displayState.value.systemBrightness) style.accent else style.secondary
         )
         keep.isEnabled = !displayState.busy
         keep.isChecked = displayState.value.keepScreenOn

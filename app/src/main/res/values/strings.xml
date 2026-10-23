@@ -3,7 +3,6 @@
     <string name="view_settings">보기 설정</string>
     <string name="read_text_short">본문 읽기</string>
     <string name="automatic_short">자동</string>
-    <string name="automatic_selected">자동 ✓</string>
     <string name="color_soft_green">연한 초록색</string>
     <string name="color_sky_blue">연한 하늘색</string>
     <string name="custom_color_short">직접 입력</string>
