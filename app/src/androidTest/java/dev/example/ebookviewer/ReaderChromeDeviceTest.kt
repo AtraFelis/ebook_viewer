@@ -150,7 +150,7 @@ class ReaderChromeDeviceTest {
 
     private fun checkButtonFills(tools: ReaderToolsView, style: ReaderStyle) {
         val context = tools.view.context
-        val buttons = listOf(tools.page, tools.bookmarks, tools.readText) +
+        val buttons = listOf(tools.viewSettings, tools.bookmarks, tools.readText) +
             ui.views(tools.view).filterIsInstance<Button>().filter {
                 it.text == context.getString(R.string.settings)
             }
@@ -170,22 +170,31 @@ class ReaderChromeDeviceTest {
                 Bitmap.Config.ARGB_8888
             )
             try {
-                button.draw(Canvas(bitmap))
-                val enabled = bitmap.getPixel(button.width / 2, style.dp(4))
+                drawButton(button, bitmap)
+                // Sample an empty interior, away from rounded corners and the centered icon/text.
+                val enabled = bitmap.getPixel(bitmap.width / 4, bitmap.height / 2)
                 assertEquals(
-                    "Action=${button.text} state=${button.drawableState.contentToString()}",
+                    "Action=${button.text} scroll=${button.scrollX},${button.scrollY} " +
+                        "size=${button.width}x${button.height} bounds=${button.background.bounds}",
                     style.accentSoft,
                     enabled
                 )
                 assertTrue("Tint blends into the footer", enabled != style.surface)
                 button.isEnabled = false
                 button.jumpDrawablesToCurrentState()
-                button.draw(Canvas(bitmap))
-                assertTrue(enabled != bitmap.getPixel(button.width / 2, style.dp(4)))
+                drawButton(button, bitmap)
+                assertTrue(enabled != bitmap.getPixel(bitmap.width / 4, bitmap.height / 2))
             } finally {
                 bitmap.recycle()
             }
         }
+    }
+
+    private fun drawButton(button: Button, bitmap: Bitmap) {
+        val canvas = Canvas(bitmap)
+        // Match ViewGroup.drawChild: single-line TextViews can have an internal scroll offset.
+        canvas.translate(-button.scrollX.toFloat(), -button.scrollY.toFloat())
+        button.draw(canvas)
     }
 
     private fun dragFromIndicator(root: View, label: View) {

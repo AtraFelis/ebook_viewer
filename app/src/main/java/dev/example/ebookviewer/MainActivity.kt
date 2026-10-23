@@ -45,10 +45,9 @@ class MainActivity : Activity() {
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
     private lateinit var libraryManagement: LibraryManagement
-    private var inversionReady = false
-    private var inversionSaving = false
     private var importShelf: String? = null
     private var importRunning = false
+    private var pendingImportMessage: String? = null
     private lateinit var homePresentation: ReaderHomeView
     private lateinit var homeScroll: ScrollView
     private lateinit var readerTools: LinearLayout
@@ -56,6 +55,10 @@ class MainActivity : Activity() {
     private lateinit var readingWindow: ReadingWindow
     private lateinit var displayWindow: DisplayWindow
     private var displaySettings = DisplaySettings()
+    private var displayPreview: DisplaySettings? = null
+    private var viewSettingsDialog: ViewSettingsDialog? = null
+    private var viewSettingsOpen = false
+    private var viewSettingsGeneration = 0
     private var appliedDarkTheme = false
     private var resumed = false
     private lateinit var root: FrameLayout
@@ -81,7 +84,6 @@ class MainActivity : Activity() {
     private lateinit var pageTextClient: PageTextClient
     private lateinit var readPageButton: Button
     private lateinit var pageIndicator: PageNumberView
-    private lateinit var pageJumpButton: Button
     private lateinit var bookmarksButton: Button
     private var pageNumbersVisible = false
     private data class PageTarget(val page: Int, val y: Double? = null)
@@ -139,7 +141,7 @@ class MainActivity : Activity() {
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
                 viewer.setPages(it)
                 if (first) {
-                    if (quickOrientationOpen) showTools() else hideTools()
+                    if (quickOrientationOpen || viewSettingsOpen) showTools() else hideTools()
                 }
                 if (first) {
                     hintState.documentOpened()
@@ -164,6 +166,7 @@ class MainActivity : Activity() {
                         getString(R.string.temporary_access, it.size)
                     }
                 )
+                status.visibility = if (!durableAccess) View.VISIBLE else View.GONE
                 if (pendingNavigation == null) {
                     if (first) saveReading() else scheduleSave()
                 }
@@ -247,18 +250,16 @@ class MainActivity : Activity() {
             status,
             onHome = ::showLibrary,
             onSettings = ::showSettings,
-            onPage = ::showPageJump,
+            onViewSettings = { showViewSettings() },
             onBookmarks = ::showBookmarks,
             onReadText = { showPageText() },
             onDismiss = ::hideTools,
             onScrubBegin = viewer::stopScrolling,
             onScrubPage = { requestPage(it, keepTools = true) },
             onPanLock = ::toggleHorizontalPanLock,
-            onOrientation = ::showQuickOrientation,
-            onInvert = ::toggleInversion
+            onOrientation = ::showQuickOrientation
         )
         readerTools = toolsPresentation.view
-        pageJumpButton = toolsPresentation.page
         bookmarksButton = toolsPresentation.bookmarks
         readPageButton = toolsPresentation.readText
         pageIndicator = PageNumberView(this).apply {
@@ -384,9 +385,7 @@ class MainActivity : Activity() {
         settings.loadInversion { result ->
             if (isDestroyed) return@loadInversion
             result.onSuccess {
-                inversionReady = true
                 viewer.setColorsInverted(it)
-                toolsPresentation.updateInversion(it, true)
             }.onFailure { reportError(R.string.settings_error) }
         }
         settings.loadBackground { result ->
@@ -405,11 +404,16 @@ class MainActivity : Activity() {
         reselectRecord = savedInstanceState?.getString("reselectUri")?.let { uri ->
             ReadingRecord(uri, getString(R.string.untitled_pdf), 0)
         }
+        pendingImportMessage = savedInstanceState?.getString("pendingImportMessage")
         if (savedInstanceState?.getBoolean("synthetic") == true) {
             openSample(savedInstanceState.getBundle("viewport"))
         } else {
             val uri = savedInstanceState?.getString("sourceUri")
             if (uri == null) {
+                pendingImportMessage?.let {
+                    setStatus(it)
+                    pendingImportMessage = null
+                }
                 refreshLibrary()
             } else {
                 openDocument(
@@ -429,7 +433,10 @@ class MainActivity : Activity() {
                 }
             )
         }
-        if (savedInstanceState?.getBoolean("quickOrientationOpen") == true) {
+        if (savedInstanceState?.getBoolean("viewSettingsOpen") == true) {
+            val draft = savedInstanceState.getBundle("viewSettingsDraft")
+            root.post { if (!isDestroyed) showViewSettings(draft) }
+        } else if (savedInstanceState?.getBoolean("quickOrientationOpen") == true) {
             root.post { if (!isDestroyed) showQuickOrientation() }
         } else if (savedInstanceState?.getBoolean("settingsOpen") == true) {
             showSettings()
@@ -498,39 +505,31 @@ class MainActivity : Activity() {
         }) { result ->
             if (isDestroyed) return@execute
             importRunning = false
-            if (!reading) {
-                result.onSuccess {
+            result.onSuccess {
+                val message = getString(
+                    R.string.pdf_import_result,
+                    it.added,
+                    it.existing,
+                    it.failed,
+                    it.temporary
+                )
+                if (reading) {
+                    pendingImportMessage = message
+                    if (it.failed > 0) Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                } else {
                     clearFailedOpen()
-                    setStatus(
-                        getString(
-                            R.string.pdf_import_result,
-                            it.added,
-                            it.existing,
-                            it.failed,
-                            it.temporary
-                        )
-                    )
+                    setStatus(message)
                     refreshLibrary()
-                }.onFailure { reportError(R.string.library_change_error) }
+                }
+            }.onFailure {
+                if (reading) {
+                    val message = getString(R.string.library_change_error)
+                    pendingImportMessage = message
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                } else {
+                    reportError(R.string.library_change_error)
+                }
             }
-        }
-    }
-
-    private fun toggleInversion() {
-        if (!inversionReady || inversionSaving) return
-        val previous = viewer.colorsInverted
-        val value = !previous
-        inversionSaving = true
-        viewer.setColorsInverted(value)
-        toolsPresentation.updateInversion(value, false)
-        settings.saveInversion(value) { result ->
-            if (isDestroyed) return@saveInversion
-            inversionSaving = false
-            result.onFailure {
-                viewer.setColorsInverted(previous)
-                reportError(R.string.settings_error)
-            }
-            toolsPresentation.updateInversion(viewer.colorsInverted, true)
         }
     }
 
@@ -713,7 +712,8 @@ class MainActivity : Activity() {
         homeScroll.visibility = View.VISIBLE
         hideTools()
         readingWindow.apply(false)
-        setStatus(R.string.ready)
+        setStatus(pendingImportMessage ?: getString(R.string.ready))
+        pendingImportMessage = null
         updatePageIndicator()
         refreshLibrary()
     }
@@ -830,6 +830,7 @@ class MainActivity : Activity() {
 
     private fun setStatus(message: CharSequence) {
         status.text = message
+        status.visibility = if (reading && !loaded) View.VISIBLE else View.GONE
         homeStatus.text = message
         homeStatus.visibility = if (message == getString(R.string.ready)) {
             View.GONE
@@ -842,6 +843,7 @@ class MainActivity : Activity() {
 
     private fun reportError(resource: Int) {
         setStatus(resource)
+        status.visibility = View.VISIBLE
         Toast.makeText(this, resource, Toast.LENGTH_LONG).show()
     }
 
@@ -923,10 +925,6 @@ class MainActivity : Activity() {
             expectedPages,
             loaded && pendingNavigation == null
         )
-        pageJumpButton.isEnabled = loaded &&
-            position != null &&
-            expectedPages > 1 &&
-            pendingNavigation == null
         bookmarksButton.isEnabled = loaded && activeRecord != null && position != null
         if (::readPageButton.isInitialized) readPageButton.isEnabled = loaded && position != null
         toolsPresentation.updatePanLock(
@@ -988,18 +986,6 @@ class MainActivity : Activity() {
         previous?.setOnDismissListener(null)
         previous?.findViewById<TextView>(R.id.page_text_content)?.text = ""
         previous?.dismiss()
-    }
-
-    private fun showPageJump() {
-        if (!loaded ||
-            expectedPages <= 1 ||
-            pendingNavigation != null ||
-            navigationDialog != null
-        ) {
-            return
-        }
-        val current = viewer.readingPosition() ?: return
-        trackNavigationDialog(pageJumpDialog(current.page, expectedPages) { requestPage(it) })
     }
 
     private fun requestPage(page: Int, y: Double? = null, keepTools: Boolean = false) {
@@ -1136,6 +1122,101 @@ class MainActivity : Activity() {
         }
         dialog.window?.setWindowAnimations(0)
         dialog.show()
+    }
+
+    private fun showViewSettings(draft: Bundle? = null) {
+        if (!reading ||
+            viewSettingsOpen ||
+            settingsDialog != null ||
+            isDestroyed ||
+            isFinishing
+        ) {
+            return
+        }
+        viewSettingsOpen = true
+        showTools()
+        val generation = ++viewSettingsGeneration
+        fun live() =
+            !isDestroyed && !isFinishing && viewSettingsOpen && generation == viewSettingsGeneration
+        fun failed() {
+            if (live()) {
+                viewSettingsOpen = false
+                reportError(R.string.settings_error)
+            }
+        }
+        settings.loadBackground { background ->
+            if (!live()) return@loadBackground
+            background.onSuccess { currentBackground ->
+                settings.loadDisplay { display ->
+                    if (!live()) return@loadDisplay
+                    display.onSuccess { currentDisplay ->
+                        settings.loadInversion { inversion ->
+                            if (!live()) return@loadInversion
+                            inversion.onSuccess { inverted ->
+                                val panel = ViewSettingsDialog(
+                                    this,
+                                    ViewSettings(currentBackground, currentDisplay, inverted),
+                                    draft,
+                                    saveBackground = { value, done ->
+                                        settings.saveBackground(value) { saved ->
+                                            if (!isDestroyed) {
+                                                saved.onSuccess(viewer::setBackgroundSettings)
+                                            }
+                                            done(saved.isSuccess)
+                                        }
+                                    },
+                                    saveDisplay = { value, done ->
+                                        settings.saveDisplay(value) { saved ->
+                                            if (!isDestroyed) {
+                                                saved.onSuccess(::applyDisplaySettings)
+                                            }
+                                            done(saved.isSuccess)
+                                        }
+                                    },
+                                    saveInversion = { value, done ->
+                                        settings.saveInversion(value) { saved ->
+                                            if (!isDestroyed) {
+                                                saved.onSuccess(viewer::setColorsInverted)
+                                            }
+                                            done(saved.isSuccess)
+                                        }
+                                    },
+                                    preview = { value ->
+                                        if (live()) {
+                                            viewer.setBackgroundSettings(value.background)
+                                            viewer.setColorsInverted(value.inverted)
+                                            displayPreview = value.display
+                                            updateDisplayWindow()
+                                        }
+                                    },
+                                    closed = { confirmed ->
+                                        if (live()) {
+                                            viewer.setBackgroundSettings(confirmed.background)
+                                            viewer.setColorsInverted(confirmed.inverted)
+                                            displaySettings = confirmed.display
+                                            displayPreview = null
+                                            viewSettingsDialog = null
+                                            viewSettingsOpen = false
+                                            updateDisplayWindow()
+                                        }
+                                    }
+                                )
+                                viewSettingsDialog = panel
+                                panel.show()
+                            }.onFailure { failed() }
+                        }
+                    }.onFailure { failed() }
+                }
+            }.onFailure { failed() }
+        }
+    }
+
+    private fun closeViewSettings() {
+        viewSettingsDialog?.dismiss()
+        viewSettingsDialog = null
+        viewSettingsOpen = false
+        viewSettingsGeneration++
+        displayPreview = null
     }
 
     private fun showOrientationSettings() {
@@ -1508,6 +1589,7 @@ class MainActivity : Activity() {
     }
 
     private fun closeSettings() {
+        closeViewSettings()
         if (::viewer.isInitialized) viewer.observeCropPreview(null)
         val child = settingsDialog
         val parent = settingsHomeDialog
@@ -1587,7 +1669,7 @@ class MainActivity : Activity() {
     }
 
     private fun updateDisplayWindow() {
-        displayWindow.apply(displaySettings, reading && loaded, resumed)
+        displayWindow.apply(displayPreview ?: displaySettings, reading && loaded, resumed)
     }
 
     /** Synthetic fixture only. File IO and generation run on the PDF worker. */
@@ -1694,7 +1776,10 @@ class MainActivity : Activity() {
         toolsPresentation.scrubber.cancelPreview()
         outState.putBundle("libraryUi", homePresentation.saveState())
         outState.putString("importShelf", importShelf)
+        outState.putString("pendingImportMessage", pendingImportMessage)
         outState.putString("displayTheme", displaySettings.theme.name)
+        outState.putBoolean("viewSettingsOpen", viewSettingsOpen)
+        viewSettingsDialog?.let { outState.putBundle("viewSettingsDraft", it.capture()) }
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
         outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)

@@ -1,5 +1,7 @@
 # 문서 목차
 
+본문을 덜 가리는 [작은 읽기 도구·보기 설정 계획](plan/compact-reader-tools.md)과 [구현/검증 이력](history/2026-10-23-02-compact-reader-tools.md): 페이지 슬라이더·작은 버튼 한 줄, 배경색/색반전/밝기/화면 유지 패널. 책장 UI 개편은 별도 논의 뒤 진행한다.
+
 PDF 색반전·다중 추가·책장의 [Windows 인계/컨벤션·기기 검증](history/2026-10-23-01-local-library-validation.md): 관련12개 기기 성공, 원래 사용자 변경/버전 보존, 실제 SAF 사용자 수용과 원격 CI·리뷰는 별도 판정한다.
 
 [개인 사용 피드백 계획](plan/reader-usability-follow-up.md)·[문서 여백/기록v4 결정](adr/0018-document-crop-and-reading-records-v4.md): 자동 배경색 대기 중 색 유지, 읽기 도구 방향 버튼, 원본을 보존하는 문서 전체 공통 여백을 진행한다. 실제 실행 결과는 [이번 이력](history/2026-10-22-05-reader-usability.md)을 따른다.

@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ListView
+import android.widget.Switch
 import android.widget.TextView
 import java.io.File
 import java.util.concurrent.CountDownLatch
@@ -35,15 +36,19 @@ class LibraryFeaturesDeviceTest {
         var activity = ui.launch()
         try {
             val viewer = ui.sample(activity)
-            ui.onMain { viewer.performClick() }
+            ui.onMain {
+                viewer.performClick()
+                activity.findViewById<View>(R.id.reader_view_settings).performClick()
+            }
+            ui.await("View settings did not open") { viewSettings(activity)?.isShowing == true }
             ui.await("Inversion setting did not load") {
-                activity.findViewById<Button>(R.id.invert_pdf).isEnabled
+                inversionControl(activity).isEnabled
             }
             val outside = ui.onMain { viewer.outsideBackgroundColor() }
             val before = ui.state(viewer)
-            ui.onMain { activity.findViewById<Button>(R.id.invert_pdf).performClick() }
+            ui.onMain { inversionControl(activity).performClick() }
             ui.await("Inversion did not save") {
-                activity.findViewById<Button>(R.id.invert_pdf).let { it.isEnabled && it.isSelected }
+                inversionControl(activity).let { it.isEnabled && it.isChecked }
             }
             assertTrue(awaitResult(settings::loadInversion))
             val after = ui.state(viewer)
@@ -56,7 +61,7 @@ class LibraryFeaturesDeviceTest {
             ui.onMain { activity.recreate() }
             ui.await("Reader did not recreate", 30_000) {
                 val latest = monitor.lastActivity
-                if (latest != null && latest !== old && latest.hasWindowFocus()) {
+                if (latest != null && latest !== old && viewSettings(latest)?.isShowing == true) {
                     activity = latest
                     true
                 } else {
@@ -65,8 +70,9 @@ class LibraryFeaturesDeviceTest {
             }
             val restored = ui.awaitReady(activity)
             ui.await("Saved inversion did not restore") {
-                restored.colorsInverted &&
-                    activity.findViewById<Button>(R.id.invert_pdf).isSelected
+                viewSettings(activity)?.isShowing == true &&
+                    restored.colorsInverted &&
+                    inversionControl(activity).isChecked
             }
         } finally {
             ui.onMain { activity.finish() }
@@ -171,6 +177,14 @@ class LibraryFeaturesDeviceTest {
             directory.deleteRecursively()
         }
     }
+
+    private fun inversionControl(activity: android.app.Activity): Switch =
+        requireNotNull(viewSettings(activity)).findViewById(R.id.invert_pdf)
+
+    private fun viewSettings(activity: android.app.Activity): ViewSettingsDialog? =
+        MainActivity::class.java.getDeclaredField("viewSettingsDialog").apply {
+            isAccessible = true
+        }.get(activity) as ViewSettingsDialog?
 
     private fun <T> awaitResult(start: ((Result<T>) -> Unit) -> Unit): T {
         val latch = CountDownLatch(1)

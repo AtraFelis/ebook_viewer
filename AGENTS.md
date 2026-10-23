@@ -28,9 +28,9 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 여백/원본 앵커·타일·기록v1/v2/v3→v4·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·슬라이더·첫 안내 상태 및 책장/색반전 포함69개 통과(클라우드/Windows 단위 실행; 기기 검증과 별도) |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | 여백/원본 앵커·타일·기록v1/v2/v3→v4·가시 면적·페이지 수명·자동 배경색/표시 설정·본문 예산·슬라이더·첫 안내 상태 및 책장/색반전·보기 설정 상태 포함73개 통과(클라우드/Windows 단위 실행; 기기 검증과 별도) |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
-| 기기 테스트 | `./scripts/device-smoke.ps1` | API33 로컬 관련12개/실패0(2026-10-23): 책장/색반전5·배경6·큰 글꼴6조합1. 기본 기대96개 전체 미실행. [로컬 결과](docs/history/2026-10-23-01-local-library-validation.md), 이전91개 분할/실패 이력은 [P3 기록](docs/history/2026-10-22-01-p3-final-verification.md)에 보존. 전체 제한900초/개별 선택 지원, 실제 OOM/다른 API 검증 아님 |
+| 기기 테스트 | `./scripts/device-smoke.ps1` | API33 책장/배경 관련12개 성공 뒤 작은 읽기 도구 관련 고유14개를 분할 보완해 성공(2026-10-23). 마지막 한 APK의 전체 재실행 아님. [본문 UI 결과](docs/history/2026-10-23-02-compact-reader-tools.md). 기본 기대96개 전체 미실행. [로컬 결과](docs/history/2026-10-23-01-local-library-validation.md), 이전91개 분할/실패 이력은 [P3 기록](docs/history/2026-10-22-01-p3-final-verification.md)에 보존. 전체 제한900초/개별 선택 지원, 실제 OOM/다른 API 검증 아님 |
 
 ktlint CLI 1.5.0: `./gradlew.bat ktlintCheck` 통과. `ktlintFormat`은 명시적으로만 실행합니다. CI도 같은 검사 명령을 사용하지만 원격 CI 실행은 별도 확인합니다. 의존성은 lockfile 및 SHA-256 verification-metadata로 고정하며 검사 시 `--dependency-verification strict`를 사용합니다.
 

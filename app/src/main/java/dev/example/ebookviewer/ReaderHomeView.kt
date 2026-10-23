@@ -216,8 +216,8 @@ internal class ReaderHomeView(
         if (values.isEmpty()) {
             recent.addView(secondaryLabel(R.string.no_documents))
         }
-        values.forEach { record ->
-            recent.spaced(documentRow(record), if (recent.childCount == 0) 0 else 16)
+        values.forEachIndexed { index, record ->
+            recent.spaced(documentRow(record, index), if (recent.childCount == 0) 0 else 16)
         }
         manage.isEnabled = records.isNotEmpty()
         updateSelection()
@@ -258,7 +258,7 @@ internal class ReaderHomeView(
         )
     }
 
-    private fun documentRow(record: ReadingRecord): LinearLayout = card(0).apply {
+    private fun documentRow(record: ReadingRecord, index: Int): LinearLayout = card(0).apply {
         addView(
             column().apply {
                 id = R.id.home_record
@@ -319,7 +319,6 @@ internal class ReaderHomeView(
                 0
             )
             val visible = displayedRecords
-            val index = visible.indexOfFirst { it.uri == record.uri }
             spaced(
                 LinearLayout(context).apply {
                     addView(

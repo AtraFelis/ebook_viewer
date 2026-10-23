@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="reader_view_settings" type="id" />
+    <item name="view_settings_panel" type="id" />
+    <item name="view_background_presets" type="id" />
+    <item name="view_settings_retry" type="id" />
     <item name="crop_page_preview" type="id" />
     <item name="quick_orientation_choices" type="id" />
     <item name="crop_left" type="id" />

@@ -2,9 +2,9 @@ package dev.example.ebookviewer
 
 import android.app.Activity
 import android.net.Uri
-import android.os.Bundle
 import android.os.SystemClock
 import android.util.AtomicFile
+import android.view.MotionEvent
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
@@ -130,7 +130,7 @@ class NavigationDeviceTest {
     }
 
     @Test
-    fun pageJumpAndBookmarksKeepCurrentZoomAndSurviveActivityRelaunch() {
+    fun pageSliderAndBookmarksKeepCurrentZoomAndSurviveActivityRelaunch() {
         val file = File.createTempFile(
             "navigation-pdf-",
             ".pdf",
@@ -145,7 +145,8 @@ class NavigationDeviceTest {
             ui.pinch(view)
             val zoom = ui.state(view).getDouble("zoom")
             jump(activity, view, "0")
-            setPage("70", activity)
+            ui.await("Slider did not clamp to first page") { view.readingPosition()?.page == 0 }
+            jump(activity, view, "70")
             try {
                 ui.await("Did not navigate to selected page", 30_000) {
                     view.readingPosition()?.page == 69
@@ -203,32 +204,54 @@ class NavigationDeviceTest {
     }
 
     private fun jump(activity: Activity, view: PdfCanvasView, value: String) {
-        controls(activity, view, R.string.go_to_page)
-        setPage(value, activity)
-    }
-
-    private fun setPage(value: String, activity: Activity) {
-        val arguments = Bundle().apply {
-            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
+        ui.onMain {
+            if (!activity.findViewById<View>(R.id.reader_tools).isShown) view.performClick()
         }
-        val hint = activity.getString(R.string.page_number_hint, 100)
-        awaitAction {
-            instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(hint)
-                ?.firstOrNull { it.className == "android.widget.EditText" }
-                ?.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments) == true
+        val slider = activity.findViewById<PageScrubberView>(R.id.page_scrubber)
+        val catalog = PdfCanvasView::class.java.getDeclaredField("layout").apply {
+            isAccessible = true
         }
-        // Accessibility accepts a queued action before its edited value is observable.
-        awaitAction {
-            instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(hint)
-                ?.any {
-                    it.className == "android.widget.EditText" && it.text?.toString() == value
-                } == true
+        ui.await("Page slider catalog unavailable") {
+            slider.width > 0 &&
+                slider.isShown &&
+                !slider.isLayoutRequested &&
+                slider.isEnabled &&
+                (catalog.get(view) as? DocumentLayout)?.pages?.size == 100
         }
-        action(activity.getString(R.string.navigate))
+        instrumentation.waitForIdleSync()
+        val down = SystemClock.uptimeMillis()
+        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+            ui.onMain {
+                val inset = ReaderStyle(activity).dp(9)
+                val fraction = ((value.toInt() - 1) / 99f).coerceIn(0f, 1f)
+                val origin = IntArray(2)
+                slider.getLocationOnScreen(origin)
+                val event = MotionEvent.obtain(
+                    down,
+                    SystemClock.uptimeMillis(),
+                    action,
+                    origin[0] + inset + (slider.width - inset * 2) * fraction,
+                    origin[1] + slider.height / 2f,
+                    0
+                )
+                try {
+                    event.offsetLocation(-origin[0].toFloat(), -origin[1].toFloat())
+                    slider.dispatchTouchEvent(event)
+                    if (action == MotionEvent.ACTION_DOWN) {
+                        assertEquals((value.toInt() - 1).coerceIn(0, 99), slider.previewPage)
+                    }
+                } finally {
+                    event.recycle()
+                }
+            }
+            SystemClock.sleep(25)
+        }
     }
 
     private fun controls(activity: Activity, view: PdfCanvasView, resource: Int) {
-        ui.tap(view)
+        ui.onMain {
+            if (!activity.findViewById<View>(R.id.reader_tools).isShown) view.performClick()
+        }
         ui.onMain {
             ui.views(activity.window.decorView).filterIsInstance<Button>()
                 .single { it.isShown && it.text == activity.getString(resource) }.performClick()

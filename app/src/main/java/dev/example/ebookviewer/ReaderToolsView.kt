@@ -13,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import kotlin.math.ceil
 
 /** Overlay chrome: the empty middle lets the PDF receive scroll and pinch gestures. */
 internal class ReaderToolsView(
@@ -20,15 +21,14 @@ internal class ReaderToolsView(
     status: TextView,
     onHome: () -> Unit,
     onSettings: () -> Unit,
-    onPage: () -> Unit,
+    onViewSettings: () -> Unit,
     onBookmarks: () -> Unit,
     onReadText: () -> Unit,
     onDismiss: () -> Unit,
     onScrubBegin: () -> Unit,
     onScrubPage: (Int) -> Unit,
     onPanLock: () -> Unit = {},
-    onOrientation: () -> Unit = {},
-    onInvert: () -> Unit = {}
+    onOrientation: () -> Unit = {}
 ) {
     private val style = ReaderStyle(context)
     private var availableHeight = 0
@@ -54,17 +54,13 @@ internal class ReaderToolsView(
         background = RippleDrawable(ColorStateList.valueOf(style.accentSoft), circle, circle)
         setOnClickListener { onPanLock() }
     }
-    val invert = action(R.string.invert_pdf_on, onInvert).apply {
-        id = R.id.invert_pdf
-        isEnabled = false
+    val viewSettings = action(
+        R.string.view_settings,
+        R.drawable.reader_view_settings,
+        onViewSettings
+    ).apply {
+        id = R.id.reader_view_settings
     }
-    fun updateInversion(inverted: Boolean, available: Boolean) {
-        invert.isSelected = inverted
-        invert.isEnabled = available
-        invert.setText(if (inverted) R.string.invert_pdf_off else R.string.invert_pdf_on)
-    }
-
-    val page = action(R.string.go_to_page, onPage)
     val orientationButton = ImageButton(context).apply {
         id = R.id.reader_orientation
         contentDescription = context.getString(R.string.orientation_settings)
@@ -79,9 +75,10 @@ internal class ReaderToolsView(
         orientationButton.setImageResource(mode.iconResource())
     }
 
-    val bookmarks = action(R.string.bookmarks, onBookmarks)
-    val readText = action(R.string.read_page_text, onReadText).apply {
+    val bookmarks = action(R.string.bookmarks, R.drawable.reader_bookmark, onBookmarks)
+    val readText = action(R.string.read_text_short, R.drawable.reader_text, onReadText).apply {
         id = R.id.read_page_text
+        contentDescription = context.getString(R.string.read_page_text)
     }
     val pageCount = style.label(R.string.loading, 14f).apply {
         id = R.id.reader_page_count
@@ -97,8 +94,8 @@ internal class ReaderToolsView(
         id = R.id.reader_header
         orientation = LinearLayout.HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        minimumHeight = style.dp(64)
-        setPadding(style.dp(8), style.dp(8), style.dp(16), style.dp(8))
+        minimumHeight = style.dp(56)
+        setPadding(style.dp(8), style.dp(4), style.dp(8), style.dp(4))
         setBackgroundColor(style.surface)
         addView(home, LinearLayout.LayoutParams(style.dp(48), style.dp(48)))
         addView(title, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) })
@@ -109,61 +106,50 @@ internal class ReaderToolsView(
         )
         dismissBlankTaps(onDismiss)
     }
-    private val summary = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(pageCount, LinearLayout.LayoutParams(-1, -2))
-        addView(scrubber, LinearLayout.LayoutParams(-1, style.dp(48)))
-        status.apply {
+    private val progress = LinearLayout(context).apply {
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        pageCount.apply {
             textSize = 12f
-            setTextColor(style.secondary)
+            isSingleLine = true
+            maxWidth = style.dp(120)
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(style.dp(4), 0, style.dp(8), 0)
         }
-        addView(status, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(8) })
+        addView(pageCount, LinearLayout.LayoutParams(-2, -2))
+        addView(scrubber, LinearLayout.LayoutParams(0, style.dp(48), 1f))
         dismissBlankTaps(onDismiss)
     }
     private val actions = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(
-            LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                addView(page, LinearLayout.LayoutParams(0, -2, 1f))
-                addView(
-                    bookmarks,
-                    LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) }
-                )
-                addView(
-                    action(R.string.settings, onSettings),
-                    LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = style.dp(8) }
-                )
-                dismissBlankTaps(onDismiss)
-            },
-            LinearLayout.LayoutParams(-1, -2)
-        )
-        addView(invert, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(8) })
-        addView(readText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = style.dp(8) })
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        listOf(
+            bookmarks,
+            viewSettings,
+            action(R.string.settings, R.drawable.reader_settings, onSettings),
+            readText
+        ).forEachIndexed { index, button ->
+            addView(
+                button,
+                LinearLayout.LayoutParams(0, -2, 1f).apply {
+                    leftMargin = if (index == 0) 0 else style.dp(6)
+                }
+            )
+        }
         dismissBlankTaps(onDismiss)
     }
-    private val footer = object : LinearLayout(context) {
-        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-            val wide = MeasureSpec.getSize(widthMeasureSpec) >= style.dp(760) &&
-                availableHeight < style.dp(480)
-            orientation = if (wide) HORIZONTAL else VERTICAL
-            for (index in 0 until childCount) {
-                val params = getChildAt(index).layoutParams as LayoutParams
-                params.width = if (wide) 0 else -1
-                params.weight = if (wide) 1f else 0f
-                params.topMargin = if (!wide && index > 0) style.dp(12) else 0
-                params.leftMargin = if (wide && index > 0) style.dp(24) else 0
-            }
-            val horizontal = style.dp(
-                if (MeasureSpec.getSize(widthMeasureSpec) < style.dp(360)) 16 else 24
-            )
-            setPadding(horizontal, style.dp(16), horizontal, style.dp(16))
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        }
-    }.apply {
+    private val footer = LinearLayout(context).apply {
         id = R.id.reader_footer
+        orientation = LinearLayout.VERTICAL
+        setPadding(style.dp(12), 0, style.dp(12), style.dp(4))
         setBackgroundColor(style.surface)
-        addView(summary, LinearLayout.LayoutParams(-1, -2))
+        addView(progress, LinearLayout.LayoutParams(-1, -2))
+        status.apply {
+            textSize = 11f
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setTextColor(style.secondary)
+            visibility = View.GONE
+        }
+        addView(status, LinearLayout.LayoutParams(-1, -2))
         addView(actions, LinearLayout.LayoutParams(-1, -2))
         dismissBlankTaps(onDismiss)
     }
@@ -200,6 +186,19 @@ internal class ReaderToolsView(
     }
 
     fun updatePages(page: Int?, count: Int, available: Boolean) {
+        if (totalPages != count) {
+            // Changing preview digits must not resize the slider and cancel its active gesture.
+            val widest = ('0'..'9').maxBy { pageCount.paint.measureText(it.toString()) }
+            val sample = pageCount.context.getString(R.string.current_page, count, count).map {
+                if (it.isDigit()) widest else it
+            }.joinToString("")
+            pageCount.layoutParams = pageCount.layoutParams.apply {
+                width = (
+                    ceil(pageCount.paint.measureText(sample)).toInt() +
+                        pageCount.compoundPaddingLeft + pageCount.compoundPaddingRight
+                    ).coerceIn(style.dp(48), style.dp(120))
+            }
+        }
         currentPage = page
         totalPages = count
         scrubber.update(page, count, available)
@@ -233,21 +232,25 @@ internal class ReaderToolsView(
         } else {
             val target = scrubber.previewPage
             if (target != null) {
-                pageCount.context.getString(
-                    R.string.page_scrub_preview,
-                    page + 1,
-                    totalPages,
-                    target + 1
-                )
+                pageCount.context.getString(R.string.current_page, target + 1, totalPages)
             } else {
                 pageCount.context.getString(R.string.current_page, page + 1, totalPages)
             }
         }
     }
 
-    private fun action(label: Int, click: () -> Unit): Button =
+    private fun action(label: Int, icon: Int, click: () -> Unit): Button =
         style.button(label, onClick = click).apply {
-            setPadding(style.dp(4), style.dp(8), style.dp(4), style.dp(8))
+            textSize = 11f
+            isSingleLine = true
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(style.dp(2), style.dp(2), style.dp(2), style.dp(2))
+            val image = context.getDrawable(icon)?.mutate()?.apply {
+                setTint(style.accent)
+                setBounds(0, 0, style.dp(20), style.dp(20))
+            }
+            setCompoundDrawables(null, image, null, null)
+            compoundDrawablePadding = style.dp(2)
         }
 
     private fun View.dismissBlankTaps(onDismiss: () -> Unit) {
