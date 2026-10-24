@@ -4,6 +4,8 @@
 
 ## 결정
 
+2026-10-24 실행 상태: 사용자 생성0.1.2/code4 APK의 서명과 이전0.1.1-vc3의 동일 인증서를 확인했다. 설치·키 백업은 사용자 확인 완료다. 에이전트가 개인용 키/비밀번호를 읽거나 현재 기기를 재검증하지 않았으며 코드 LICENSE/공개 배포 결정은 바꾸지 않았다. [완료 이력](../history/2026-10-24-10-main-sync-and-release-closeout.md)을 참고한다. 아래 기본0.1.0/code2는 초기 설정이며 사용자 로컬 버전은 따로 보존한다.
+
 namespace dev.example.ebookviewer는 유지하고 release applicationId를 같은 값으로 사용한다. debug/profile에는 .p0 suffix를 붙여 기존 dev.example.ebookviewer.p0와 계측/provider 식별자를 유지한다. 사용자 도메인을 새로 만들지 않는다. 정식판 이름은 Ebook Viewer이고 기존 개발용 이름은 유지한다. 기본 versionName0.1.0/versionCode2, debug -dev/profile -profile이다. 새 정식 APK마다 code를 증가시키며 다운그레이드 우회/기존 앱 제거는 하지 않는다.
 
 명시적 -PreleaseSigning=true와 EBOOK_RELEASE_STORE_FILE/STORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD가 모두 있을 때만 release signingConfig를 연결한다. 기본 release는 검증용 unsigned다. 서명 요청의 빈 값/없는 파일은 실패하며 debug signingConfig로 대체하지 않는다. 비밀값은 로컬 SecureString 입력 후 해당 프로세스의 환경변수로만 전달하고 finally에서 원래 환경을 복원한다. Gradle에는 비밀값 인자/파일을 넘기지 않으며 서명 빌드는 no-daemon/no-configuration-cache/in-process Kotlin을 사용한다.
