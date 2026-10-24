@@ -4,6 +4,10 @@
 
 ## 현재 단계 — main 동기화·개인용 정식판 완료 기록 정리
 
+PR #34 head2a97736의 실제 완료 리뷰에서 지적4366261550(최종 검증의 명령/결과 부족)1개를 확인하고 채택했다. history10에 공백/링크·사용자 해시/Git 보존의 실제 명령/결과와 실패·중단/건너뜀/미실행/미결을 보완했다. 앱 코드는 그대로이며 같은 브랜치에 검증 후 수정 게시한다. 아래 접수 당시 기록과 구분한다.
+
+문서11개를2a97736으로 codex/documentation-closeout에 커밋/일반 push하고 [PR #34](https://github.com/AtraFelis/ebook_viewer/pull/34)을 main 대상으로 게시했다. 현재 체크아웃은 같은 폴더의 이 문서 브랜치이며 로컬 main은 origin/main69931e9와0/0으로 동기화돼 있다. 문서 링크/공백·사용자 파일 해시 검사는 통과했고 앱 코드는 바꾸지 않았다. Markdown 전용이라 Android checks는 실행되지 않았다. CodeRabbit은 수동6380886160 한 번/봇6380887036 Review triggered 접수·PENDING을 확인했다. 완료 리뷰는 아직 아니며 상태 기록만의 추가 push는 하지 않는다. 병합은 사용자다.
+
 현재 체크아웃의 main을69931e9(PR #33 병합)로 ff-only 동기화했다. 원래 변경5개는 ignored 백업과 stash168afee63f68ca9a7795ffcf35c291ff5aaea8ad에 보존하고 바이트/해시 동일 복원했다. 기존 stash20fbf558도 남겨 뒀다. 사용자 docs/design.md와 gradle.properties(0.1.2/code4)는 수정/커밋 대상에서 제외한다.
 
 로컬 ebook-viewer-0.1.2-vc4.apk의 apksigner 검증 성공·정식 ID/버전·debuggable 아님과 이전0.1.1-vc3 APK와 같은 인증서를 확인했다. 키/비밀번호는 읽지 않았다. 사용자가 현재 정식판 설치와 키 백업을 완료했다고 명시 확인했다. 이는 사용자 확인이며 에이전트의 기기 재검증이 아니다. 프로젝트 코드 LICENSE/스토어 공개 배포는 계속 보류다.

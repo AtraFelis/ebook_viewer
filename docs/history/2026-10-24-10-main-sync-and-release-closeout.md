@@ -20,4 +20,64 @@
 
 AGENTS/SESSION/CHECKLIST·배포 준비/개인용 안내·계획·ADR0017·문서 목차/로드맵에 현재 완료 상태와 출처를 반영했다. 사용자 로컬 버전과 저장소 기본값을 구분하고 다음 버전은code를 증가/기존 키 재사용, 같은 버전 출력 충돌 보호와 SHA-256 보관 의미를 안내했다. 과거 검사/실패 이력은 보존하며 당시 대기 상태를 현재 미완료로 해석하지 않도록 최신 요약을 앞에 둔다.
 
-첫 시도에서는 후속 도구가 응답하지 않아 APK/문서 작업을 완료로 세지 않았다. 재시도에서는 기존 작업 적용 여부를 읽어 미적용을 확인한 뒤 진행했다. 이번 변경은 문서뿐이므로 앱 빌드/단위/기기·장시간/성능/OOM·다른 API 검사를 반복하지 않는다. 최종 검증은 문서 공백/링크와 사용자 파일 해시 보존을 확인한다.
+첫 시도에서는 후속 도구가 응답하지 않아 APK/문서 작업을 완료로 세지 않았다. 재시도에서는 기존 작업 적용 여부를 읽어 미적용을 확인한 뒤 진행했다. 이번 변경은 문서뿐이므로 앱 빌드/단위/기기·장시간/성능/OOM·다른 API 검사를 반복하지 않는다. 실제 최종 검증 명령/결과는 아래에 구분한다.
+
+## 최종 문서 검증 — PR #34 리뷰 보완
+
+CodeRabbit 지적4366261550을 채택했다. 작업 위치는 `C:\Users\cotjs\workspace\ebook_viewer`, PowerShell에서 다음을 실행해 문서11개를 재확인했다. 사용자 디자인 파일은 검사/커밋 범위에서 제외한다.
+
+**통과 — 공백 검사:** 다음 명령 종료0, 공백 오류 없음.
+
+```powershell
+git diff origin/main --check -- '*.md' ':(exclude)docs/design.md'
+```
+
+**통과 — 로컬 문서 링크:** 다음 스크립트의 `DOCUMENT_LINKS_OK (11 files)` 출력, 존재하지 않는 로컬 링크0개. 외부 URL 접속 검사는 이번 범위에서 미실행이다.
+
+```powershell
+$docs = @(git diff --name-only origin/main -- '*.md' ':(exclude)docs/design.md')
+$missing = @()
+foreach ($doc in $docs) {
+    $source = [IO.File]::ReadAllText((Join-Path $PWD $doc))
+    foreach ($match in [regex]::Matches($source, '\]\(([^)]+)\)')) {
+        $target = $match.Groups[1].Value
+        if ($target -match '^(https?://|#|mailto:|codex:)') { continue }
+        $target = ($target -split '#')[0]
+        $base = Split-Path (Join-Path $PWD $doc) -Parent
+        if ($target -and -not (Test-Path -LiteralPath (Join-Path $base $target))) {
+            $missing += $doc + ': ' + $target
+        }
+    }
+}
+if ($missing.Count) { throw ($missing -join "`n") }
+"DOCUMENT_LINKS_OK ($($docs.Count) files)"
+```
+
+**통과 — 사용자 파일 보존:** 다음 명령의 `USER_FILES_UNCHANGED (2 files)` 출력. 동기화 전 백업의 SHA-256과 사용자 디자인/속성 파일이 각각 같았다. 키/비밀번호/개인 PDF는 대상에 넣지 않았다.
+
+```powershell
+$backupRoot = Get-Content local-artifacts/main-sync-backup-path.txt
+$manifest = Get-Content (Join-Path $backupRoot 'manifest.json') -Raw | ConvertFrom-Json
+$userFiles = @($manifest | Where-Object { $_.path -in @('docs/design.md', 'gradle.properties') })
+if ($userFiles.Count -ne 2) { throw 'Incomplete preservation manifest' }
+foreach ($entry in $userFiles) {
+    if ((Get-FileHash -LiteralPath $entry.path).Hash -ne $entry.sha256) {
+        throw ('User file changed: ' + $entry.path)
+    }
+}
+'USER_FILES_UNCHANGED (2 files)'
+```
+
+**통과 — Git 보존:** `git rev-list --left-right --count main...origin/main` 출력0/0. `git cat-file -t 168afee63f68ca9a7795ffcf35c291ff5aaea8ad`와 `git cat-file -t 20fbf558655599c0e7af93c1855c30789dafdb91`는 각각commit을 반환했다. 새/기존 stash를 삭제하지 않았다.
+
+**실패/중단:** 첫 시도의 후속 도구 응답 지연으로 중단된 검증은 성공으로 세지 않았다. 재시도/이번 문서 재확인의 위 검사에는 실패가 없었다.
+
+**건너뜀:** Markdown 전용 변경은 CI 경로 필터로 Android checks가 실행되지 않았다. **미실행:** 앱 빌드/단위/기기·장시간/성능/OOM/다른 API 재검증과 키/백업 파일 직접 검사. 기존 앱 검사 결과와 사용자 설치/백업 확인을 이 검사에서 실행한 것으로 보고하지 않는다.
+
+**미결/범위 밖:** APK 서명 도구의 META-INF 경고2개는 보존하며 이번 문서 수정에서 해결하지 않았다. 프로젝트 코드 LICENSE/공개 배포는 사용자 결정으로 보류다. PR #34 병합은 사용자에게 남아 있다. 이번 보완은 검증 증거를 추가하는 문서 변경이며 앱 코드/설정은 바꾸지 않았다.
+
+## 실제 게시
+
+문서11개를2a977367341273480b7e18caf307099fc560ab03으로 같은 체크아웃의 codex/documentation-closeout에 커밋/일반 push하고 [PR #34](https://github.com/AtraFelis/ebook_viewer/pull/34)을 게시했다. 링크/공백 검사와 사용자 디자인/버전의 백업 대비 해시 동일 검사를 통과했다. 로컬 main은 origin/main69931e9와0/0이고 현재는 문서 브랜치다. 사용자 변경2개는 커밋하지 않았다.
+
+Markdown 전용이므로 경로 필터에 따라 Android checks는 실행되지 않았고 이를 앱 검사 통과로 세지 않는다. CodeRabbit 자동 제외 후 수동6380886160 한 번에 봇6380887036의 Review triggered 접수·PENDING을 확인했다. 실제 완료 리뷰는 아직 아니며 결과 기록은 로컬에서 모으고 상태만의 추가 push는 하지 않는다. PR 병합은 사용자다.
