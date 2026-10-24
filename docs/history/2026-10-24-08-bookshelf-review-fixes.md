@@ -18,3 +18,9 @@
 사용자 연결 후 승인된 API33에 개발용/계측 APK만 -r 설치했다. 위 관련3개를 각각 메서드 선택 실행해 각 P0 tests=1, failures=0을 확인했다(`local-artifacts/pr33-sharedCoverSubscriptionsPrioritizeSheetsAndBoundTheCombinedVisibleSet.log`, `pr33-isolatedCoverProducesBoundedPixelsAndInvalidPdfFallsBack.log`, `pr33-emptyShelfEditorAndMoveUseShelfSpecificMessages.log`). 앱/계측 force-stop·ADB 종료를 마쳤다. 사용자 개인 화면/문서/기록 추출 없이 공개 합성 데이터만 사용했다.
 
 `:app:assembleRelease :app:lintRelease -PreleaseSigning=false`와 동일 strict 옵션도22초 성공했다(`local-artifacts/pr33-review-fixes-release.log`), release Lint0/0이다. 실제 개인용 서명/정식 앱 설치는 하지 않았다. 사용자 디자인/버전 두 SHA-256 및 기존 stash20fbf558은 동일 보존했다. 새 APK의 기본96개 전체/장시간/성능/OOM/다른 API 검사는 미실행이다.
+
+## 게시
+
+2d718636dd2c7d0557ea5c32585cd8ef5b1a1433으로 같은 브랜치에 일반 push하고 PR #33 head 일치를 확인했다. 네 지적에 각각 답변4365822889/4365822996/4365823159/4365823233으로 수정·검증 근거를 남겼다. PR 설명도 공유 store/합산10개·84개 단위/관련 기기3개 결과로 갱신했다. 최신 CI40057904366/40057901402 두 건은 실행 중이며 자동 리뷰 제외를 확인해 의미 있는 수정 전체에 수동 재검토를 한 번 요청했다. 아래에서 접수/완료를 구분하고 상태 기록만의 추가 push는 하지 않는다.
+
+수동 재검토6379251793 한 번에 봇6379252550의 Review triggered 접수/PENDING을 확인했다. 기존4개 스레드는 모두 resolved(미해결0)이며 봇 답변4365824362/4365824559/4365824543/4365824816가 수정 방향의 타당성을 확인했다. 공유 store 답변은 코드/검사를 별도로 검증하지 않았다고 명시하므로 실제 전체 재리뷰 완료와 구분한다. 최신 CI두 건은 계속 실행 중이고 새 head 완료 리뷰는 대기다. 상태만의 추가 push/중복 요청은 하지 않았다.

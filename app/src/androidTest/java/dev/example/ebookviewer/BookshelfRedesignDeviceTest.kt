@@ -384,6 +384,21 @@ class BookshelfRedesignDeviceTest {
                 loader = BookCoverLoader(context) {}
                 loader?.request(listOf(ReadingRecord(uri, "Public fixture", 1)))
             }
+            if (android.os.Build.VERSION.SDK_INT < 30) {
+                ui.onMain {
+                    assertEquals(null, loader?.get(uri))
+                    loader?.request(listOf(ReadingRecord(bad, "Invalid fixture", 1)))
+                    assertEquals(null, loader?.get(bad))
+                    val store = (context.applicationContext as ReaderApplication).bookCovers
+                    assertEquals(
+                        null,
+                        BookCoverStore::class.java.getDeclaredField("attempt").apply {
+                            isAccessible = true
+                        }.get(store)
+                    )
+                }
+                return
+            }
             ui.await("Isolated cover did not complete", 15_000) { loader?.get(uri) != null }
             ui.onMain {
                 val bitmap = requireNotNull(loader?.get(uri))
@@ -430,6 +445,22 @@ class BookshelfRedesignDeviceTest {
                     )
                 }
                 home?.request(records)
+                if (android.os.Build.VERSION.SDK_INT < 30) {
+                    // Older APIs deliberately keep placeholders without scheduling PDF work.
+                    sheet?.request(records.takeLast(3))
+                    assertTrue(requests().isEmpty())
+                    for (record in records) {
+                        assertEquals(null, home?.get(record.uri))
+                        assertEquals(null, sheet?.get(record.uri))
+                    }
+                    assertEquals(
+                        null,
+                        BookCoverStore::class.java.getDeclaredField("attempt").apply {
+                            isAccessible = true
+                        }.get(store)
+                    )
+                    return@onMain
+                }
                 assertEquals(records.take(10).map { it.uri }, requests())
                 sheet?.request(records.takeLast(3))
                 assertEquals((records.takeLast(3) + records.take(7)).map { it.uri }, requests())
