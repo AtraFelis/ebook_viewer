@@ -1,14 +1,16 @@
 # 개인용 정식판 만들기와 업데이트
 
-2026-10-22. 사용자는 정식판의 읽기 기록/북마크/설정을 새로 시작하고 코드 공개 라이선스는 보류하기로 했다. 현재 단계는 빌드/로컬 서명 절차 준비다. 실제 개인용 키·설치·기기 수용/공개 배포는 아직 완료하지 않았다. [계획](plan/personal-release.md)·[ADR0017](adr/0017-personal-release-identity-and-signing.md).
+2026-10-24 갱신. 개인용 정식판0.1.2/versionCode4의 서명 APK를 확인했고, 사용자가 휴대폰 설치·키 백업 완료를 확인했다. 설치/백업은 사용자 확인이며 에이전트가 기기나 백업 파일을 열어 검사한 것은 아니다. 코드 공개 라이선스와 스토어/공개 배포는 계속 보류한다. [완료 근거](history/2026-10-24-10-main-sync-and-release-closeout.md)·[계획](plan/personal-release.md)·[ADR0017](adr/0017-personal-release-identity-and-signing.md).
 
 ## 기존 앱과 정식판
 
 개발용 debug/profile은 기존 `dev.example.ebookviewer.p0`를 유지한다. 정식판은 `dev.example.ebookviewer`, 표시 이름 `Ebook Viewer`로 병행 설치한다. 기존 앱을 삭제하거나 그 앱의 기록/권한을 복사하지 않는다. 정식판에서 PDF를 처음 열 때 직접 다시 선택하면 새 앱에 SAF 접근 권한이 부여된다.
 
-버전은 [gradle.properties](../gradle.properties)의 `ebook.versionName=0.1.0`, `ebook.versionCode=2`다. debug는 `-dev`, profile은 `-profile`이 붙는다. 업데이트용 APK를 내보낼 때마다 versionCode를 증가시키고 필요하면 표시 버전도 올린다. 기존 설치보다 낮은 버전을 우회 설치하거나 같은 번호의 다른 APK를 덮어쓰지 않는다.
+버전은 [gradle.properties](../gradle.properties)의 `ebook.versionName`과 `ebook.versionCode`로 정한다. 저장소 기본값과 사용자 로컬 값은 다를 수 있으며, 현재 보존한 로컬 값은0.1.2/code4다. 이 문서의 APK 경로는 이 산출물을 예로 든다. 실제 경로는 실행 결과의 `Signed APK:`를 따른다. debug는 `-dev`, profile은 `-profile`이 붙는다. 업데이트용 APK를 내보낼 때마다 versionCode를 이전보다 높이고 표시 버전 versionName은 필요할 때만 바꾼다. 기존 설치보다 낮은 버전을 우회 설치하거나 같은 번호의 다른 APK를 덮어쓰지 않는다.
 
 ## 최초 개인용 키 생성과 APK 만들기
+
+이미 키를 만든 사용자는 이 절차를 반복하지 않고 아래 ‘다음 버전 만들기’를 사용한다.
 
 이 단계만 사용자가 Windows 로컬 터미널에서 직접 진행한다. 비밀번호를 채팅으로 보내거나 명령 인자에 평문으로 쓰지 않는다. PowerShell 7에서 다음을 실행한다.
 
@@ -22,7 +24,7 @@ Set-Location 'C:\Users\cotjs\workspace\ebook_viewer'
 스크립트는 strict release 빌드/Lint·서명·applicationId/버전/debuggable 검사를 통과한 APK만 다음 위치로 복사하고 SHA-256을 표시한다.
 
 ```text
-C:\Users\cotjs\workspace\ebook_viewer\local-artifacts\releases\ebook-viewer-0.1.0-vc2.apk
+C:\Users\cotjs\workspace\ebook_viewer\local-artifacts\releases\ebook-viewer-0.1.2-vc4.apk
 ```
 
 키 파일과 비밀번호는 서로 다른 안전한 곳에 백업한다. 키를 잃으면 같은 정식 앱의 후속 업데이트를 서명할 수 없다. `.p12`/비밀번호/로컬 빌드 결과는 Git에 올리지 않는다. 스크립트는 설치·앱 삭제·GitHub Release/스토어 업로드를 하지 않는다.
@@ -39,13 +41,15 @@ C:\Users\cotjs\workspace\ebook_viewer\local-artifacts\releases\ebook-viewer-0.1.
 
 다른 키 경로를 사용했다면 같은 `-KeystorePath`를 다시 지정한다. 키/비밀번호/alias 확인 실패 시 빌드를 시작하지 않는다. 해당 버전의 출력 파일이 이미 있고 내용이 다르면 교체하지 않는다. APK와 키의 백업은 별도이며 APK를 보관하는 것만으로 서명 키를 복원할 수는 없다.
 
+`A different APK already exists at this version` 오류는 같은 버전 이름의 다른 APK를 덮어쓰지 않는 보호 동작이다. 기존 APK는 보존하고 `ebook.versionCode`를 이전 출력보다 높여 다시 빌드한다. 예를 들어0.1.2/code4 파일이 이미 있으면 다음 업데이트는code5 이상을 사용한다. versionName만 바꾸는 것은 내부 업데이트 번호 증가를 대신하지 않는다. SHA-256은 파일 비교용이며 외울 필요 없이 APK와 함께 기록하면 된다.
+
 ## 설치와 후속 검증
 
 실제 개인용 키로 만든 APK가 준비된 뒤 휴대폰을 연결한다. 기존 개발용 앱은 그대로 둔다. PowerShell에서 설치한 다음 직접 평소 PDF의 열기·확대/스크롤·설정·이어 읽기를 확인한다.
 
 ```powershell
 . ./scripts/android-env.ps1
-adb install --no-streaming -r ./local-artifacts/releases/ebook-viewer-0.1.0-vc2.apk
+adb install --no-streaming -r ./local-artifacts/releases/ebook-viewer-0.1.2-vc4.apk
 adb shell am start -W -n dev.example.ebookviewer/dev.example.ebookviewer.MainActivity
 ```
 

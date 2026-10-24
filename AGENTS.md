@@ -17,7 +17,7 @@
 | 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v6은 다중 책장 소속·사용자 순서를 저장하고 v1~v5를 읽음. 첫 변환 전 원본 바이트를 앱 private before-v6 파일에 보존. 별도 서재 보기/정렬 v1(ADR 0020). v4 필드는 문서별 크기/간격·가로 이동 잠금·원본을 보존하는 공통 여백을 저장(ADR 0006/0016/0018). 배경색 v2는 자동/수동 선택을 추가하고 v1 수동색을 읽음(ADR 0004/0013/0018). 테마/읽기 밝기/화면 유지는 별도 v1(ADR 0014). 북마크/방향/번호 표시는 별도 v1(ADR 0002/0003/0005). PDF 색반전은 별도 v1 설정(ADR 0019). 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
-| 개인용 배포 준비 | ADR0017: debug/profile ID dev.example.ebookviewer.p0 유지, release dev.example.ebookviewer 별도 설치·새 기록. versionCode/Name은 gradle.properties. 명시적 로컬 서명만 사용하고 실제 개인용 키/설치·프로젝트 코드 LICENSE는 아직 미완료/보류 |
+| 개인용 배포 | ADR0017: debug/profile ID dev.example.ebookviewer.p0 유지, release dev.example.ebookviewer 별도 설치·새 기록. 사용자 로컬0.1.2/code4 APK의 서명·정식 ID/버전·이전 APK와 같은 인증서 확인. 설치·키 백업은 사용자 확인 완료(2026-10-24). versionCode/Name은 gradle.properties이며 로컬 변경은 별도 보존. 프로젝트 코드 LICENSE/공개 배포는 보류. [완료 근거](docs/history/2026-10-24-10-main-sync-and-release-closeout.md) |
 
 새 런타임 의존성 도입이나 승인된 스택 변경 전 목적·대안·라이선스·영향을 제시하고 사용자 승인을 받습니다. 제안과 확정 사항을 구분하고 결정은 ADR과 이 표에 반영합니다.
 

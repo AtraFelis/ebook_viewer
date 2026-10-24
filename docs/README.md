@@ -1,5 +1,7 @@
 # 문서 목차
 
+현재 상태는 [main 동기화·개인용 정식판 완료 기록](history/2026-10-24-10-main-sync-and-release-closeout.md)을 따른다. PR #33은 병합됐고 최종 CI두 건 성공·리뷰 미해결0이다. 로컬0.1.2/code4 APK의 서명 확인과 설치/키 백업 사용자 확인을 마쳤다. [배포 안내](personal-release.md)는 다음 업데이트 절차를 설명한다. 아래 문단은 단계별 당시 이력이며 ‘대기/미게시’ 표현을 현재 상태로 읽지 않는다.
+
 PR #33의 실제 CodeRabbit 지적4개는 [리뷰 보완](history/2026-10-24-08-bookshelf-review-fixes.md)에서 판단/수정했다. 표지 store/큐/캐시를 앱 전체에서 공유하고 합산10개로 제한하며, 책장 인덱스·빈 안내를 보완했다. 단위84개/기기 관련3개와 strict debug/unsigned release 검증을 마쳤고 수정 게시/최신 CI·재검토는 별도로 확인한다.
 
 현재 최종안은 [중앙 삭제 확인창](history/2026-10-24-06-centered-delete-confirmation.md)이며 사용자가 수용했다. 이동/더보기만 하단 시트를 유지한다. strict debug/계측·관련 기기1개와 unsigned release/release Lint를 마쳤으며 아래 문단들은 단계별 이전 이력이다. 관련 변경 게시/CI·실제 리뷰는 별도 확인한다.

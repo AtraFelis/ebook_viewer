@@ -1,6 +1,6 @@
 # 빌드·설치·라이선스와 배포 준비
 
-2026-10-22 (Asia/Seoul). P3 debug APK의 고지·설치 점검을 바탕으로 개인용 release 준비를 보완했다. [현재 개인용 빌드·키 생성·업데이트 절차](personal-release.md)를 먼저 따른다. 실제 개인용 키/설치는 미실행이며 임시 키 검증과 구분한다. 이전 APK 검증 범위는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)을 따른다.
+2026-10-24 (Asia/Seoul) 갱신. P3 debug APK 점검 이후 개인용 정식판0.1.2/code4 APK의 서명·버전과 이전 정식 APK의 동일 인증서를 확인했다. 사용자가 설치·키 백업 완료를 확인했다. [현재 개인용 빌드·업데이트 절차](personal-release.md)와 [실제 완료 근거](history/2026-10-24-10-main-sync-and-release-closeout.md)를 먼저 따른다. 이전 APK 검증 범위는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)에 보존하며 공개 배포/스토어 출시는 별도 보류다.
 
 ## 현재 산출물과 다시 빌드하기
 
@@ -48,7 +48,7 @@ JUnit4.13.2(EPL-1.0)와 Hamcrest1.3(New BSD/3-clause)는 단위/기기 검사 �
 
 - 저장소 자체의 LICENSE는 사용자 결정으로 보류했다. 사용자는 앱 사용 허가와 코드 수정·재배포 허가를 구분한 뒤 코드 라이선스를 적용하지 않기로 했다. 제3자 Apache-2.0 고지가 앱 자체의 라이선스를 정하지는 않는다.
 - 2026-10-22 사용자가 첨부한 아이콘을 최종 선택했고 일반/adaptive/단색 테마 런처 리소스로 적용했다. 원본 [PNG](design-assets/selected-launcher-icon.png)와 대응 [SVG](design-assets/selected-launcher-icon.svg)를 보존하며 APK에는 vector만 넣는다. 출처는 사용자가 선택한 별도 디자인 작업의 자체 SVG 시안이다. 프로젝트 공개 라이선스 결정은 별도이며 선택/적용을 모든 법적 권리 검증으로 확대하지 않는다. [검증 범위](history/2026-10-22-03-launcher-icon.md).
-- applicationId/버전과 명시적 로컬 release 서명·직접 APK 업데이트 절차는 [ADR0017](adr/0017-personal-release-identity-and-signing.md)로 정했다. debug는 개발용, profile은 debug 키 서명의 비디버그 계측용이며 정식판이 아니다. 실제 개인용 키 생성·백업·그 키의 APK 설치/수용은 아직 남아 있다.
+- applicationId/버전과 명시적 로컬 release 서명·직접 APK 업데이트 절차는 [ADR0017](adr/0017-personal-release-identity-and-signing.md)로 정했다. debug는 개발용, profile은 debug 키 서명의 비디버그 계측용이며 정식판이 아니다. 현재 개인용 서명 APK는 검증했고 설치·키 백업은 사용자 확인 완료다. 현재 버전의 모든 기능/다른 기기 재검증으로 확대하지 않는다.
 - release용 버전·서명·최적화 설정을 결정한 다음 해당 **실제 release 산출물**의 설치/업데이트·기능·서명/고지/개인 데이터 제외를 다시 확인한다. debug 통과를 미생성 release의 검증으로 바꾸지 않는다.
 - 외부 배포/스토어 등록·개인정보 안내·대상 API/기기 확장은 현재 개인용 범위와 별도로 결정한다. 실제 게시/릴리스는 사용자 승인 전 진행하지 않는다.
 
