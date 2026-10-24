@@ -8,12 +8,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.net.Uri
 import android.view.View
-import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.Switch
-import android.widget.TextView
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -153,7 +150,7 @@ class LibraryFeaturesDeviceTest {
             assertEquals(id, snapshot().shelves.single().id)
             ui.onMain { manager?.move(setOf(uri)) }
             choose("Shelf B")
-            assertEquals(id, snapshot().memberships[uri])
+            assertEquals(setOf(id), snapshot().memberships[uri])
             ui.onMain { manager?.shelves() }
             choose("Shelf B")
             choose(activity.getString(R.string.delete_bookshelf))
@@ -310,42 +307,7 @@ class LibraryFeaturesDeviceTest {
 
     @Test
     fun managementSelectsMultipleWithoutOpeningAndRestoresSelection() {
-        val activity = ui.launch()
-        try {
-            ui.onMain {
-                val records = listOf(ReadingRecord("a", "A", 1), ReadingRecord("b", "B", 2))
-                var opened = false
-                var removed = emptySet<String>()
-                fun createHome() = ReaderHomeView(
-                    activity, TextView(activity), Button(activity), Button(activity),
-                    {}, {}, {}, { opened = true }, {}, { removed = it }, {}, { _, _, _ -> }, {}
-                )
-                val home = createHome()
-                assertEquals(
-                    View.GONE,
-                    home.view.findViewById<View>(R.id.library_selection).visibility
-                )
-                home.render(LibraryCatalog(records))
-                ui.views(home.view).filterIsInstance<Button>().first {
-                    it.text == activity.getString(R.string.manage_documents)
-                }.performClick()
-                ui.views(home.view).filterIsInstance<CheckBox>().forEach { it.performClick() }
-                assertTrue(!opened)
-                val restored = createHome()
-                restored.restoreState(home.saveState())
-                restored.render(LibraryCatalog(records))
-                assertTrue(
-                    ui.views(restored.view).filterIsInstance<CheckBox>().all {
-                        it.isChecked
-                    }
-                )
-                ui.views(restored.view).filterIsInstance<Button>().first {
-                    it.text == activity.getString(R.string.remove_selected)
-                }.performClick()
-                assertEquals(setOf("a", "b"), removed)
-            }
-        } finally {
-            ui.onMain { activity.finish() }
-        }
+        // Keep the regression at the new grid entry point instead of the removed checkbox form.
+        BookshelfRedesignDeviceTest().gridSelectionRestoresAndShelfHomeUsesRecycledCells()
     }
 }

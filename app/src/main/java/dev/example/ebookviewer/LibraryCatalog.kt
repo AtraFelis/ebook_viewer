@@ -11,7 +11,7 @@ data class LibraryCatalog(
     val records: List<ReadingRecord> = emptyList(),
     val shelves: List<Bookshelf> = emptyList(),
     val order: List<String> = records.map { it.uri },
-    val memberships: Map<String, String> = emptyMap()
+    val memberships: Map<String, Set<String>> = emptyMap()
 ) {
     init {
         val uris = records.map { it.uri }.toSet()
@@ -19,7 +19,9 @@ data class LibraryCatalog(
         require(records.size <= 10_000 && uris.size == records.size)
         require(shelves.size <= 1_000 && ids.size == shelves.size)
         require(order.size == uris.size && order.toSet() == uris)
-        require(memberships.keys.all { it in uris } && memberships.values.all { it in ids })
+        require(memberships.keys.all { it in uris })
+        require(memberships.values.all { it.isNotEmpty() && ids.containsAll(it) })
+        require(memberships.values.sumOf { it.size.toLong() } <= 100_000)
     }
 
     fun visible(shelf: String?): List<ReadingRecord> {
@@ -29,9 +31,25 @@ data class LibraryCatalog(
                 if (shelf.isEmpty()) {
                     it.uri !in memberships
                 } else {
-                    memberships[it.uri] == shelf
+                    memberships[it.uri]?.contains(shelf) == true
                 }
         }
+    }
+
+    /** Build the presentation index once per catalog snapshot, preserving the saved document order. */
+    internal fun documentsByShelf(): Map<String, List<ReadingRecord>> {
+        val byUri = records.associateBy { it.uri }
+        val grouped = mutableMapOf<String, MutableList<ReadingRecord>>()
+        for (uri in order) {
+            val record = byUri.getValue(uri)
+            val ids = memberships[uri].orEmpty()
+            if (ids.isEmpty()) {
+                grouped.getOrPut("") { mutableListOf() }.add(record)
+            } else {
+                ids.forEach { grouped.getOrPut(it) { mutableListOf() }.add(record) }
+            }
+        }
+        return grouped
     }
 
     fun put(record: ReadingRecord, replacedUri: String? = null): LibraryCatalog {
@@ -62,15 +80,16 @@ data class LibraryCatalog(
         require(shelf == null || shelves.any { it.id == shelf })
         val known = records.map { it.uri }.toMutableSet()
         val added = values.filter { known.add(it.uri) }
-        return copy(
+        val updated = copy(
             records = (records + added).sortedByDescending { it.openedAt },
-            order = order + added.map { it.uri },
-            memberships = if (shelf == null) {
-                memberships
-            } else {
-                memberships + added.associate { it.uri to shelf }
-            }
+            order = order + added.map { it.uri }
         )
+        // Importing an already-known URI into another shelf adds a relation, not a second record.
+        return if (shelf == null) {
+            updated
+        } else {
+            updated.addToShelves(values.map { it.uri }.toSet(), setOf(shelf))
+        }
     }
 
     fun remove(uris: Set<String>): LibraryCatalog = copy(
@@ -83,8 +102,64 @@ data class LibraryCatalog(
         require(shelf == null || shelves.any { it.id == shelf })
         val selected = uris.intersect(order.toSet())
         val updated = memberships.filterKeys { it !in selected }.toMutableMap()
-        if (shelf != null) selected.forEach { updated[it] = shelf }
+        if (shelf != null) selected.forEach { updated[it] = setOf(shelf) }
         return copy(memberships = updated)
+    }
+
+    fun addToShelves(uris: Set<String>, destinations: Set<String>): LibraryCatalog {
+        require(shelves.map { it.id }.containsAll(destinations))
+        val updated = memberships.toMutableMap()
+        uris.intersect(order.toSet()).forEach { uri ->
+            val ids = updated[uri].orEmpty() + destinations
+            if (ids.isNotEmpty()) updated[uri] = ids
+        }
+        return copy(memberships = updated)
+    }
+
+    /** A move only replaces the source relation; other shelves and reading anchors survive. */
+    fun transferToShelf(
+        uris: Set<String>,
+        source: String,
+        target: String,
+        keepSource: Boolean
+    ): LibraryCatalog {
+        require(shelves.any { it.id == target } && source != target)
+        require(source.isEmpty() || shelves.any { it.id == source })
+        val eligible = uris.intersect(visible(source).map { it.uri }.toSet())
+        val base = if (keepSource || source.isEmpty()) this else removeFromShelf(eligible, source)
+        return base.addToShelves(eligible, setOf(target))
+    }
+
+    fun reorderShelves(ids: List<String>): LibraryCatalog {
+        require(ids.size == shelves.size && ids.toSet() == shelves.map { it.id }.toSet())
+        val byId = shelves.associateBy { it.id }
+        return copy(shelves = ids.map { byId.getValue(it) })
+    }
+
+    fun removeShelves(ids: Set<String>): LibraryCatalog = copy(
+        shelves = shelves.filterNot { it.id in ids },
+        memberships = memberships.mapValues { (_, value) ->
+            value - ids
+        }.filterValues { it.isNotEmpty() }
+    )
+
+    fun removeFromShelf(uris: Set<String>, shelf: String): LibraryCatalog = copy(
+        memberships = memberships.mapValues { (uri, ids) ->
+            if (uri in uris) ids - shelf else ids
+        }.filterValues { it.isNotEmpty() }
+    )
+
+    fun moveShelfBy(id: String, direction: Int): LibraryCatalog {
+        require(direction == -1 || direction == 1)
+        val index = shelves.indexOfFirst { it.id == id }
+        if (index < 0) return this
+        val neighbor = shelves.getOrNull(index + direction) ?: return this
+        return copy(
+            shelves = shelves.toMutableList().apply {
+                this[index + direction] = shelves[index]
+                this[index] = neighbor
+            }
+        )
     }
 
     fun moveBy(uri: String, direction: Int, filter: String?): LibraryCatalog {
@@ -115,6 +190,7 @@ data class LibraryCatalog(
 
     fun removeShelf(id: String): LibraryCatalog = copy(
         shelves = shelves.filterNot { it.id == id },
-        memberships = memberships.filterValues { it != id }
+        memberships = memberships.mapValues { (_, ids) -> ids - id }
+            .filterValues { it.isNotEmpty() }
     )
 }

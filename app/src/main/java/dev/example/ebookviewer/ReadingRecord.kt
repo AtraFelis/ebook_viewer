@@ -34,7 +34,7 @@ object ReadingRecordsCodec {
         val data = DataInputStream(input)
         require(data.readInt() == MAGIC) { "Unsupported reading records" }
         val version = data.readInt()
-        require(version in 1..5) { "Unsupported reading records" }
+        require(version in 1..6) { "Unsupported reading records" }
         val count = data.readInt()
         require(count in 0..10_000)
         val records = List(count) {
@@ -84,7 +84,17 @@ object ReadingRecordsCodec {
             val orderCount = data.readInt().also { require(it == count) }
             val order = List(orderCount) { data.readUTF() }
             val memberCount = data.readInt().also { require(it in 0..count) }
-            val entries = List(memberCount) { data.readUTF() to data.readUTF() }
+            var total = 0
+            val entries = List(memberCount) {
+                val uri = data.readUTF()
+                val size = if (version == 5) 1 else data.readInt()
+                require(size in 1..shelfCount)
+                total += size
+                require(total <= 100_000)
+                val ids = List(size) { data.readUTF() }
+                require(ids.distinct().size == size)
+                uri to ids.toSet()
+            }
             require(entries.map { it.first }.distinct().size == entries.size)
             LibraryCatalog(
                 records.sortedByDescending {
@@ -109,7 +119,7 @@ object ReadingRecordsCodec {
         val records = catalog.records
         val data = DataOutputStream(output)
         data.writeInt(MAGIC)
-        data.writeInt(5)
+        data.writeInt(6)
         data.writeInt(records.size)
         for (record in records) {
             data.writeUTF(record.uri)
@@ -141,9 +151,10 @@ object ReadingRecordsCodec {
         data.writeInt(catalog.order.size)
         catalog.order.forEach(data::writeUTF)
         data.writeInt(catalog.memberships.size)
-        catalog.memberships.forEach { (uri, shelf) ->
+        catalog.memberships.forEach { (uri, shelves) ->
             data.writeUTF(uri)
-            data.writeUTF(shelf)
+            data.writeInt(shelves.size)
+            shelves.sorted().forEach(data::writeUTF)
         }
         data.flush()
     }

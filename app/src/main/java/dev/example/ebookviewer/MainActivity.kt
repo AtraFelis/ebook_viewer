@@ -22,7 +22,6 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ListView
-import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -45,11 +44,12 @@ class MainActivity : Activity() {
     private var failedOpen: FailedOpen? = null
     private lateinit var homeScreen: LinearLayout
     private lateinit var libraryManagement: LibraryManagement
+    private lateinit var libraryWorkflow: LibraryWorkflow
     private var importShelf: String? = null
     private var importRunning = false
     private var pendingImportMessage: String? = null
     private lateinit var homePresentation: ReaderHomeView
-    private lateinit var homeScroll: ScrollView
+    private lateinit var homeScroll: FrameLayout
     private lateinit var readerTools: LinearLayout
     private lateinit var toolsPresentation: ReaderToolsView
     private lateinit var readingWindow: ReadingWindow
@@ -224,6 +224,8 @@ class MainActivity : Activity() {
             ::refreshLibrary,
             { reportError(R.string.library_change_error) }
         )
+        libraryWorkflow = LibraryWorkflow(this, library, { !reading }, ::refreshLibrary)
+        libraryWorkflow.restore(savedInstanceState?.getBundle("libraryWorkflow"))
         homePresentation = ReaderHomeView(
             this,
             homeStatus,
@@ -237,10 +239,14 @@ class MainActivity : Activity() {
             onSample = { openSample() },
             onOpen = { openDocument(Uri.parse(it.uri)) },
             onRemove = ::confirmRemoveRecord,
-            onRemoveMany = libraryManagement::remove,
-            onMove = libraryManagement::move,
+            onRemoveMany = { libraryWorkflow.remove(it) },
+            onMove = { libraryWorkflow.move(it, homePresentation.shelfFilter) },
             onReorder = libraryManagement::reorder,
-            onShelves = libraryManagement::shelves
+            onShelves = libraryManagement::createShelf,
+            onRemoveFromShelf = libraryManagement::removeFromShelf,
+            onShelfAction = libraryWorkflow::actions,
+            onShelfReorder = libraryManagement::reorderShelf,
+            onEditShelves = libraryWorkflow::edit
         )
         homePresentation.restoreState(savedInstanceState?.getBundle("libraryUi"))
         importShelf = savedInstanceState?.getString("importShelf")
@@ -278,7 +284,9 @@ class MainActivity : Activity() {
         pageIndicator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             positionReadingHint()
         }
-        homeScroll = ScrollView(this).apply { addView(homeScreen) }
+        homeScroll = FrameLayout(this).apply {
+            addView(homeScreen, FrameLayout.LayoutParams(-1, -1))
+        }
         root = FrameLayout(this).apply {
             setBackgroundColor(themeBackground())
             addView(viewer, FrameLayout.LayoutParams(-1, -1))
@@ -542,6 +550,7 @@ class MainActivity : Activity() {
         relink: String? = null
     ) {
         libraryManagement.close()
+        homePresentation.setActive(false)
         closePageText()
         saveReading()
         clearFailedOpen()
@@ -650,7 +659,8 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun openSample(viewport: Bundle? = null) {
+    internal fun openSample(viewport: Bundle? = null) {
+        homePresentation.setActive(false)
         closePageText()
         saveReading()
         clearFailedOpen()
@@ -678,6 +688,7 @@ class MainActivity : Activity() {
         root.setBackgroundColor(viewer.outsideBackgroundColor())
         homeScreen.visibility = View.GONE
         homeScroll.visibility = View.GONE
+        homePresentation.setActive(false)
         viewer.visibility = View.VISIBLE
         toolsPresentation.setTitle(
             activeRecord?.title
@@ -710,6 +721,7 @@ class MainActivity : Activity() {
         viewer.visibility = View.GONE
         homeScreen.visibility = View.VISIBLE
         homeScroll.visibility = View.VISIBLE
+        homePresentation.setActive(resumed)
         hideTools()
         readingWindow.apply(false)
         setStatus(pendingImportMessage ?: getString(R.string.ready))
@@ -765,18 +777,7 @@ class MainActivity : Activity() {
     }
 
     private fun confirmRemoveRecord(record: ReadingRecord) {
-        AlertDialog.Builder(this)
-            .setMessage(R.string.remove_record_message)
-            .setPositiveButton(R.string.remove_record) { _, _ ->
-                library.execute({ it.remove(record.uri) }) { removed ->
-                    if (!isDestroyed) {
-                        removed.onSuccess { refreshLibrary() }
-                            .onFailure { reportError(R.string.save_error) }
-                    }
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        libraryWorkflow.remove(setOf(record.uri), single = true)
     }
 
     private fun scheduleSave() {
@@ -1730,14 +1731,18 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         resumed = true
+        homePresentation.setActive(!reading)
+        libraryWorkflow.resume()
         updateDisplayWindow()
     }
 
     override fun onPause() {
+        homePresentation.setActive(false)
         toolsPresentation.scrubber.cancelPreview()
         libraryManagement.close()
         closePageText()
         resumed = false
+        libraryWorkflow.pause()
         updateDisplayWindow()
         saveReading()
         cancelSave()
@@ -1757,6 +1762,8 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        homePresentation.close()
+        libraryWorkflow.close()
         libraryManagement.close()
         closePageText()
         resumed = false
@@ -1775,6 +1782,7 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         toolsPresentation.scrubber.cancelPreview()
         outState.putBundle("libraryUi", homePresentation.saveState())
+        outState.putBundle("libraryWorkflow", libraryWorkflow.capture())
         outState.putString("importShelf", importShelf)
         outState.putString("pendingImportMessage", pendingImportMessage)
         outState.putString("displayTheme", displaySettings.theme.name)

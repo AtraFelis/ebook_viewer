@@ -116,7 +116,11 @@ class P0Instrumentation : Instrumentation() {
                 "chrome" -> ReaderChromeDeviceTest::class.java
                 "usability" -> ReaderUsabilityDeviceTest::class.java
                 "libraryFeatures" -> LibraryFeaturesDeviceTest::class.java
+                "library" -> LibraryDeviceTest::class.java
                 "compact" -> CompactReaderDeviceTest::class.java
+                "bookshelfRedesign" -> BookshelfRedesignDeviceTest::class.java
+                "libraryInteraction" -> LibraryInteractionDeviceTest::class.java
+                "libraryDeletion" -> LibraryDeletionDeviceTest::class.java
                 else -> error("Unsupported individual test class")
             }
         }

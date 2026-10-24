@@ -9,7 +9,6 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import org.junit.Assert.assertTrue
 
 class DeviceGestures(
@@ -85,10 +84,8 @@ class DeviceGestures(
 
     fun sample(activity: Activity): PdfCanvasView {
         instrumentation.runOnMainSync {
-            views(activity.window.decorView).filterIsInstance<Button>()
-                .single {
-                    it.text.toString() == activity.getString(R.string.sample_pdf)
-                }.performClick()
+            // Fixture setup uses the same load path, independently of library chrome placement.
+            (activity as MainActivity).openSample()
         }
         return awaitReady(activity)
     }

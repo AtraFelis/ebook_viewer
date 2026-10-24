@@ -206,7 +206,7 @@ class DocumentAccessDeviceTest {
             val absent = File(file.parentFile, "${file.name}.absent")
             ui.onMain { (activity as MainActivity).openDocument(Uri.fromFile(absent)) }
             awaitError(activity, R.string.pdf_unavailable_error)
-            click(activity, R.string.sample_pdf)
+            ui.onMain { (activity as MainActivity).openSample() }
             ui.awaitReady(activity)
         } finally {
             ui.onMain { activity.finish() }

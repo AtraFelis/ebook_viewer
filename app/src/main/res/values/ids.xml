@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="library_document_actions" type="id" />
+    <item name="bookshelf_edit" type="id" />
+    <item name="bookshelf_add" type="id" />
+    <item name="bookshelf_more" type="id" />
+    <item name="main_bookshelf_list" type="id" />
     <item name="reader_view_settings" type="id" />
     <item name="view_settings_panel" type="id" />
     <item name="view_background_presets" type="id" />
@@ -44,4 +49,6 @@
     <item name="bookshelf_name" type="id" />
     <item name="library_selection" type="id" />
     <item name="select_document" type="id" />
+    <item name="library_grid" type="id" />
+    <item name="bookshelf_tile" type="id" />
 </resources>
