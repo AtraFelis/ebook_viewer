@@ -391,9 +391,9 @@ class BookshelfRedesignDeviceTest {
                 loader?.request(listOf(ReadingRecord(bad, "Invalid fixture", 1)))
             }
             ui.await("Failed render did not release its request", 15_000) {
-                BookCoverLoader::class.java.getDeclaredField("attempt").apply {
+                BookCoverStore::class.java.getDeclaredField("attempt").apply {
                     isAccessible = true
-                }.get(loader) == null
+                }.get((context.applicationContext as ReaderApplication).bookCovers) == null
             }
             ui.onMain {
                 assertEquals(null, loader?.get(bad))
@@ -404,6 +404,48 @@ class BookshelfRedesignDeviceTest {
             ui.onMain { loader?.close() }
             pdf.delete()
             invalid.delete()
+        }
+    }
+
+    @Test
+    fun sharedCoverSubscriptionsPrioritizeSheetsAndBoundTheCombinedVisibleSet() {
+        val context = instrumentation.targetContext
+        val store = (context.applicationContext as ReaderApplication).bookCovers
+        val prefix = "public:subscription-${System.nanoTime()}-"
+        val records = (0 until 20).map { ReadingRecord("$prefix$it", "Public fixture", 0) }
+        var home: BookCoverLoader? = null
+        var sheet: BookCoverLoader? = null
+        fun requests(): List<*> = BookCoverStore::class.java.getDeclaredField("requested").apply {
+            isAccessible = true
+        }.get(store) as List<*>
+        try {
+            ui.onMain {
+                home = BookCoverLoader(context) {}
+                sheet = BookCoverLoader(context, priority = 1) {}
+                for (client in listOf(home, sheet)) {
+                    assertTrue(
+                        BookCoverLoader::class.java.getDeclaredField("store").apply {
+                            isAccessible = true
+                        }.get(client) === store
+                    )
+                }
+                home?.request(records)
+                assertEquals(records.take(10).map { it.uri }, requests())
+                sheet?.request(records.takeLast(3))
+                assertEquals((records.takeLast(3) + records.take(7)).map { it.uri }, requests())
+                // A home redraw must not steal the sheet's foreground budget.
+                home?.request(records)
+                assertEquals(records.takeLast(3).map { it.uri }, requests().take(3))
+                sheet?.close()
+                assertEquals(records.take(10).map { it.uri }, requests())
+                home?.close()
+                assertTrue(requests().none { it.toString().startsWith(prefix) })
+            }
+        } finally {
+            ui.onMain {
+                sheet?.close()
+                home?.close()
+            }
         }
     }
 

@@ -190,4 +190,25 @@ class BookshelfRedesignTest {
         }
         assertTrue(catalog().moveShelfBy("reference", 1) == catalog())
     }
+
+    @Test
+    fun shelfIndexPreservesManualOrderAndAllMembershipsAfterChanges() {
+        val original = catalog().addAll(listOf(ReadingRecord("c", "Unclassified", 0)), null)
+            .addToShelves(setOf("a"), setOf("study", "reference"))
+        val changed = original.transferToShelf(setOf("a"), "study", "reference", false)
+            .removeShelves(setOf("reference"))
+        for (value in listOf(original, changed, LibraryCatalog())) {
+            val index = value.documentsByShelf()
+            for (id in value.shelves.map { it.id } + "") {
+                assertEquals(value.visible(id), index[id].orEmpty())
+            }
+            assertEquals(
+                value.records.map {
+                    it.uri
+                }.toSet(),
+                index.values.flatten().map { it.uri }.toSet()
+            )
+        }
+        assertEquals(listOf("a", "b", "c"), changed.documentsByShelf()[""]?.map { it.uri })
+    }
 }

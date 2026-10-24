@@ -45,13 +45,14 @@ internal class LibraryWorkflow(
     private var state: Bundle? = null
     private var dialog: Dialog? = null
     private var catalog = LibraryCatalog()
+    private var shelfDocuments = emptyMap<String, List<ReadingRecord>>()
     private var generation = 0
     private var paused = true
     private var busy = false
     private var error = false
     private var loaded = false
     private var list: ListView? = null
-    private val covers = BookCoverLoader(activity) { list?.invalidateViews() }
+    private val covers = BookCoverLoader(activity, priority = 1) { list?.invalidateViews() }
     private fun live() = !activity.isDestroyed && !activity.isFinishing && available()
 
     fun edit() = start(Bundle().apply { putString("mode", "edit") })
@@ -124,6 +125,7 @@ internal class LibraryWorkflow(
             if (request != generation || !live() || paused) return@execute
             result.onSuccess {
                 catalog = it
+                shelfDocuments = it.documentsByShelf()
                 loaded = true
                 val draft = state ?: return@onSuccess
                 val source = draft.getString("source")
@@ -364,7 +366,10 @@ internal class LibraryWorkflow(
                     }
                 )
                 val targets = catalog.shelves.filter { it.id != source }
-                items(content, targets.size, { index, recycled ->
+                items(content, targets.size, empty = R.string.library_empty_move_targets, cell = {
+                        index,
+                        recycled
+                    ->
                     shelfRow(targets[index], recycled).apply {
                         setPadding(0, style.dp(8), 0, style.dp(8))
                         val caption = getChildAt(1) as LinearLayout
@@ -630,7 +635,10 @@ internal class LibraryWorkflow(
                 }
             )
         }
-        items(content, shelves.size, { index, recycled ->
+        items(content, shelves.size, empty = R.string.library_empty_editor, cell = {
+                index,
+                recycled
+            ->
             shelfRow(shelves[index], recycled).apply {
                 val id = shelves[index].id
                 if (ordering) {
@@ -825,9 +833,10 @@ internal class LibraryWorkflow(
         content: LinearLayout,
         count: Int,
         cell: (Int, View?) -> View,
+        empty: Int = R.string.no_documents,
         click: (Int) -> Unit
     ) {
-        if (count == 0) content.addView(label(activity.getString(R.string.no_documents), 14f))
+        if (count == 0) content.addView(label(activity.getString(empty), 14f))
         val rows = ListView(activity).apply {
             divider = null
             itemsCanFocus = true
@@ -869,12 +878,15 @@ internal class LibraryWorkflow(
         content.addView(rows, LayoutParams(-1, 0, 1f))
     }
 
-    private fun shelfRow(shelf: Bookshelf, recycled: View?): LinearLayout = basicRow(
-        recycled,
-        shelf.name,
-        activity.getString(R.string.library_document_count, catalog.visible(shelf.id).size),
-        catalog.visible(shelf.id).take(3)
-    )
+    private fun shelfRow(shelf: Bookshelf, recycled: View?): LinearLayout {
+        val documents = shelfDocuments[shelf.id].orEmpty()
+        return basicRow(
+            recycled,
+            shelf.name,
+            activity.getString(R.string.library_document_count, documents.size),
+            documents.take(3)
+        )
+    }
 
     private fun documentRow(
         record: ReadingRecord,

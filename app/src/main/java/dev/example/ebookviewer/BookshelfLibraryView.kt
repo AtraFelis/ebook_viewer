@@ -58,6 +58,7 @@ internal class BookshelfLibraryView(
     private var preferenceDialog: AlertDialog? = null
     private var pendingPreferenceError = false
     private var catalog = LibraryCatalog()
+    private var shelfDocuments = emptyMap<String, List<ReadingRecord>>()
     private var home = true
     private var managing = false
     private var ordering = false
@@ -281,7 +282,10 @@ internal class BookshelfLibraryView(
     }
 
     fun render(value: LibraryCatalog) {
-        catalog = value
+        if (catalog !== value) {
+            catalog = value
+            shelfDocuments = value.documentsByShelf()
+        }
         if (shelfFilter?.isNotEmpty() == true && value.shelves.none { it.id == shelfFilter }) {
             home = true
             shelfFilter = null
@@ -290,7 +294,7 @@ internal class BookshelfLibraryView(
         selected.retainAll(visible.map { it.uri }.toSet())
         entries =
             if (home) {
-                val uncategorized = if (value.visible("").isNotEmpty()) {
+                val uncategorized = if (shelfDocuments[""].orEmpty().isNotEmpty()) {
                     listOf(Entry(uncategorized = true))
                 } else {
                     emptyList()
@@ -740,7 +744,7 @@ internal class BookshelfLibraryView(
     }
 
     private fun entryDocuments(entry: Entry) = entry.record?.let(::listOf)
-        ?: catalog.visible(if (entry.uncategorized) "" else entry.shelf?.id)
+        ?: shelfDocuments[if (entry.uncategorized) "" else entry.shelf?.id].orEmpty()
 
     private data class Entry(
         val record: ReadingRecord? = null,

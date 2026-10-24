@@ -1,5 +1,7 @@
 # 문서 목차
 
+PR #33의 실제 CodeRabbit 지적4개는 [리뷰 보완](history/2026-10-24-08-bookshelf-review-fixes.md)에서 판단/수정했다. 표지 store/큐/캐시를 앱 전체에서 공유하고 합산10개로 제한하며, 책장 인덱스·빈 안내를 보완했다. 단위84개/기기 관련3개와 strict debug/unsigned release 검증을 마쳤고 수정 게시/최신 CI·재검토는 별도로 확인한다.
+
 현재 최종안은 [중앙 삭제 확인창](history/2026-10-24-06-centered-delete-confirmation.md)이며 사용자가 수용했다. 이동/더보기만 하단 시트를 유지한다. strict debug/계측·관련 기기1개와 unsigned release/release Lint를 마쳤으며 아래 문단들은 단계별 이전 이력이다. 관련 변경 게시/CI·실제 리뷰는 별도 확인한다.
 
 최신은 [문서 선택 하단·삭제 경고 시트](history/2026-10-24-05-document-selection-and-deletion-sheets.md)다. 중앙의 둥근 책장 이동/원형 삭제, 선택 전 체크 제거, 취소/원본 보존을 설명하는 삭제 시트를 사용자가 수용했다. 후속 이동 시트4~8dp 간격 보완도 빌드/개발용 갱신을 마쳤다. 관련 기기3개와 최종 표시만의 빌드 범위를 구분하며 아직 미게시다.

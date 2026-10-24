@@ -24,8 +24,36 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.Executors
 
-/** Main-thread scheduler with bounded local pixels; file access and decoding belong to IO. */
-internal class BookCoverLoader(context: Context, private val changed: () -> Unit) : Closeable {
+/** A screen owns a subscription, not another cache or rendering queue. */
+internal class BookCoverLoader(context: Context, priority: Int = 0, changed: () -> Unit) :
+    Closeable {
+    private val store = (context.applicationContext as ReaderApplication).bookCovers
+    private val owner = Any()
+    private var closed = false
+
+    init {
+        store.register(owner, priority, changed)
+    }
+
+    fun get(uri: String): Bitmap? = store.get(uri)
+    fun request(records: List<ReadingRecord>) {
+        if (!closed) store.request(owner, records)
+    }
+    fun cancel() {
+        if (!closed) store.request(owner, emptyList())
+    }
+    fun clear() {
+        if (!closed) store.clear()
+    }
+    override fun close() {
+        if (closed) return
+        closed = true
+        store.unregister(owner)
+    }
+}
+
+/** Application-owned scheduler: all screens share one bounded cache and serial file/render queue. */
+internal class BookCoverStore(context: Context) {
     private val context = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
     private val io = Executors.newSingleThreadExecutor()
@@ -36,9 +64,29 @@ internal class BookCoverLoader(context: Context, private val changed: () -> Unit
     private val failed = linkedSetOf<String>()
     private var requested = emptyList<String>()
     private var attempt: Attempt? = null
-    private var closed = false
     private var preparing = false
+    private var clearing = false
     private val attempted = linkedSetOf<String>()
+    private data class Client(
+        val priority: Int,
+        val changed: () -> Unit,
+        var uris: List<String> = emptyList()
+    )
+    private val clients = linkedMapOf<Any, Client>()
+
+    fun register(owner: Any, priority: Int, changed: () -> Unit) {
+        clients[owner] = Client(priority, changed)
+    }
+
+    fun unregister(owner: Any) {
+        clients.remove(owner)
+        refreshRequests()
+        if (clients.isEmpty()) cache.evictAll()
+    }
+
+    private fun changed() {
+        clients.values.filter { it.uris.isNotEmpty() }.toList().forEach { it.changed() }
+    }
 
     fun get(uri: String): Bitmap? = cache.get(uri)
 
@@ -95,9 +143,16 @@ internal class BookCoverLoader(context: Context, private val changed: () -> Unit
         }
     }
 
-    fun request(records: List<ReadingRecord>) {
-        if (closed || Build.VERSION.SDK_INT < 30) return
-        val visible = records.map { it.uri }.distinct().take(32)
+    fun request(owner: Any, records: List<ReadingRecord>) {
+        if (Build.VERSION.SDK_INT < 30) return
+        clients[owner]?.uris = records.map { it.uri }.distinct().take(MAX_VISIBLE_COVERS)
+        refreshRequests()
+    }
+
+    private fun refreshRequests() {
+        // Foreground sheets win over the home screen beneath them without duplicating work.
+        val visible = clients.values.sortedByDescending { it.priority }
+            .flatMap { it.uris }.distinct().take(MAX_VISIBLE_COVERS)
         if (visible != requested) {
             attempted.retainAll(visible.toSet())
             attempted.removeAll(visible.filter { it !in requested }.toSet())
@@ -107,24 +162,24 @@ internal class BookCoverLoader(context: Context, private val changed: () -> Unit
         next()
     }
 
-    fun cancel() {
-        requested = emptyList()
-        attempted.clear()
-        cancelAttempt()
-    }
-
     fun clear() {
-        cancel()
+        clearing = true
+        cancelAttempt()
+        attempted.clear()
         cache.evictAll()
         failed.clear()
         io.execute {
             directory.listFiles()?.forEach { it.delete() }
-            main.post { if (!closed) changed() }
+            main.post {
+                clearing = false
+                changed()
+                next()
+            }
         }
     }
 
     private fun next() {
-        if (closed || attempt != null || preparing) return
+        if (clearing || attempt != null || preparing) return
         val uri = requested.firstOrNull {
             cache.get(it) == null && it !in failed && it !in attempted
         } ?: return
@@ -313,11 +368,8 @@ internal class BookCoverLoader(context: Context, private val changed: () -> Unit
         io.execute { file?.delete() }
     }
 
-    override fun close() {
-        cancel()
-        closed = true
-        cache.evictAll()
-        // Preparation callbacks must release their descriptors before this queue stops.
-        io.execute { main.post { io.shutdown() } }
+    private companion object {
+        // Ten 384x512 ARGB_8888 covers fit in the shared 8MiB cache without eviction churn.
+        const val MAX_VISIBLE_COVERS = 10
     }
 }

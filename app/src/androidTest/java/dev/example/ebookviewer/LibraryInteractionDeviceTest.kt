@@ -26,6 +26,43 @@ class LibraryInteractionDeviceTest {
     private val ui get() = DeviceGestures(instrumentation)
 
     @Test
+    fun emptyShelfEditorAndMoveUseShelfSpecificMessages() {
+        val activity = ui.launch()
+        val path = File(activity.cacheDir, "public-empty-shelf-${System.nanoTime()}.bin")
+        DocumentLibrary(path).put(ReadingRecord("public:empty-shelf", "Public fixture", 0))
+        var workflow: LibraryWorkflow? = null
+        fun textValues(): List<String> {
+            val dialog = LibraryWorkflow::class.java.getDeclaredField("dialog").apply {
+                isAccessible = true
+            }.get(workflow) as? Dialog ?: return emptyList()
+            return ui.views(requireNotNull(dialog.window).decorView).filterIsInstance<TextView>()
+                .map { it.text.toString() }
+        }
+        try {
+            ui.onMain {
+                activity.setContentView(TextView(activity).apply { text = "Public backdrop" })
+                workflow = LibraryWorkflow(activity, LibraryRepository { path }, { true }, {})
+                workflow?.resume()
+                workflow?.edit()
+            }
+            ui.await("Empty editor used document wording") {
+                activity.getString(R.string.library_empty_editor) in textValues()
+            }
+            ui.onMain { workflow?.move(setOf("public:empty-shelf"), "") }
+            ui.await("Empty move picker used document wording") {
+                activity.getString(R.string.library_empty_move_targets) in textValues()
+            }
+            ui.onMain { assertFalse(activity.getString(R.string.no_documents) in textValues()) }
+        } finally {
+            ui.onMain {
+                workflow?.close()
+                activity.finish()
+            }
+            path.delete()
+        }
+    }
+
+    @Test
     fun referenceEditorAndSheetsKeepControlsDistinctAndContentSized() {
         val activity = ui.launch()
         val path = File(activity.cacheDir, "public-reference-${System.nanoTime()}.bin")

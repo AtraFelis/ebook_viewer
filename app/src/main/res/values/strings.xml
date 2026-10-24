@@ -166,6 +166,8 @@
     <string name="library_refresh_covers">표지 새로고침</string>
     <string name="library_preferences_error">서재 보기 설정을 저장하거나 읽지 못했습니다. 입력값은 유지됩니다. 다시 시도해 주세요.</string>
     <string name="library_empty_shelves">아직 책장이 없습니다. 편집에서 책장을 추가하거나 전체 문서를 열어 보세요.</string>
+    <string name="library_empty_editor">등록한 책장이 없습니다. 위의 + 버튼으로 책장을 만들어 보세요.</string>
+    <string name="library_empty_move_targets">이동할 다른 책장이 없습니다. 새 책장을 만들어 보세요.</string>
     <string name="library_document_count">%1$d개 문서</string>
     <string name="library_progress">%1$d / %2$d</string>
     <string name="library_unread">아직 읽지 않음</string>

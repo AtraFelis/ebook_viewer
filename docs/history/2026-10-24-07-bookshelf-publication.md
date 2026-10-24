@@ -9,3 +9,11 @@
 사용자 docs/design.md와 gradle.properties는 SHA-256 동일 보존하고 커밋 대상에서 제외한다. 기존 stash20fbf558655599c0e7af93c1855c30789dafdb91도 commit으로 보존한다. 공개 합성 View PNG를 제외한 개인 기기 화면/기록은 추출하지 않았고 기기 앱/계측·ADB는 종료했다.
 
 이 기록 시점 commit/push/PR/원격 CI·CodeRabbit은 아직 미실행이다. 게시 후 실제 head·CI·리뷰 접수를 로컬 기록으로 모으고 리뷰 중 상태만의 push/중복 요청은 피한다. 병합은 사용자가 한다.
+
+## 실제 게시
+
+46파일을3536da923f59afec9695391e04dd9c9e9dac8654로 커밋하고 같은 전용 브랜치에 일반 push했다. [PR #33](https://github.com/AtraFelis/ebook_viewer/pull/33)은 main 대상 ready 상태이며 head가 일치한다. Android checks39997863960/39997828449 두 건은 실행 중이다.
+
+CodeRabbit은10 stars 미만이라 자동 리뷰 제외 응답6371147127을 남겼다. 이를 완료 리뷰로 세지 않고 사용자 지정 절차대로 최신 substantive head에 수동 댓글6371151042로 한 번 요청했다. 봇6371153110의 Review triggered 접수는 확인했으며 완료 리뷰/CI 결과는 아직 대기다. 이 게시 뒤 결과 기록은 로컬에서 모으며 상태만의 추가 push/중복 호출은 하지 않는다.
+
+최신 재확인에서 Android checks39997863960/39997828449 두 건은 모두 SUCCESS, head3536da9·MERGEABLE이다. CodeRabbit 요약은 a6a202f→3536da9의46파일 실제 처리 중으로 바뀌었고 PENDING이다. 완료 리뷰/인라인 지적은 아직 없어 병합 준비 완료로 보고하지 않는다. 다음은 리뷰 결과 확인·타당한 지적 보완이며 이 상태 기록만의 push는 하지 않았다.

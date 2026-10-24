@@ -36,6 +36,22 @@ data class LibraryCatalog(
         }
     }
 
+    /** Build the presentation index once per catalog snapshot, preserving the saved document order. */
+    internal fun documentsByShelf(): Map<String, List<ReadingRecord>> {
+        val byUri = records.associateBy { it.uri }
+        val grouped = mutableMapOf<String, MutableList<ReadingRecord>>()
+        for (uri in order) {
+            val record = byUri.getValue(uri)
+            val ids = memberships[uri].orEmpty()
+            if (ids.isEmpty()) {
+                grouped.getOrPut("") { mutableListOf() }.add(record)
+            } else {
+                ids.forEach { grouped.getOrPut(it) { mutableListOf() }.add(record) }
+            }
+        }
+        return grouped
+    }
+
     fun put(record: ReadingRecord, replacedUri: String? = null): LibraryCatalog {
         val replaced = replacedUri?.takeIf { it != record.uri && records.any { r -> r.uri == it } }
         val existing = records.any { it.uri == record.uri }
