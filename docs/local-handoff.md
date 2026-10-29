@@ -2,7 +2,7 @@
 
 작성: 2026-10-16 (Asia/Seoul).
 
-이 문서는 클라우드 조사 직후의 전환 기록이다. 이후 구성 승인·로컬 초기화·API 33 기기 검증이 진행되었다. 현재 상태는 [SESSION](../SESSION.md), 실행 절차는 [Windows 개발](windows-development.md), 최신 검증은 [제스처·측정 이력](history/2026-10-16-07-gestures-and-probe.md)을 따른다.
+이 문서는 클라우드 조사 직후의 전환 기록이다. 이후 구성 승인·로컬 초기화·API 33 기기 검증이 진행되었다. 현재 상태는 [SESSION](../SESSION.md), 실행 절차는 [Windows 개발](windows-development.md), 현재 기능·검증 범위는 [검증 전략](testing/strategy.md)과 SESSION의 최신 이력을 따른다. 아래 미승인/미초기화 표현과 재개 프롬프트는 2026-10-16 당시 자료다.
 
 ## 전환 범위
 

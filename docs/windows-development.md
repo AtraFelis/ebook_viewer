@@ -1,65 +1,53 @@
-# Windows 개발 환경과 P0 실행
+# Windows 개발 환경과 실행
 
-현재 빌드·설치/업데이트·고지/서명 준비는 [배포 준비](release-preparation.md), 최신 통합 결과는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)을 먼저 확인한다. 아래 P0/초기 P1의 구현 제한·테스트 수는 당시 기록이며 현재 기능/91개 기본 검사 상태를 대신하지 않는다.
+갱신: 2026-10-29. 현재 도구 계약은 [AGENTS](../AGENTS.md), 기능/검증 상태는 [SESSION](../SESSION.md), 정식 APK는 [개인용 빌드](personal-release.md)를 따른다. 과거 P0/초기 P1 구현 제한을 현재 상태로 적용하지 않는다.
 
-2026-10-16 (Asia/Seoul). 사용자 승인 구성으로 로컬 빌드·검사를 완료했다. API 33 실기기 설치·기본 렌더 테스트·앱 실행을 확인했다. 현재 기기에서 합성 자료 성능을 측정했으며 최종 결과는 history에 기록한다. 원격 Windows CI는 통과했고 다른 API는 미검증이다.
+## 최초 설치
 
-## 설치와 검사
-
-PowerShell 7에서 현재 체크아웃을 사용한다. JDK/SDK/다운로드는 Git 제외 `local-artifacts`에 저장한다. 시스템 Java나 전역 환경 변수는 바꾸지 않는다.
+PowerShell 7에서 현재 체크아웃을 사용한다. 시스템 Java/전역 환경 변수는 바꾸지 않고 SDK/JDK·다운로드는 Git 제외 local-artifacts에 둔다.
 
 ```powershell
 Set-Location 'C:\Users\cotjs\workspace\ebook_viewer'
 ./scripts/bootstrap-windows.ps1 -AcceptAndroidSdkLicenses
-. ./scripts/android-env.ps1
-./gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug ktlintCheck --dependency-verification strict
 ```
 
-`-AcceptAndroidSdkLicenses`는 SDK 라이선스 수락 옵션이다. 조건을 직접 읽으려면 옵션 없이 설치 후 `sdkmanager --licenses`를 대화형으로 실행한다. 설치 스크립트는 SHA-256 불일치 시 추출하지 않는다. 기존 `local.properties`를 덮어쓰지 않으므로 다른 SDK가 지정돼 있다면 내용을 확인한다. PowerShell 실행 정책을 우회하거나 시스템 정책을 바꾸지 않는다.
+이 옵션은 SDK 라이선스 수락을 뜻한다. 조건을 직접 읽으려면 옵션 없이 설치 후 sdkmanager --licenses를 대화형으로 실행한다. 다운로드 SHA-256 불일치 시 추출하지 않고 기존 local.properties를 덮어쓰지 않는다. 기존 SDK 경로와 스크립트 도구 경로가 맞는지 확인한다. 실행 정책/서명/체크섬 검증은 우회하지 않는다.
 
-고정 도구: Temurin 17.0.20.1+1, Gradle 8.9, AGP 8.7.2, Kotlin 2.1.20, Platform 35 revision 2, Build Tools 34.0.0, command-line tools 12.0, platform-tools 37.0.1. 다운로드 URL/해시는 `scripts/windows-toolchain.lock.json`에 있다. Gradle 자체의 내장 Kotlin 1.9.23 출력은 앱 KGP 2.1.20과 다른 항목이다.
+고정 도구는 Temurin 17.0.20.1+1, Gradle 8.9, AGP 8.7.2, Kotlin 2.1.20, Platform 35 rev2, Build Tools 34.0.0이다. 다운로드 URL/해시는 [도구 잠금 파일](../scripts/windows-toolchain.lock.json)에 있다. Gradle 내장 Kotlin 출력은 앱 Kotlin 플러그인 버전과 구분한다.
 
-Android Studio는 필수 빌드 도구가 아니며 이번에 설치하지 않았다. 나중에 설치하면 Gradle JDK와 SDK를 위 로컬 도구 경로로 지정한다. 새 PowerShell 세션마다 android-env.ps1을 dot-source한다.
+Android Studio는 필수가 아니며 이 프로젝트 초기화 때 설치하지 않았다. 사용한다면 Gradle JDK/SDK를 프로젝트 설치 경로에 맞춘다. 새 PC의 드라이버·Studio·기기 연결 복원은 별도 확인 대상이다.
 
-## 기기 실행
+## 평소 빌드와 검사
+
+이미 도구가 있으면 새 PowerShell 세션마다 환경만 읽는다.
 
 ```powershell
-adb devices -l
-./gradlew.bat :app:installDebug --dependency-verification strict
-adb shell am start -n dev.example.ebookviewer.p0/dev.example.ebookviewer.MainActivity
+Set-Location 'C:\Users\cotjs\workspace\ebook_viewer'
+. ./scripts/android-env.ps1
+./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug ktlintCheck --dependency-verification strict
 ```
 
-한 번에 설치·기기 테스트·실행을 확인하려면 `./scripts/device-smoke.ps1`을 실행한다. 기기는 USB 디버깅 및 PC 연결 승인이 필요하다. 여러 기기 연결 시 대상 serial을 로컬에서 지정하고 공개 이력에 복사하지 않는다. 연결된 SM-N981N(API 33, emulator flag 0)에서 앱/테스트 APK 설치와 am start -W 실행 성공을 확인했다. 식별자는 기록하지 않는다.
+ktlintCheck는 읽기 전용이고 ktlintFormat은 명시적으로 요청할 때만 실행한다. 의존성 lockfile/verification-metadata를 정상 검증하며 일반 검사에서 다시 생성하거나 검증을 끄지 않는다. 변경 승인 후에만 공식 출처를 대조해 잠금/해시를 갱신한다.
 
-첫 화면의 “합성 100페이지”는 600×800 / 800×600 point를 교차 배치한 비공개 정보 없는 문서를 worker에서 생성한다. “PDF 열기”는 SAF를 사용한다. 합성 파일은 FD를 연 뒤 임시 이름을 삭제한다. 실제 측정 자료의 고정 SHA/기기 trace는 다음 기기 검증 시 별도 저장한다.
+debug APK는 app/build/outputs/apk/debug/app-debug.apk, 계측 APK는 app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk다. debug는 개발용이고 정식 서명 APK가 아니다. 보고서는 app/build/reports와 app/build/test-results에 있다. [캐시 정리](maintenance.md) 뒤 첫 빌드는 중간 산출물을 다시 생성한다.
 
-문서를 읽을 때는 전체 화면이며 중앙을 탭하면 설정/문서 목록/읽기 복귀 도구가 열린다. 설정에서 자동/세로/가로를 선택한다. 목록 화면에서도 설정에 접근한다. 앱 도구를 닫아도 읽던 위치/줌은 유지한다. 기기 UI 테스트에는 잠금 해제가 필요하며 테스트 창에만 화면 켜짐을 유지한다.
+## 필요한 기기 검사
 
-검증 순서: 첫 표시 → 핀치와 두 축 이동 → 페이지 경계 왕복 → 플링 중 반전 → 회전 → 문서 교체/목록에서 이어 읽기 → 종료 → 암호화/손상/provider 오류. 사용자 정정으로 P1 별도 최적화/반복 성능 측정은 필수가 아니며, 성능 악화가 의심될 때 필요한 계측을 추가한다. APK 빌드 통과는 기능/기기 검증의 대체물이 아니다.
+PC 빌드·문서 정리에는 휴대폰이 필요하지 않다. 기능 검사 때만 USB 연결·디버깅 승인·잠금 해제를 확인한다. 한 기기를 대상으로 하며 식별자는 공개 이력에 남기지 않는다.
 
-## 현재 구현 범위와 제한
+```powershell
+. ./scripts/android-env.ps1
+adb devices
+./scripts/device-smoke.ps1
+./scripts/reading-soak.ps1 -Mode stop
+```
 
-측정: `./scripts/device-smoke.ps1 -Probe`(debug), `./scripts/device-smoke.ps1 -Profile -Probe`(비디버그, 기본 30초×3회). `-Seconds 600 -Runs 1`로 10분 측정 가능하다. profile은 release 설정을 복사하고 로컬 debug 키로 서명하며 profileable을 켠다. 난독화는 현재 release와 동일하게 꺼져 있다. 스토어 출시물이 아니다. 보고서는 `local-artifacts/p0-profile-probe.json`에 저장하며 인프로세스 계측 오버헤드와 firstVisibleTilesMs의 의미를 [이력](history/2026-10-16-07-gestures-and-probe.md)에서 확인한다.
+device-smoke는 빌드/설치·검사 후 앱을 실행하므로 종료 시 stop으로 앱/계측과 ADB를 중지한다. 실패 때도 뒤 정리가 필요하다. 현재 기본 기대 수는 96개이며 [검증 전략](testing/strategy.md)의 관련 검사 선택과 [배포 준비](release-preparation.md)의 실제 명령을 따른다. 최종 APK에서 전체 96개가 통과했다는 뜻은 아니다. 문서·표시만의 변경에서 기본 전체/장시간 검사를 반복하지 않는다.
 
-- 플랫폼 Activity + View/Canvas, 기본 API PdfRenderer, single worker 수명 관리. 텍스트/암호화 API 35 확장은 SDK 서명만 확인했으며 UI에 구현하지 않았다.
-- 문서 전체 공통 zoom, gap 0 원본 크기 배치, 가시 영역 512px 타일, 64MiB 바이트 LRU, 문서/요청 세대 검사. active native render는 즉시 중단할 수 없으며 close는 worker에서 순서대로 수행한다.
-- 회전 시 페이지 내부 중심·zoom Bundle 복원, 최근/읽던 목록에서 문서별 위치 복원을 구현했다. API 33 합성 PDF의 A/B 전환·Activity 재실행과 저장 후 force-stop/다른 프로세스에서 이어 열기를 통과했다. 물리 회전/개인 PDF/provider별 검증은 남아 있다.
-- 첫 4페이지를 먼저 표시하고 나머지 크기는 worker에서 2페이지씩 추가한다. 기존 페이지 위치·사용자 줌을 유지한다. 회전 복원 시에는 전체 크기를 먼저 확보해 정확한 경계에서 위치를 복원한다. 렌더 배율은 반 옥타브 단계로 올림하며 사용자 줌은 연속값이다. 가시 페이지의 긴 변 최대 512px 미리보기를 우선 표시하고 현재/이전 배율 타일과 같은 64MiB 캐시를 공유한다. 아주 빠른 이동에서는 아직 준비되지 않은 영역이 남을 수 있다.
-- 캐시 64MiB는 총 메모리 상한이 아니다. worker 비트맵·UI 게시 대기·플랫폼 native 메모리는 별도 측정 대상이다.
-- 읽기 기록은 앱 내부 AtomicFile/버전 1 코덱이며 저장·SAF 메타데이터/권한 처리는 별도 단일 I/O 큐다. 목록으로 돌아가기와 실패 후 파일 재선택을 제공한다. 기록 삭제는 원본 PDF를 삭제하지 않는다. 자체 합성 버튼 문서는 목록에 등록하지 않는다.
-- 전체 화면/중앙 탭 도구/자동·가로·세로 설정을 구현했다. 방향은 별도 AtomicFile 설정 파일에 비동기 저장한다. API 30+ 시스템 바 제어와 23~29 legacy 경로, API 33+ 뒤로가기와 이전 API 콜백을 분기한다. 실제 API 33만 실행 검증했다.
-- 비탐색 provider는 임시 복사 대신 현재 일반 오류 안내. 배경색·간격/크기 모드·페이지 이동/북마크·완전한 접근성·오류 분류는 후속이다. 실제 provider 영구 권한·물리 센서·설정 재부팅 수용도 남아 있다.
+프로파일 측정은 device-smoke.ps1 -Profile -Probe를 명시적으로 선택한다. 30초·3회가 기본이고 -Seconds 600 -Runs 1은 10분 측정이다. profile은 로컬 debug 키를 쓰는 비디버그 계측용이며 정식판이 아니다. 성능의 조건/정의는 [기존 P0 이력](history/2026-10-16-07-gestures-and-probe.md)과 [후속 선명화 측정](testing/sharpness-probe.md)을 따른다. 과거 결과를 다른 API/기기·새 빌드의 통과로 바꾸지 않는다.
 
-## 의존성 및 검사 정책
+## 현재 기능과 배포
 
-앱 runtime은 stdlib 2.1.20과 annotations 13.0(Apache-2.0). JUnit 4.13.2(EPL-1.0)/Hamcrest 1.3(BSD 계열)은 테스트 전용, ktlint 1.5.0(MIT)은 공식 shadowed CLI로 실행한다. JDK는 GPLv2+Classpath Exception, Android SDK는 배포 SDK 약관/각 구성요소 고지를 따른다. 실제 배포 전 전체 고지 정리는 별도다.
+원본/너비 통일·간격·여백, 이어 읽기·책장 v6, 다섯 방향·작은 도구·번호/북마크·색반전/배경·본문 읽기는 [제품 문서](product/requirements.md)에 정리했다. 파일 접근은 SAF와 비탐색 파일의 취소 가능한 256MiB 상한 임시 복사를 사용한다. 현재 개인 API 33 기기 외 검증, 실제 OOM·모든 PDF의 무지연은 완료하지 않았다.
 
-`gradle/verification-metadata.xml`은 최초 공식 HTTPS 다운로드를 신뢰 기준으로 SHA-256을 생성했다. 전체 의존성의 독립 서명 검증을 주장하지 않는다. 변경 승인 후에만 `--write-locks --write-verification-metadata sha256`로 갱신하고 diff/출처를 검토한다. 일반 검사는 strict를 유지한다.
-
-ktlintCheck는 읽기 전용, ktlintFormat은 명시적 포맷 명령이다. Android Lint는 warningsAsErrors이며 승인한 버전을 유지하기 위한 AndroidGradlePluginVersion 권고만 informational로 남긴다. 기기 테스트는 JUnit 4와 최소 Instrumentation 브리지로 실행하며 앱 런타임 의존성은 늘리지 않았다. 현재 단위 19개와 API 33 debug 계측 27개를 통과했다([전체 화면 결과](history/2026-10-17-03-immersive-reading.md)). `-e suite immersive`로 새 4개를 선택 실행할 수 있다. 이전 읽기 기록 별도 프로세스 seed/verify 각 1개 명령/결과는 [P1 이력](history/2026-10-17-01-p1-reading-library.md)을 따른다. 최종 P0 성능 수치/한계는 history/2026-10-16-09-p0-local-validation.md를 따른다. P0와 PR #1 최종 df3ef15의 원격 Windows CI가 통과했으며 [PR/CI 결과](history/2026-10-17-02-p1-library-pr.md)에 기록했다. 전체 화면 PR #2 최종 head 3d7b6d5의 CI 38927859821도 통과했고 사용자가 병합했다. 확대/축소 조정 결과와 해당 변경의 원격 CI 상태는 [배율 변경 이력](history/2026-10-17-04-zoom-range.md)을 확인한다. 실제 새 PC의 드라이버/Studio/기기 연결 복원은 미검증이다.
-
-산출물: `app/build/outputs/apk/debug/app-debug.apk`, `app/build/reports/tests/testDebugUnitTest`, `app/build/reports/lint-results-debug.html`. debug APK는 출시 서명물이 아니다. apksigner는 서명 검증에 성공했으며 AGP의 META-INF app-metadata.properties 엔트리가 개별 보호되지 않는다는 경고도 기록했다.
-
-배경색은 홈/중앙 탭 설정 → 페이지 외부 배경색에서 지정한다. 기본 #444444, 네 가지 색상 버튼과 임의 RGB 코드를 지원한다. 자동 색 추출/선명도 복구 지연 최적화는 P2다. 수동 색상 신규 3개는 -e suite background로 선택할 수 있고 전체 회귀는 기본 device-smoke로 27개를 실행한다. [배경색 결과](history/2026-10-17-05-custom-background.md).
-
-페이지 이동/북마크는 중앙 탭 도구에서 접근한다. 번호 표시/숨김은 설정에서 선택하고 재실행에도 보존하며, 기본은 숨김이다. 북마크 항목을 길게 누르면 북마크만 삭제한다. -e suite navigation은 신규 4개 선택 실행이다. [명령/결과](history/2026-10-17-06-navigation-bookmarks.md).
+개인용 정식판은 별도 ID와 사용자 키를 사용한다. 기존 키를 다시 만들거나 기존 앱을 삭제하지 않고 새 versionCode로 업데이트한다. 고지·서명·출력 보호와 공개 배포 보류는 [개인용 안내](personal-release.md), [배포 준비](release-preparation.md)에 따른다.

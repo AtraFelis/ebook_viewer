@@ -1,6 +1,6 @@
 # 빌드·설치·라이선스와 배포 준비
 
-2026-10-24 (Asia/Seoul) 갱신. P3 debug APK 점검 이후 개인용 정식판0.1.2/code4 APK의 서명·버전과 이전 정식 APK의 동일 인증서를 확인했다. 사용자가 설치·키 백업 완료를 확인했다. [현재 개인용 빌드·업데이트 절차](personal-release.md)와 [실제 완료 근거](history/2026-10-24-10-main-sync-and-release-closeout.md)를 먼저 따른다. 이전 APK 검증 범위는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)에 보존하며 공개 배포/스토어 출시는 별도 보류다.
+2026-10-29 (Asia/Seoul) 갱신. P3 debug APK 점검 이후 개인용 정식판0.1.2/code4 APK의 서명·버전과 이전 정식 APK의 동일 인증서를 확인했다. 사용자가 설치·키 백업 완료를 확인했다. [현재 개인용 빌드·업데이트 절차](personal-release.md)와 [실제 완료 근거](history/2026-10-24-10-main-sync-and-release-closeout.md)를 먼저 따른다. 이전 APK 검증 범위는 [P3 최종 이력](history/2026-10-22-01-p3-final-verification.md)에 보존하며 공개 배포/스토어 출시는 별도 보류다.
 
 ## 현재 산출물과 다시 빌드하기
 
@@ -13,7 +13,7 @@ Set-Location 'C:\Users\cotjs\workspace\ebook_viewer'
 Get-FileHash ./app/build/outputs/apk/debug/app-debug.apk -Algorithm SHA256
 ```
 
-앱은 `app/build/outputs/apk/debug/app-debug.apk`, 계측 APK는 `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`다. 개발용 debug/profile ID `dev.example.ebookviewer.p0`는 유지하고 새 정식판 ID는 `dev.example.ebookviewer`다. 버전은 gradle.properties의0.1.0/code2, debug/profile suffix는-dev/-profile이다. 이전 P3 기기 점검의 code1/0.1.0-p0와 새 빌드/새 정식판을 구분하며 up-to-date 결과를 새 검사 실행으로 보고하지 않는다.
+앱은 `app/build/outputs/apk/debug/app-debug.apk`, 계측 APK는 `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`다. 개발용 debug/profile ID `dev.example.ebookviewer.p0`는 유지하고 새 정식판 ID는 `dev.example.ebookviewer`다. 버전은 gradle.properties에서 읽는다. 저장소 기본은0.1.0/code2이고 사용자 로컬은0.1.2/code4이며, 이후 값은 해당 체크아웃에서 확인한다. debug/profile suffix는-dev/-profile이다. 이전 P3 기기 점검의 code1/0.1.0-p0와 새 빌드/새 정식판을 구분하며 up-to-date 결과를 새 검사 실행으로 보고하지 않는다.
 
 ## 개인 기기 설치와 업데이트
 
@@ -27,9 +27,9 @@ adb shell am start -W -n dev.example.ebookviewer.p0/dev.example.ebookviewer.Main
 
 동일 applicationId/서명의 `-r` 업데이트를 사용한다. 서명 불일치·버전 다운그레이드 오류가 나면 원인을 확인하고 앱 삭제·데이터 초기화·우회 플래그로 해결하지 않는다. 기록은 앱 내부에 저장되므로 삭제/데이터 초기화 시 사라지며, 현재 백업도 비활성화돼 있다. 원본 PDF 삭제와 읽기 기록 삭제는 별개다. 다른 PC의 자동 생성 debug 키는 기존 키와 다를 수 있으므로 새 환경으로 옮길 때 서명 일치를 먼저 확인한다. 서명 키를 Git/로그에 복사하지 않는다.
 
-기본 통합 검사는 `./scripts/device-smoke.ps1`이며 현재91개다. 이 명령은 마지막에 앱을 한 번 실행하므로 검사 종료 후 `./scripts/reading-soak.ps1 -Mode stop`으로 앱/계측과 ADB를 중지한다. 중지 명령은 연결 기기 한 개를 전제로 한다. 명시적 전용 `readingSoak`20분은 일반 검사에 포함하지 않는다. 새 전체 기능/성능 검사가 필요하지 않은 문서 변경에서 기기 검사를 반복하지 않는다.
+기본 통합 검사는 `./scripts/device-smoke.ps1`이며 현재 기본 기대 수는96개다. 최종 앱에서 전체96개를 다시 실행한 결과는 아니며 [검증 전략](testing/strategy.md)에서 실제 범위를 확인한다. 이 명령은 마지막에 앱을 한 번 실행하므로 검사 종료 후 `./scripts/reading-soak.ps1 -Mode stop`으로 앱/계측과 ADB를 중지한다. 중지 명령은 연결 기기 한 개를 전제로 한다. 명시적 전용 `readingSoak`20분은 일반 검사에 포함하지 않는다. 새 전체 기능/성능 검사가 필요하지 않은 문서 변경에서 기기 검사를 반복하지 않는다.
 
-전체91개의 계측 제한은900초다. 최초720초 전체 중단 뒤 필요한 검사만 분할 보완했으며 그 실제 결과를 단일전체 성공으로 표기하지 않는다. 오류에 필요한 개별 재현은 `-e methodClass gestures|settings|chrome -e method 실제@Test함수명`을 사용할 수 있다. 기존 `-e suite access -e method 실제@Test함수명`도 유지한다. 허용 클래스/실제 @Test 외 입력과 probe/restart 혼용은 거부한다. 예를 들어 `adb shell am instrument -w -e methodClass chrome -e method centeredPageIndicatorKeepsViewportAndPassesScrollingThroughItsOwnSurface -e deadlineSeconds 90 dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation`로 번호 검사 하나를 실행한다. 실행 전에 현재 계측 APK를 `adb install --no-streaming -r -t ./app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`로 설치한다. 불완료/실패는 원문 로그와 함께 보존하고 별도 성공 실행으로 덮지 않는다.
+현재 기본 검사의 계측 제한은900초다. 과거 P3의91개 검사에서 최초720초 전체 중단 뒤 필요한 검사만 분할 보완했으며 그 실제 결과를 단일전체 성공으로 표기하지 않는다. 오류에 필요한 개별 재현은 `-e methodClass gestures|settings|chrome -e method 실제@Test함수명`을 사용할 수 있다. 기존 `-e suite access -e method 실제@Test함수명`도 유지한다. 허용 클래스/실제 @Test 외 입력과 probe/restart 혼용은 거부한다. 예를 들어 `adb shell am instrument -w -e methodClass chrome -e method centeredPageIndicatorKeepsViewportAndPassesScrollingThroughItsOwnSurface -e deadlineSeconds 90 dev.example.ebookviewer.p0.test/dev.example.ebookviewer.P0Instrumentation`로 번호 검사 하나를 실행한다. 실행 전에 현재 계측 APK를 `adb install --no-streaming -r -t ./app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`로 설치한다. 불완료/실패는 원문 로그와 함께 보존하고 별도 성공 실행으로 덮지 않는다.
 
 ## 실제 의존성과 고지
 
@@ -42,7 +42,7 @@ APK 고지는 [THIRD_PARTY_NOTICES.txt](../app/src/main/assets/THIRD_PARTY_NOTIC
 
 JUnit4.13.2(EPL-1.0)와 Hamcrest1.3(New BSD/3-clause)는 단위/기기 검사 전용이다. JUnit JAR의 LICENSE-junit.txt/POM, Hamcrest parent POM/[1.3 원문](https://github.com/hamcrest/JavaHamcrest/blob/hamcrest-java-1.3/LICENSE.txt)을 확인했다. ktlint1.5.0(MIT)은 빌드 검사 CLI다. Gradle8.9/AGP8.7.2/Kotlin compiler2.1.20/JDK/SDK는 앱 런타임과 구분하며 각 도구 배포의 고지를 따른다. 도구 전체의 전이 의존성이나 계측 APK를 배포하는 경우의 고지 전체를 이번 앱 APK 점검만으로 완료했다고 선언하지 않는다. PdfRenderer/PreV는 기기 플랫폼에서 제공되며 별도 PDF 엔진 JAR/native 라이브러리를 APK에 넣지 않는다.
 
-소스/기본 APK 점검에서 외부 폰트·이미지 자산이나 독립 native `.so`는 없었다. Android 시스템 글꼴과 저장소 내 View/Canvas·vector XML을 사용한다. 아이콘 최종안의 출처/라이선스는 선택 시 별도로 확인한다. 이 문서는 구성요소/고지의 기술적 확인이며 프로젝트 전체의 법률 판단을 대신하지 않는다.
+소스/기본 APK 점검에서 외부 폰트·이미지 자산이나 독립 native `.so`는 없었다. Android 시스템 글꼴과 저장소 내 View/Canvas·vector XML을 사용한다. 후속 아이콘은 아래 선택 원본/검증 근거를 따르며 프로젝트 공개 라이선스 결정과 구분한다. 이 문서는 구성요소/고지의 기술적 확인이며 프로젝트 전체의 법률 판단을 대신하지 않는다.
 
 ## 공개 배포 전에 남은 결정
 
