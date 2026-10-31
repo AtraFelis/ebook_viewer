@@ -4,6 +4,7 @@
 
 ## 주요 완료 근거
 
+- [2026-10-31 PR #35 문서 리뷰 보완](2026-10-31-01-documentation-review-fixes.md)
 - [2026-10-29 문서 최신화·캐시 정리](2026-10-29-01-documentation-and-cleanup.md)
 - [2026-10-24 main 동기화·개인용 설치/키 백업 확인](2026-10-24-10-main-sync-and-release-closeout.md)
 - [2026-10-24 PR #33 최종 API 분기·CI/병합](2026-10-24-09-cover-test-api-guards.md)

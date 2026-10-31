@@ -1,12 +1,14 @@
 # SESSION.md — 세션 인수인계
 
-최종 갱신: 2026-10-29 (Asia/Seoul).
+최종 갱신: 2026-10-31 (Asia/Seoul).
 
 ## 현재 상태
 
 P0·P1·합의한 P2/P3, 읽기 도구와 책장 후속 개선은 완료했다. [PR #33](https://github.com/AtraFelis/ebook_viewer/pull/33)은 책장 구현/리뷰 보완을, [PR #34](https://github.com/AtraFelis/ebook_viewer/pull/34)는 개인용 정식판 완료 문서를 반영했다. 이번 GitHub 조회에서 #34 MERGED/병합 `674c8d8`을 확인했다. PR #34의 문서 지적은 `9c4df30`과 봇의 실제 문서 확인으로 해소됐다. Markdown 전용 Android checks 미실행을 앱 검사 통과로 세지 않는다.
 
-현재 작업은 문서 최신화와 재생성 가능한 캐시 정리다. 체크아웃 경로는 `C:\Users\cotjs\workspace\ebook_viewer`, 작업 브랜치는 `codex/project-docs-cleanup`, 기준은 병합된 `origin/main`의 `674c8d8`이다. 기존 변경 5개를 유지한 채 동일 트리에서 브랜치를 만들었다. main 브랜치 자체는 이번에 갱신하지 않았다. 원격 상태·로컬 상태와 실제 검증은 [이번 이력](docs/history/2026-10-29-01-documentation-and-cleanup.md)에 기록한다.
+현재 작업은 문서 최신화·캐시 정리 뒤 PR #35 리뷰 보완이다. 체크아웃 경로는 `C:\Users\cotjs\workspace\ebook_viewer`, 작업 브랜치는 `codex/project-docs-cleanup`, 기준은 병합된 main의 `674c8d8`이다. 기존 변경 5개를 유지한 채 동일 트리에서 브랜치를 만들었다. main 브랜치 자체는 이번에 갱신하지 않았다. 원격 상태·로컬 상태와 정리 검증은 [정리 이력](docs/history/2026-10-29-01-documentation-and-cleanup.md)에 기록한다.
+
+문서 34개를 e15629e로 일반 push하고 [PR #35](https://github.com/AtraFelis/ebook_viewer/pull/35)를 main 대상으로 게시했다. CodeRabbit 수동 요청6488610493/접수6488612097 뒤 실제 완료 리뷰5693252929의 지적2개를 확인했다. 검색 보류와 검증 표의 충돌, 기기 검사/정리 오류 보존 안내를 채택해 수정했다. 문서 예제의 성공/검사 실패/정리 실패/양쪽 실패 합성4개는 모두 기대 조건을 통과했다. [리뷰 판단·실행 이력](docs/history/2026-10-31-01-documentation-review-fixes.md)을 따른다. 같은 PR 브랜치에 검증 후 일반 push하며 Markdown 전용 Android checks는 경로 필터 대상이다. 앱 검사는 반복하지 않는다.
 
 ## 현재 구현
 

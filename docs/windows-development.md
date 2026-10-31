@@ -1,6 +1,6 @@
 # Windows 개발 환경과 실행
 
-갱신: 2026-10-29. 현재 도구 계약은 [AGENTS](../AGENTS.md), 기능/검증 상태는 [SESSION](../SESSION.md), 정식 APK는 [개인용 빌드](personal-release.md)를 따른다. 과거 P0/초기 P1 구현 제한을 현재 상태로 적용하지 않는다.
+갱신: 2026-10-31. 현재 도구 계약은 [AGENTS](../AGENTS.md), 기능/검증 상태는 [SESSION](../SESSION.md), 정식 APK는 [개인용 빌드](personal-release.md)를 따른다. 과거 P0/초기 P1 구현 제한을 현재 상태로 적용하지 않는다.
 
 ## 최초 설치
 
@@ -38,11 +38,34 @@ PC 빌드·문서 정리에는 휴대폰이 필요하지 않다. 기능 검사 �
 ```powershell
 . ./scripts/android-env.ps1
 adb devices
-./scripts/device-smoke.ps1
-./scripts/reading-soak.ps1 -Mode stop
+$deviceSmokeError = $null
+$deviceCleanupError = $null
+try {
+    ./scripts/device-smoke.ps1
+} catch {
+    $deviceSmokeError = $_
+} finally {
+    try {
+        & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -File ./scripts/reading-soak.ps1 -Mode stop
+        if ($LASTEXITCODE -ne 0) {
+            throw "Device cleanup failed with exit code $LASTEXITCODE."
+        }
+    } catch {
+        $deviceCleanupError = $_
+    }
+}
+if ($null -ne $deviceSmokeError) {
+    if ($null -ne $deviceCleanupError) {
+        Write-Warning 'Cleanup also failed; preserving the device-smoke error.'
+    }
+    throw $deviceSmokeError
+}
+if ($null -ne $deviceCleanupError) {
+    throw $deviceCleanupError
+}
 ```
 
-device-smoke는 빌드/설치·검사 후 앱을 실행하므로 종료 시 stop으로 앱/계측과 ADB를 중지한다. 실패 때도 뒤 정리가 필요하다. 현재 기본 기대 수는 96개이며 [검증 전략](testing/strategy.md)의 관련 검사 선택과 [배포 준비](release-preparation.md)의 실제 명령을 따른다. 최종 APK에서 전체 96개가 통과했다는 뜻은 아니다. 문서·표시만의 변경에서 기본 전체/장시간 검사를 반복하지 않는다.
+device-smoke는 빌드/설치·검사 후 앱을 실행하므로 성공/실패에 관계없이 finally에서 앱/계측과 ADB 정리를 시도한다. reading-soak의 stop 경로는 exit를 사용하므로 별도 PowerShell 7 프로세스에서 호출하고 종료 코드도 확인한다. 검사·정리 오류를 따로 보존해 둘 다 실패하면 검사 오류를 다시 던지고 정리 실패는 경고로 남긴다. 검사 성공 후 정리만 실패해도 오류로 보고한다. 현재 기본 기대 수는 96개이며 [검증 전략](testing/strategy.md)의 관련 검사 선택과 [배포 준비](release-preparation.md)의 실제 명령을 따른다. 최종 APK에서 전체 96개가 통과했다는 뜻은 아니다. 문서·표시만의 변경에서 기본 전체/장시간 검사를 반복하지 않는다.
 
 프로파일 측정은 device-smoke.ps1 -Profile -Probe를 명시적으로 선택한다. 30초·3회가 기본이고 -Seconds 600 -Runs 1은 10분 측정이다. profile은 로컬 debug 키를 쓰는 비디버그 계측용이며 정식판이 아니다. 성능의 조건/정의는 [기존 P0 이력](history/2026-10-16-07-gestures-and-probe.md)과 [후속 선명화 측정](testing/sharpness-probe.md)을 따른다. 과거 결과를 다른 API/기기·새 빌드의 통과로 바꾸지 않는다.
 
