@@ -11,7 +11,8 @@ data class LibraryCatalog(
     val records: List<ReadingRecord> = emptyList(),
     val shelves: List<Bookshelf> = emptyList(),
     val order: List<String> = records.map { it.uri },
-    val memberships: Map<String, Set<String>> = emptyMap()
+    val memberships: Map<String, Set<String>> = emptyMap(),
+    val hiddenRecents: Set<String> = emptySet()
 ) {
     init {
         val uris = records.map { it.uri }.toSet()
@@ -22,6 +23,7 @@ data class LibraryCatalog(
         require(memberships.keys.all { it in uris })
         require(memberships.values.all { it.isNotEmpty() && ids.containsAll(it) })
         require(memberships.values.sumOf { it.size.toLong() } <= 100_000)
+        require(uris.containsAll(hiddenRecents))
     }
 
     fun visible(shelf: String?): List<ReadingRecord> {
@@ -38,10 +40,15 @@ data class LibraryCatalog(
 
     /** Recents are derived from read records, independently of shelf membership and manual order. */
     internal fun recentlyRead(): List<ReadingRecord> = records.asSequence()
-        .filter { it.position != null }
+        .filter { it.position != null && it.uri !in hiddenRecents }
         .sortedWith(compareByDescending<ReadingRecord> { it.openedAt }.thenBy { it.uri })
         .take(5)
         .toList()
+
+    fun hideRecent(uris: Set<String>): LibraryCatalog =
+        copy(hiddenRecents = hiddenRecents + uris.intersect(order.toSet()))
+
+    fun revealRecent(uris: Set<String>): LibraryCatalog = copy(hiddenRecents = hiddenRecents - uris)
 
     /** Build the presentation index once per catalog snapshot, preserving the saved document order. */
     internal fun documentsByShelf(): Map<String, List<ReadingRecord>> {
@@ -78,7 +85,9 @@ data class LibraryCatalog(
             records = (records.filter { it.uri != record.uri && it.uri != replaced } + record)
                 .sortedByDescending { it.openedAt },
             order = updatedOrder,
-            memberships = updatedMemberships
+            memberships = updatedMemberships,
+            hiddenRecents = (hiddenRecents - listOfNotNull(replaced)) +
+                if (replaced in hiddenRecents && !existing) setOf(record.uri) else emptySet()
         )
     }
 
@@ -102,7 +111,8 @@ data class LibraryCatalog(
     fun remove(uris: Set<String>): LibraryCatalog = copy(
         records = records.filterNot { it.uri in uris },
         order = order.filterNot { it in uris },
-        memberships = memberships.filterKeys { it !in uris }
+        memberships = memberships.filterKeys { it !in uris },
+        hiddenRecents = hiddenRecents - uris
     )
 
     fun moveToShelf(uris: Set<String>, shelf: String?): LibraryCatalog {

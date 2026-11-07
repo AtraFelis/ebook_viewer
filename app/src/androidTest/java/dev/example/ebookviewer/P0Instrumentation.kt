@@ -123,6 +123,7 @@ class P0Instrumentation : Instrumentation() {
                 "libraryDeletion" -> LibraryDeletionDeviceTest::class.java
                 "home" -> HomeNavigationDeviceTest::class.java
                 "managedStorage" -> ManagedStorageDeviceTest::class.java
+                "recentHistory" -> RecentHistoryDeviceTest::class.java
                 "immersive" -> ImmersiveDeviceTest::class.java
                 else -> error("Unsupported individual test class")
             }

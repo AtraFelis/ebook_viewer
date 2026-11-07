@@ -43,6 +43,9 @@
     <string name="current_document">현재 문서</string>
     <string name="document_settings_hint">페이지 크기와 간격은 문서를 연 뒤 바꿀 수 있어요. PDF 내용과 사용자 줌은 유지해요.</string>
     <string name="recent_documents">최근 읽은 문서</string>
+    <string name="recent_documents_empty">최근 읽은 문서가 없습니다.</string>
+    <string name="remove_recent_record">최근 읽기 기록 삭제</string>
+    <string name="remove_recent_record_message">최근 읽은 문서 목록에서만 지울까요? 등록된 문서·앱 복사본과 이어 읽기 위치·북마크·책장 소속은 유지합니다.</string>
     <string name="recent_document_row">%1$s\n%2$s</string>
     <string name="manage_documents">문서 관리</string>
     <string name="read_page_text">현재 페이지 본문 읽기</string>

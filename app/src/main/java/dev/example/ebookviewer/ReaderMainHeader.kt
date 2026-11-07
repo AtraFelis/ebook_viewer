@@ -18,7 +18,7 @@ internal class ReaderMainHeader(
     onSettings: () -> Unit,
     onPick: () -> Unit,
     private val onOpen: (ReadingRecord) -> Unit,
-    private val onRemove: (ReadingRecord) -> Unit
+    private val onRemoveRecent: (ReadingRecord) -> Unit
 ) {
     private val style = ReaderStyle(context)
     private val controls = LibraryControls(context)
@@ -49,6 +49,9 @@ internal class ReaderMainHeader(
             resume.addView(secondaryLabel(R.string.recent_documents, 14f))
             resume.spaced(resumeCard(recent.first()), 16)
             recent.drop(1).forEach { resume.spaced(recentRow(it), 8) }
+        } else if (catalog.records.isNotEmpty()) {
+            resume.addView(secondaryLabel(R.string.recent_documents, 14f))
+            resume.spaced(secondaryLabel(R.string.recent_documents_empty), 12)
         } else {
             resume.addView(
                 card(24).apply {
@@ -103,7 +106,7 @@ internal class ReaderMainHeader(
         id = R.id.home_record
         contentDescription = context.getString(R.string.resume_document, entryDescription(record))
         setOnLongClickListener {
-            onRemove(record)
+            onRemoveRecent(record)
             true
         }
     }

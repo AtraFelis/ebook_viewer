@@ -2,6 +2,15 @@
 
 최종 갱신: 2026-11-07. 실제 근거가 있는 범위만 완료로 표시한다. 현재 상태는 [SESSION](SESSION.md), 상세 실행은 [이력 목차](docs/history/README.md)를 따른다.
 
+## 최근 목록 삭제·일반 설정 방향 후속
+
+- [x] PR #37 사용자 병합4e707f9 확인, 기존 변경5개 백업·현재 체크아웃 codex/recent-history-removal 사용. 사용자 디자인/버전·stash7개 보존.
+- [x] 최근 항목 길게 누르기의 전용 확인·목록 숨김, 문서/앱 복사본·앵커/줌·북마크·책장 소속 보존, 실제 재열기 시 복귀. 기록 v8/고정 v7 호환·첫 before-v8 백업.
+- [x] 일반 설정·세부창의 기기 방향 정책과 종료 후 본문 방향/위치·줌 복귀, 재생성 반복 방지. 작은 보기 설정/빠른 방향은 기존 정책.
+- [x] strict debug/계측/release 빌드·단위100개/실패·오류·건너뜀0·두 Lint0/0·ktlint·APK ID 통과. API33 관련6개 분할 성공/각 실패0, 최초 탐색 실패·보완과 범위는 [이번 이력](docs/history/2026-11-07-04-recent-history-and-settings-orientation.md).
+- [x] 앱/계측·ADB 종료와 설정 복원, 사용자 ‘좋아. 괜찮은 것 같아’ 수용.
+- [ ] 같은 브랜치 일반 push·새 PR 게시·원격 CI/실제 CodeRabbit 확인. 병합은 사용자.
+
 ## 메인 방향·최근 문서·합성 메뉴 후속
 
 - [x] 사용자 요청3개와 [계획](docs/plan/home-orientation-and-recent-documents.md)/[ADR0021](docs/adr/0021-reader-orientation-scope-and-recent-documents.md) 정리. PR #35 사용자 병합 확인·현재 체크아웃 새 브랜치/원래5개 변경·stash 보존.
@@ -23,7 +32,9 @@
 - [x] 9b029e8 일반 push·PR #37 Ready 게시/첨부. CodeRabbit 수동1회는 무료 OSS 한도로 거부돼 실제 리뷰 미실행이며 자동 SUCCESS와 구분한다.
 - [x] PR #37의 9b029e8 원격 CI42346212477/42346151798 두 건 completed/success 확인.
 - [x] 이후 실제 리뷰5810562680 확인·인라인/본문 정리 지적2개 채택·자동 정리 실패 격리/기존 예외 보존과 회귀2개 추가. 단위95개·strict CI 동일 빌드·두 Lint0/0·ktlint·APK ID 통과. 이번 기기 검사는 미실행. [리뷰 보완](docs/history/2026-11-07-03-managed-storage-review-fixes.md).
-- [ ] PR #37 수정 push/최신 원격 CI·관련 리뷰 답변/확인과 사용자 병합.
+- [x] d50fde6 일반 push·PR 설명 갱신·리뷰 답변4501261660에 두 지적/실제 검증 공유. 전체 수동 리뷰 중복 요청 없음.
+- [x] 봇4501267277의 d50fde6 실제 코드/추가 검사 확인·두 수정 동의와 스레드 해결 확인. 미해결 인라인0. 봇의 테스트 재실행은 아님.
+- [x] PR #37 d50fde6 최신 CI 두 건 SUCCESS와 사용자 병합4e707f9 확인. 아래 대기 문구는 당시 과정이다.
 
 ## 완료한 범위
 

@@ -14,6 +14,8 @@ Activity의 방향 선택 캐시는 Bundle에도 보존해 읽기 재생성 도�
 
 ## 대안과 영향
 
+후속 변경: 최근 항목의 길게 누르기는 [ADR0023](0023-recent-history-visibility.md)에서 등록 제거와 분리했다. 일반 설정·세부창의 기기 방향 정책은 [ADR0024](0024-settings-system-orientation.md)가 확장한다. 아래와 위의 v6/공유 제거 설명은 이 결정 당시의 상태다.
+
 메인을 세로 고정하는 방식은 기기 회전 설정을 따르려는 요청과 맞지 않아 선택하지 않았다. 방향/기록을 새 저장소로 옮기거나 최근 목록을 중복 저장할 이유가 없어 기존 AtomicFile을 유지한다. 표지 렌더를 최근 목록에 추가하지 않아 캐시/격리 표지 예산도 확장하지 않는다.
 
 메인과 본문 전환은 서로 다른 방향일 때 Activity 재생성을 유발할 수 있다. 단일 Activity의 목적지/설정과 읽기 위치를 보존하고 관련 회귀로 확인한다. 실제 센서/제조사 정책·다른 API와 전체 앱 검사 통과는 별도 판정한다. 구현과 실행 범위는 [계획](../plan/home-orientation-and-recent-documents.md)과 [실행 이력](../history/2026-11-07-01-home-orientation-and-recent-documents.md)에 기록한다.
