@@ -116,7 +116,7 @@ class LibraryDeviceTest {
     }
 
     @Test
-    fun missingDocumentDoesNotOverwriteItsSavedAnchor() {
+    fun movingOriginalDoesNotLoseTheSavedAnchorOrItsAppCopy() {
         val file = fixture()
         val activity = ui.launch()
         try {
@@ -130,11 +130,9 @@ class LibraryDeviceTest {
             val previous = records(activity).single { it.uri == Uri.fromFile(file).toString() }
             assertTrue(file.delete())
             open(activity, file)
-            ui.await("Missing document error was not displayed") {
-                ui.views(activity.window.decorView).filterIsInstance<android.widget.TextView>()
-                    .any { it.text == activity.getString(R.string.pdf_unavailable_error) }
-            }
-            assertEquals(previous, records(activity).single { it.uri == previous.uri })
+            val restored = position(ui.awaitReady(activity))
+            assertNotNull(previous.managedCopy)
+            assertPosition(requireNotNull(previous.position), restored)
         } finally {
             instrumentation.runOnMainSync { activity.finish() }
             instrumentation.waitForIdleSync()

@@ -88,7 +88,7 @@ class BookshelfRedesignTest {
     }
 
     @Test
-    fun versionSixRoundTripPreservesEveryMembershipAndManualOrder() {
+    fun currentVersionRoundTripPreservesEveryMembershipAndManualOrder() {
         val value = catalog().addToShelves(setOf("a"), setOf("study", "reference"))
             .moveBy("a", 1, null).moveShelfBy("study", 1)
         val output = ByteArrayOutputStream()

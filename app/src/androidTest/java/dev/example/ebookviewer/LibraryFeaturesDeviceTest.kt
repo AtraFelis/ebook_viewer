@@ -280,9 +280,10 @@ class LibraryFeaturesDeviceTest {
                     intent.selectedPdfUris(),
                     0,
                     "s",
-                    "PDF"
+                    "PDF",
+                    directory
                 )
-            assertEquals(PdfImportResult(2, 0, 0, 0), result)
+            assertEquals(PdfImportResult(2, 0, 0), result)
             val repeated =
                 importPdfs(
                     library,
@@ -290,9 +291,10 @@ class LibraryFeaturesDeviceTest {
                     listOf(a, b),
                     0,
                     null,
-                    "PDF"
+                    "PDF",
+                    directory
                 )
-            assertEquals(PdfImportResult(0, 2, 0, 0), repeated)
+            assertEquals(PdfImportResult(0, 2, 0), repeated)
             library.moveBy(b.toString(), -1, "s")
             val reopened = DocumentLibrary(path)
             assertEquals(listOf(b.toString(), a.toString()), reopened.snapshot().order)

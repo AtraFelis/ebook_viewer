@@ -52,4 +52,5 @@
     <item name="select_document" type="id" />
     <item name="library_grid" type="id" />
     <item name="bookshelf_tile" type="id" />
+    <item name="document_recovery" type="id" />
 </resources>
