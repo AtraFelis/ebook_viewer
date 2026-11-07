@@ -84,10 +84,16 @@ class HomeNavigationDeviceTest {
                 (monitor.lastActivity ?: activity).finish()
                 activity.finish()
             }
+            instrumentation.waitForIdleSync()
             instrumentation.removeMonitor(monitor)
             setting<Unit> { done ->
                 application.library.execute({ it.remove(uri.toString()) }, done)
             }
+            assertTrue(
+                setting<List<ReadingRecord>> { done ->
+                    application.library.execute({ it.list() }, done)
+                }.none { it.uri == uri.toString() }
+            )
             file.delete()
             setting<OrientationMode> { application.settings.save(previous, it) }
         }

@@ -19,10 +19,12 @@ data class ReadingRecord(
     val openedAt: Long,
     val pageCount: Int = 0,
     val position: ReadingPosition? = null,
-    val pageLayout: PageLayoutSettings = PageLayoutSettings()
+    val pageLayout: PageLayoutSettings = PageLayoutSettings(),
+    val managedCopy: String? = null
 ) {
     init {
         require(uri.isNotBlank() && title.isNotBlank() && openedAt >= 0 && pageCount >= 0)
+        require(managedCopy == null || ManagedPdfFiles.validToken(managedCopy))
     }
 }
 
@@ -34,7 +36,7 @@ object ReadingRecordsCodec {
         val data = DataInputStream(input)
         require(data.readInt() == MAGIC) { "Unsupported reading records" }
         val version = data.readInt()
-        require(version in 1..6) { "Unsupported reading records" }
+        require(version in 1..7) { "Unsupported reading records" }
         val count = data.readInt()
         require(count in 0..10_000)
         val records = List(count) {
@@ -75,7 +77,8 @@ object ReadingRecordsCodec {
                     )
                 } else {
                     PageLayoutSettings()
-                }
+                },
+                if (version >= 7 && data.readBoolean()) data.readUTF() else null
             )
         }
         val catalog = if (version >= 5) {
@@ -119,7 +122,7 @@ object ReadingRecordsCodec {
         val records = catalog.records
         val data = DataOutputStream(output)
         data.writeInt(MAGIC)
-        data.writeInt(6)
+        data.writeInt(7)
         data.writeInt(records.size)
         for (record in records) {
             data.writeUTF(record.uri)
@@ -142,6 +145,8 @@ object ReadingRecordsCodec {
                 data.writeByte(it.right)
                 data.writeByte(it.bottom)
             }
+            data.writeBoolean(record.managedCopy != null)
+            record.managedCopy?.let(data::writeUTF)
         }
         data.writeInt(catalog.shelves.size)
         catalog.shelves.forEach {

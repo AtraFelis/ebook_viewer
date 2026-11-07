@@ -1,5 +1,7 @@
 # 검증 전략
 
+앱 전용 복사본 후속은 strict CI 동일 debug/계측/release 빌드·단위93개·양쪽 Lint0/0·ktlint와 API33 고유11개 분할 검증을 수행했다. ManagedStorageDeviceTest10개는 `-e methodClass managedStorage -e method 실제@Test함수명` opt-in이며 기본96개 수에 자동 합산하지 않는다. 보완 후5개 재검증·첫 실패/단일 APK 전체 미실행·사용자 수용은 [실제 이력](../history/2026-11-07-02-managed-pdf-storage.md)으로 구분한다.
+
 갱신: 2026-11-07. 변경 위험에 맞춰 단위/빌드/Lint·기기/성능을 선택한다. 문서/캐시 정리에는 앱·장시간 검사를 반복하지 않는다. 실행하지 않은 검사와 과거 결과 재사용을 새 통과로 보고하지 않는다.
 
 현재 `scripts/device-smoke.ps1`의 기본 기대 수는 96개다. 2026-11-07 후속은 단위86개(실패/오류/건너뜀0)·strict debug/계측/Lint0/0·ktlint와 API33 관련9개를 분할 검증했다. 새 HomeNavigationDeviceTest4개는 기본96개에 자동 합산하지 않는 opt-in이며 `-e methodClass home -e method 실제@Test함수명`으로 실행한다. 기존 방향 검사도 `methodClass immersive`로 선택할 수 있다. [후속 실제 범위/실패 보완](../history/2026-11-07-01-home-orientation-and-recent-documents.md)을 따른다. 기본96개 전체·성능/장시간을 새로 실행한 결과가 아니다.

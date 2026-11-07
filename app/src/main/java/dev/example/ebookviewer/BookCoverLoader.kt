@@ -70,7 +70,8 @@ internal class BookCoverStore(context: Context) {
     private data class Client(
         val priority: Int,
         val changed: () -> Unit,
-        var uris: List<String> = emptyList()
+        var uris: List<String> = emptyList(),
+        var copies: Map<String, String?> = emptyMap()
     )
     private val clients = linkedMapOf<Any, Client>()
 
@@ -90,7 +91,7 @@ internal class BookCoverStore(context: Context) {
 
     fun get(uri: String): Bitmap? = cache.get(uri)
 
-    private inner class Attempt(val uri: String) : ServiceConnection {
+    private inner class Attempt(val uri: String, val copy: String?) : ServiceConnection {
         val signal = CancellationSignal()
         var finishing = false
         var bound = false
@@ -145,7 +146,20 @@ internal class BookCoverStore(context: Context) {
 
     fun request(owner: Any, records: List<ReadingRecord>) {
         if (Build.VERSION.SDK_INT < 30) return
-        clients[owner]?.uris = records.map { it.uri }.distinct().take(MAX_VISIBLE_COVERS)
+        val client = clients[owner] ?: return
+        val limited = records.distinctBy { it.uri }.take(MAX_VISIBLE_COVERS)
+        limited.forEach { record ->
+            if (client.copies.containsKey(record.uri) &&
+                client.copies[record.uri] != record.managedCopy
+            ) {
+                cache.remove(record.uri)
+                failed.remove(record.uri)
+                attempted.remove(record.uri)
+                if (attempt?.uri == record.uri) cancelAttempt()
+            }
+        }
+        client.uris = limited.map { it.uri }
+        client.copies = limited.associate { it.uri to it.managedCopy }
         refreshRequests()
     }
 
@@ -184,7 +198,9 @@ internal class BookCoverStore(context: Context) {
             cache.get(it) == null && it !in failed && it !in attempted
         } ?: return
         attempted.add(uri)
-        val current = Attempt(uri)
+        val token = clients.values.sortedByDescending { it.priority }
+            .first { uri in it.uris }.copies[uri]
+        val current = Attempt(uri, token)
         attempt = current
         preparing = true
         main.postDelayed(current.timeout, PageTextLimits.TIMEOUT_MS + 1_000)
@@ -198,7 +214,7 @@ internal class BookCoverStore(context: Context) {
                 // Some providers omit reliable change metadata; refresh invalidates all covers.
                 val key = MessageDigest.getInstance(
                     "SHA-256"
-                ).digest(uri.toByteArray()).joinToString("") {
+                ).digest("$uri#${current.copy.orEmpty()}".toByteArray()).joinToString("") {
                     "%02x".format(it)
                 }
                 val destination = File(directory, "$key.png")
@@ -217,8 +233,12 @@ internal class BookCoverStore(context: Context) {
                     }
                     return@execute
                 }
-                source =
-                    context.contentResolver.openFileDescriptor(Uri.parse(uri), "r", current.signal)
+                source = current.copy?.let { token ->
+                    ParcelFileDescriptor.open(
+                        (context as ReaderApplication).managedPdfs.file(token),
+                        ParcelFileDescriptor.MODE_READ_ONLY
+                    )
+                } ?: context.contentResolver.openFileDescriptor(Uri.parse(uri), "r", current.signal)
                 requireNotNull(source)
                 temporary = File.createTempFile("cover-", ".pending", directory)
                 target =

@@ -11,6 +11,8 @@ import java.util.concurrent.Executors
 
 /** All methods belong to the repository's single IO thread, including construction. */
 class DocumentLibrary(file: File) {
+    internal val copies = managedPdfFiles(File(file.parentFile, "documents"))
+    private val deleted = mutableSetOf<String>()
     private val atomic = AtomicFile(file)
     private var catalog = try {
         atomic.openRead().use(ReadingRecordsCodec::readCatalog)
@@ -20,6 +22,16 @@ class DocumentLibrary(file: File) {
         LibraryCatalog()
     }
     private val beforeVersionSix = AtomicFile(File(file.parentFile, "${file.name}.before-v6"))
+    private val beforeVersionSeven = AtomicFile(File(file.parentFile, "${file.name}.before-v7"))
+    private var versionSevenBackupRequired = try {
+        atomic.openRead().use {
+            val data = DataInputStream(it)
+            data.readInt()
+            data.readInt() in 1..6
+        }
+    } catch (_: FileNotFoundException) {
+        false
+    }
     private var backupRequired = try {
         atomic.openRead().use {
             val data = DataInputStream(it)
@@ -30,23 +42,62 @@ class DocumentLibrary(file: File) {
         false
     }
 
+    init {
+        copies.recover(catalog.records.mapNotNull { it.managedCopy }.toSet())
+    }
+
     fun list(): List<ReadingRecord> = catalog.records.toList()
 
     fun snapshot(): LibraryCatalog = catalog
 
-    fun put(record: ReadingRecord, replacedUri: String? = null) {
-        write(catalog.put(record, replacedUri))
+    fun put(record: ReadingRecord, replacedUri: String? = null, replaceCopy: Boolean = false) {
+        val previous = catalog.records.filter { it.uri == replacedUri || it.uri == record.uri }
+            .mapNotNull { it.managedCopy }
+        val current = catalog.records.firstOrNull { it.uri == record.uri }
+        val token = current?.managedCopy?.takeIf { !replaceCopy && copies.file(it).exists() }
+            ?: record.managedCopy
+        write(catalog.put(record.copy(managedCopy = token), replacedUri))
+        ((previous + listOfNotNull(record.managedCopy)).distinct() - listOfNotNull(token))
+            .forEach(::removeUnreferencedCopy)
+    }
+
+    internal fun allowReading(uri: String) {
+        deleted.remove(uri)
+    }
+
+    internal fun saveReading(record: ReadingRecord, replacedUri: String?) {
+        if (record.uri !in deleted && (replacedUri == null || replacedUri !in deleted)) {
+            put(record, replacedUri, replaceCopy = replacedUri == record.uri)
+        }
+    }
+
+    internal fun removeUnreferencedCopy(token: String) {
+        if (catalog.records.none { it.managedCopy == token }) copies.remove(token)
     }
 
     fun addAll(records: List<ReadingRecord>, shelf: String?) {
         // A destination removed while the system picker was open falls back to uncategorized.
-        write(catalog.addAll(records, shelf?.takeIf { id -> catalog.shelves.any { it.id == id } }))
+        var updated = catalog.addAll(
+            records,
+            shelf?.takeIf { id -> catalog.shelves.any { it.id == id } }
+        )
+        records.forEach { record ->
+            val current = updated.records.first { it.uri == record.uri }
+            if (current.managedCopy == null && record.managedCopy != null) {
+                updated = updated.put(current.copy(managedCopy = record.managedCopy))
+            }
+        }
+        write(updated)
+        deleted.removeAll(records.map { it.uri }.toSet())
     }
 
     fun remove(uri: String) = removeAll(setOf(uri))
 
     fun removeAll(uris: Set<String>) {
+        val tokens = catalog.records.filter { it.uri in uris }.mapNotNull { it.managedCopy }.toSet()
         write(catalog.remove(uris))
+        deleted.addAll(uris)
+        tokens.forEach(::removeUnreferencedCopy)
     }
 
     fun moveToShelf(uris: Set<String>, shelf: String?) {
@@ -100,6 +151,19 @@ class DocumentLibrary(file: File) {
     }
 
     private fun write(updated: LibraryCatalog) {
+        if (versionSevenBackupRequired) {
+            if (!beforeVersionSeven.baseFile.exists()) {
+                val backup = beforeVersionSeven.startWrite()
+                try {
+                    atomic.openRead().use { it.copyTo(backup) }
+                    beforeVersionSeven.finishWrite(backup)
+                } catch (error: Exception) {
+                    beforeVersionSeven.failWrite(backup)
+                    throw error
+                }
+            }
+            versionSevenBackupRequired = false
+        }
         if (backupRequired) {
             // Preserve the pre-migration bytes inside app-private storage; never export them.
             if (!beforeVersionSix.baseFile.exists()) {
@@ -146,6 +210,8 @@ class LibraryRepository(private val file: () -> File) {
 }
 
 class ReaderApplication : Application() {
+    internal val managedPdfs by lazy { managedPdfFiles(File(filesDir, "documents")) }
+    internal val cancellation = Executors.newSingleThreadExecutor()
     internal val readingHint = ReadingHintState()
     internal val bookCovers: BookCoverStore by lazy { BookCoverStore(this) }
     val bookmarks: BookmarkRepository by lazy {

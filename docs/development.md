@@ -18,6 +18,15 @@ Set-Location 'C:\Users\cotjs\workspace\ebook_viewer'
 
 ktlintFormat은 명시적으로 요청한 경우만 실행한다. SDK/JDK·local.properties·서명 키와 개인 산출물은 추적하지 않고 Wrapper JAR·잠금/검증 메타데이터는 보존한다. 비밀번호·PDF 본문·URI·기기 식별자는 Git/공개 로그에 남기지 않는다.
 
+게시 전에는 CI와 같은 변형을 확인한다. debug Lint만으로 release Lint 통과를 가정하지 않는다.
+
+```powershell
+./gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease ktlintCheck --dependency-verification strict --console=plain
+./scripts/check-build-identities.ps1
+```
+
+앱 내부 PDF 복사본·v7 메타데이터의 저장/삭제/호환 정책은 [ADR0022](adr/0022-managed-pdf-copies.md)를 따른다. 새 등록에는 복사 시간이 추가되며 원본을 옮겨도 내부 복사본은 유지된다. 기존 자료는 다음 열기 때 전환한다.
+
 ## 검증과 정리
 
 PC 빌드·문서 작업에는 휴대폰이 필요하지 않다. 필요한 기기 검사 때만 USB 디버깅 승인/잠금 해제를 확인하고 [검증 전략](testing/strategy.md)에 맞춰 관련 검사를 선택한다. 최종 코드의 단위 84개와 기기 일부 검증은 과거 실행 결과이며 환경 복원이나 새 기기 성능을 보장하지 않는다.

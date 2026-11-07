@@ -2,6 +2,7 @@ package dev.example.ebookviewer
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
@@ -42,6 +43,11 @@ class MainActivity : Activity() {
         val synthetic: Boolean
     )
     private var failedOpen: FailedOpen? = null
+    private var recoveryDialog: Dialog? = null
+    private var recoveryMessage: Int? = null
+    private var loadingCopy: String? = null
+    private val managedPdfs get() = (application as ReaderApplication).managedPdfs
+    private var importRequest: PdfOpenRequest? = null
     private lateinit var homeScreen: LinearLayout
     private lateinit var libraryManagement: LibraryManagement
     private lateinit var libraryWorkflow: LibraryWorkflow
@@ -102,7 +108,6 @@ class MainActivity : Activity() {
     private var activeRecord: ReadingRecord? = null
     private var replacedUri: String? = null
     private var reselectRecord: ReadingRecord? = null
-    private var durableAccess = true
     private var savePending = false
     private val saveTask = Runnable {
         savePending = false
@@ -139,6 +144,7 @@ class MainActivity : Activity() {
         viewer = PdfCanvasView(this) { worker.request(it) }
         worker = PdfWorker(
             onLoaded = {
+                loadingCopy = null
                 val first = !loaded
                 loaded = true
                 updateDisplayWindow()
@@ -164,13 +170,11 @@ class MainActivity : Activity() {
                 setStatus(
                     if (pendingNavigation != null) {
                         getString(R.string.page_preparing)
-                    } else if (durableAccess) {
-                        getString(R.string.document_ready, it.size)
                     } else {
-                        getString(R.string.temporary_access, it.size)
+                        getString(R.string.document_ready, it.size)
                     }
                 )
-                status.visibility = if (!durableAccess) View.VISIBLE else View.GONE
+                status.visibility = View.GONE
                 if (pendingNavigation == null) {
                     if (first) saveReading() else scheduleSave()
                 }
@@ -415,6 +419,25 @@ class MainActivity : Activity() {
             ReadingRecord(uri, getString(R.string.untitled_pdf), 0)
         }
         pendingImportMessage = savedInstanceState?.getString("pendingImportMessage")
+        if (savedInstanceState?.containsKey("recoveryMessage") == true) {
+            val failedUri = savedInstanceState.getString("recoveryUri")
+            library.execute({ store ->
+                store.list().firstOrNull { record -> record.uri == failedUri }
+            }) { result ->
+                if (isDestroyed || reading) return@execute
+                val record = result.getOrNull() ?: failedUri?.let {
+                    ReadingRecord(it, getString(R.string.untitled_pdf), 0)
+                }
+                failedOpen = FailedOpen(
+                    failedUri,
+                    savedInstanceState.getBundle("recoveryViewport"),
+                    record,
+                    savedInstanceState.getString("recoveryRelink"),
+                    savedInstanceState.getBoolean("recoverySynthetic")
+                )
+                showRecovery(savedInstanceState.getInt("recoveryMessage"))
+            }
+        }
         if (savedInstanceState?.getBoolean("synthetic") == true) {
             openSample(savedInstanceState.getBundle("viewport"))
         } else {
@@ -507,13 +530,16 @@ class MainActivity : Activity() {
     internal fun importDocuments(uris: List<Uri>, flags: Int) {
         if (importRunning) return
         importRunning = true
+        val request = PdfOpenRequest()
+        importRequest = request
         setStatus(R.string.importing_pdfs)
         val resolver = applicationContext.contentResolver
         val shelf = importShelf
         val fallbackTitle = getString(R.string.untitled_pdf)
         library.execute({ store ->
-            importPdfs(store, resolver, uris, flags, shelf, fallbackTitle)
+            importPdfs(store, resolver, uris, flags, shelf, fallbackTitle, cacheDir, request)
         }) { result ->
+            if (importRequest === request) importRequest = null
             if (isDestroyed) return@execute
             importRunning = false
             result.onSuccess {
@@ -521,8 +547,7 @@ class MainActivity : Activity() {
                     R.string.pdf_import_result,
                     it.added,
                     it.existing,
-                    it.failed,
-                    it.temporary
+                    it.failed
                 )
                 if (reading) {
                     pendingImportMessage = message
@@ -556,6 +581,7 @@ class MainActivity : Activity() {
         homePresentation.setActive(false)
         closePageText()
         saveReading()
+        discardLoadingCopy()
         clearFailedOpen()
         pendingNavigation = null
         cancelSave()
@@ -574,6 +600,8 @@ class MainActivity : Activity() {
         val resolver = applicationContext.contentResolver
         val fallbackTitle = getString(R.string.untitled_pdf)
         library.execute({ store ->
+            store.allowReading(uri.toString())
+            if (relink != null) store.allowReading(relink)
             val records = store.list()
             val previous = records.find { it.uri == uri.toString() }
                 ?: records.find { it.uri == relink }
@@ -583,7 +611,10 @@ class MainActivity : Activity() {
                 System.currentTimeMillis(),
                 previous?.pageCount ?: 0,
                 previous?.position,
-                previous?.pageLayout ?: PageLayoutSettings()
+                previous?.pageLayout ?: PageLayoutSettings(),
+                previous?.managedCopy?.takeIf {
+                    previous.uri == uri.toString() && relink != uri.toString()
+                }
             )
         }) { result ->
             if (isDestroyed || generation != opening) return@execute
@@ -600,6 +631,12 @@ class MainActivity : Activity() {
                 }
                 worker.openCancelable(viewer.hasRestoredViewport()) { request ->
                     request.throwIfCanceled()
+                    record.managedCopy?.let { token ->
+                        return@openCancelable ParcelFileDescriptor.open(
+                            managedPdfs.file(token),
+                            ParcelFileDescriptor.MODE_READ_ONLY
+                        )
+                    }
                     if (uri.scheme == "content" &&
                         grantFlags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION != 0
                     ) {
@@ -609,13 +646,9 @@ class MainActivity : Activity() {
                                 grantFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION
                             )
                         } catch (_: SecurityException) {
-                            // Some providers offer temporary access; report that after opening.
+                            // A completed app copy outlives the provider's temporary read grant.
                         }
                     }
-                    val durable = uri.scheme == "file" ||
-                        resolver.persistedUriPermissions.any {
-                            it.uri == uri && it.isReadPermission
-                        }
                     val title = try {
                         if (uri.scheme == "content") {
                             resolver.query(
@@ -644,16 +677,32 @@ class MainActivity : Activity() {
                     request.throwIfCanceled()
                     main.post {
                         if (!isDestroyed && generation == opening) {
-                            durableAccess = durable
                             if (title != null) {
                                 activeRecord = activeRecord?.copy(title = title)
                                 toolsPresentation.setTitle(title)
                             }
                         }
                     }
-                    val descriptor = resolver.openFileDescriptor(uri, "r", request.signal)
-                        ?: throw PdfSourceException(PdfFailure.UNAVAILABLE)
-                    PdfDocumentSource(cacheDir).prepare(descriptor, request)
+                    val token = managedPdfs.import(resolver, uri, cacheDir, request)
+                    try {
+                        request.throwIfCanceled()
+                        val descriptor = ParcelFileDescriptor.open(
+                            managedPdfs.file(token),
+                            ParcelFileDescriptor.MODE_READ_ONLY
+                        )
+                        main.post {
+                            if (!isDestroyed && generation == opening) {
+                                activeRecord = activeRecord?.copy(managedCopy = token)
+                                loadingCopy = token
+                            } else {
+                                discardUnregisteredCopy(token)
+                            }
+                        }
+                        return@openCancelable descriptor
+                    } catch (error: Exception) {
+                        managedPdfs.remove(token)
+                        throw error
+                    }
                 }
             }.onFailure {
                 showLibrary()
@@ -674,7 +723,6 @@ class MainActivity : Activity() {
         activeRecord = null
         replacedUri = null
         synthetic = true
-        durableAccess = true
         loaded = false
         expectedPages = 0
         viewer.reset()
@@ -708,6 +756,7 @@ class MainActivity : Activity() {
         closeSettings()
         closePageText()
         saveReading()
+        discardLoadingCopy()
         clearFailedOpen()
         pendingNavigation = null
         cancelSave()
@@ -736,6 +785,9 @@ class MainActivity : Activity() {
     }
 
     private fun clearFailedOpen() {
+        recoveryDialog?.dismiss()
+        recoveryDialog = null
+        recoveryMessage = null
         failedOpen = null
         retryButton.visibility = View.GONE
         reselectButton.visibility = View.GONE
@@ -755,7 +807,7 @@ class MainActivity : Activity() {
         settingsDialog?.dismiss()
         showLibrary()
         failedOpen = failed
-        setStatus(
+        val message =
             when (failure) {
                 PdfFailure.ACCESS -> R.string.pdf_access_error
                 PdfFailure.UNAVAILABLE -> R.string.pdf_unavailable_error
@@ -768,9 +820,50 @@ class MainActivity : Activity() {
                 PdfFailure.READ -> R.string.pdf_read_error
                 PdfFailure.RENDER -> R.string.pdf_render_error
             }
-        )
-        retryButton.visibility = View.VISIBLE
-        reselectButton.visibility = if (failed.uri != null) View.VISIBLE else View.GONE
+        showRecovery(message)
+    }
+
+    private fun discardLoadingCopy() {
+        val token = loadingCopy ?: return
+        loadingCopy = null
+        discardUnregisteredCopy(token)
+    }
+
+    private fun discardUnregisteredCopy(token: String) {
+        library.execute({ it.removeUnreferencedCopy(token) }) { result ->
+            if (!isDestroyed) result.onFailure { reportError(R.string.library_change_error) }
+        }
+    }
+
+    private fun showRecovery(message: Int) {
+        val failed = failedOpen ?: return
+        recoveryMessage = message
+        val style = ReaderStyle(this)
+        val body = readerFormBody(
+            style.label(message),
+            style.button(R.string.retry_document, true) {
+                recoveryDialog?.dismiss()
+                retryButton.performClick()
+            },
+            style.button(R.string.select_again) {
+                recoveryDialog?.dismiss()
+                reselectButton.performClick()
+            }.apply { visibility = if (failed.uri == null) View.GONE else View.VISIBLE },
+            style.button(R.string.remove_document_recovery) {
+                val record = failed.record ?: return@button
+                clearFailedOpen()
+                confirmRemoveRecord(record.copy(uri = failed.relink ?: record.uri))
+            }.apply {
+                visibility = if (failed.record == null) View.GONE else View.VISIBLE
+                setTextColor(Color.rgb(210, 60, 60))
+            }
+        ).apply { id = R.id.document_recovery }
+        recoveryDialog = DocumentRecoveryDialog(this, body).also { dialog ->
+            dialog.setOnDismissListener {
+                if (recoveryDialog === dialog) recoveryDialog = null
+            }
+            dialog.show()
+        }
     }
 
     private fun refreshLibrary() {
@@ -822,7 +915,7 @@ class MainActivity : Activity() {
     }
 
     private fun persistReadingRecord(updated: ReadingRecord, replacement: String?) {
-        library.execute({ it.put(updated, replacement) }) { result ->
+        library.execute({ it.saveReading(updated, replacement) }) { result ->
             if (isDestroyed) return@execute
             result.onSuccess {
                 if (activeRecord?.uri == updated.uri &&
@@ -1768,6 +1861,10 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        importRequest?.cancel((application as ReaderApplication).cancellation)
+        discardLoadingCopy()
+        recoveryDialog?.dismiss()
+        recoveryDialog = null
         homePresentation.close()
         libraryWorkflow.close()
         libraryManagement.close()
@@ -1816,6 +1913,13 @@ class MainActivity : Activity() {
             it.y?.let { fraction -> outState.putDouble("pendingPageY", fraction) }
         }
         outState.putString("sourceUri", sourceUri)
+        if (recoveryDialog?.isShowing == true) {
+            outState.putInt("recoveryMessage", recoveryMessage ?: R.string.pdf_read_error)
+            outState.putString("recoveryUri", failedOpen?.uri)
+            outState.putBundle("recoveryViewport", failedOpen?.viewport)
+            outState.putString("recoveryRelink", failedOpen?.relink)
+            outState.putBoolean("recoverySynthetic", failedOpen?.synthetic == true)
+        }
         outState.putBoolean("synthetic", synthetic)
         outState.putString("reselectUri", reselectRecord?.uri)
         outState.putString("replacedUri", replacedUri)

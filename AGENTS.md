@@ -14,7 +14,7 @@
 | 빌드 | Gradle Kotlin DSL / 검증된 Wrapper 8.9, AGP 8.7.2, Kotlin 2.1.20 |
 | 앱 UI | 플랫폼 Activity + View/Canvas. 전체 화면/중앙 탭 도구와 본문 전용 방향 설정, 메인/책장은 기기 방향 정책. 메인은 최근 읽은 문서 최대5개를 표시하고 합성 자료는 테스트 내부 경로에 유지(ADR 0021). Compose 셸 최종 선택은 후속 비교 |
 | PDF | P0 PdfRenderer 승인. API 33 합성 문서·test provider 계측 완료, 다른 기기 미검증. 본문 읽기는 플랫폼 PdfRenderer/PreV의 요청별 isolated process(ADR 0015). 범위·제한은 ADR 0001/0007/0015. 비탐색 파일은 취소/256MiB 상한의 익명 임시 복사 |
-| 파일·데이터 | 로컬 우선, SAF. 플랫폼 AtomicFile. 읽기 기록 v6은 다중 책장 소속·사용자 순서를 저장하고 v1~v5를 읽음. 첫 변환 전 원본 바이트를 앱 private before-v6 파일에 보존. 별도 서재 보기/정렬 v1(ADR 0020). v4 필드는 문서별 크기/간격·가로 이동 잠금·원본을 보존하는 공통 여백을 저장(ADR 0006/0016/0018). 배경색 v2는 자동/수동 선택을 추가하고 v1 수동색을 읽음(ADR 0004/0013/0018). 테마/읽기 밝기/화면 유지는 별도 v1(ADR 0014). 북마크/방향/번호 표시는 별도 v1(ADR 0002/0003/0005). PDF 색반전은 별도 v1 설정(ADR 0019). 추가 저장 라이브러리 없음 |
+| 파일·데이터 | 로컬 우선, SAF에서 앱 전용 filesDir/documents 복사본으로 읽기(ADR0022). 원본은 보존하고 등록 삭제 시 앱 복사본/기록 정리, 기존 자료는 다음 열기에 전환. 플랫폼 AtomicFile v7은 URI 식별자·다중 책장/순서를 유지하고 안전한 복사본 토큰을 추가하며 v1~v6를 읽음. 첫 v7 쓰기 전 before-v7 원본 바이트 백업·기존 before-v6 보존. 별도 서재 보기/정렬 v1(ADR 0020). v4 필드는 문서별 크기/간격·가로 이동 잠금·원본을 보존하는 공통 여백을 저장(ADR 0006/0016/0018). 배경색 v2는 자동/수동 선택을 추가하고 v1 수동색을 읽음(ADR 0004/0013/0018). 테마/읽기 밝기/화면 유지는 별도 v1(ADR 0014). 북마크/방향/번호 표시는 별도 v1(ADR 0002/0003/0005). PDF 색반전은 별도 v1 설정(ADR 0019). 추가 저장 라이브러리 없음 |
 | 백엔드 | 기본 읽기에 계정·API 키·외부 서비스 불필요 |
 | SDK·도구 | JDK 17(Temurin 17.0.20.1+1), compile/target 35, min 23, Build Tools 34.0.0. 로컬 빌드 통과 |
 | 개인용 배포 | ADR0017: debug/profile ID dev.example.ebookviewer.p0 유지, release dev.example.ebookviewer 별도 설치·새 기록. 사용자 로컬0.1.2/code4 APK의 서명·정식 ID/버전·이전 APK와 같은 인증서 확인. 설치·키 백업은 사용자 확인 완료(2026-10-24). versionCode/Name은 gradle.properties이며 로컬 변경은 별도 보존. 프로젝트 코드 LICENSE/공개 배포는 보류. [완료 근거](docs/history/2026-10-24-10-main-sync-and-release-closeout.md) |
@@ -23,6 +23,8 @@
 
 ## 빌드·테스트
 
+2026-11-07 앱 전용 복사본 후속의 관련 API33 고유11개 분할 성공/보완 후5개 성공·최초 실패와 복원/한계는 [이번 이력](docs/history/2026-11-07-02-managed-pdf-storage.md)을 따른다. 새 ManagedStorageDeviceTest10개는 opt-in이며 기본96개 전체 실행이 아니다.
+
 작업 디렉터리: `C:\Users\cotjs\workspace\ebook_viewer`. PowerShell에서 먼저 `. ./scripts/android-env.ps1` 실행.
 
 2026-11-07 후속: 본문/메인 방향·최근5개·합성 메뉴 관련 API33 고유9개가 분할 성공(각 실패0)했다. 새 home4개는 opt-in이며 기본96개에 자동 합산하지 않는다. 최초 설정 검사 실패·아이콘 탐색 보완과 기기 종료/미검증은 [이번 이력](docs/history/2026-11-07-01-home-orientation-and-recent-documents.md)을 따른다. 아래 기기 표는 이전 PR #33의 근거다.
@@ -30,7 +32,7 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | Windows 단위86개 통과(실패/오류/건너뜀0). 기존84개에 최근5개 선택/미열람 제외·수동 정렬/소속 독립·재열기/삭제/재연결·코덱 복원2개 추가. 기기 검증과 별도이며 [이번 실제 실행/제한](docs/history/2026-11-07-01-home-orientation-and-recent-documents.md)을 따른다 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | Windows 단위95개 통과(실패/오류/건너뜀0). 기존93개와 정리 실패 시 취소 보존·재회수/명시적 삭제 오류2개. 이번 리뷰 수정의 기기 검사는 미실행이며 [실제 실행/제한](docs/history/2026-11-07-03-managed-storage-review-fixes.md)을 따른다 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
 | 기기 테스트 | `./scripts/device-smoke.ps1` | API33 리뷰 보완 관련3개/각 실패0: 공유 표지 구독·실제 격리 표지/오류 대체·빈 책장 안내. [리뷰 보완 결과](docs/history/2026-10-24-08-bookshelf-review-fixes.md). 이전 최종 중앙 삭제 확인 관련1개/실패0(2026-10-24). 중앙 배치·취소/복원·원본/다른 소속 보존, 사용자 시각 수용 완료. [최종 결과](docs/history/2026-10-24-06-centered-delete-confirmation.md). 이전 문서 선택/삭제 관련3개는 분할 성공, 이동 시트 간격만의 변경은 빌드/설치로 확인. [최신 결과/제한](docs/history/2026-10-24-05-document-selection-and-deletion-sheets.md). 이전 사진 기반4개/표시1개는 [편집 이력](docs/history/2026-10-24-04-bookshelf-reference-polish.md). 이전 조작7개/표시1개는 [조작 이력](docs/history/2026-10-24-03-library-interaction-implementation.md). 이전 내장 책장4개/표지·기록 변환은 [개편 이력](docs/history/2026-10-23-05-bookshelf-redesign-implementation.md), 본문 UI14개·시각 보완2개는 [본문 결과](docs/history/2026-10-23-02-compact-reader-tools.md)·[이전 시각 보완](docs/history/2026-10-23-03-plain-reader-actions.md)에 보존. 기본 기대96개 전체 미실행. 전체 제한900초/개별 선택 지원, 실제 OOM/다른 API 검증 아님 |
 

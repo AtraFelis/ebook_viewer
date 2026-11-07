@@ -105,6 +105,7 @@ class PdfWorker(
                 sourceDescriptor = null
                 val failure = when (error) {
                     is PdfSourceException -> error.failure
+                    is ManagedStorageException -> PdfFailure.STORAGE
                     is SecurityException -> PdfFailure.ACCESS
                     is FileNotFoundException -> PdfFailure.UNAVAILABLE
                     else -> PdfFailure.READ

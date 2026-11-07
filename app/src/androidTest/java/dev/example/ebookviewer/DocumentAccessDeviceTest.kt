@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -218,7 +219,7 @@ class DocumentAccessDeviceTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun crossUidPipeProviderPersistsGrantAndRevocationPreservesRecord() {
+    fun crossUidPipeProviderCopyRemainsReadableAfterGrantRevocation() {
         val resolver = instrumentation.targetContext.contentResolver
         val authority = Uri.parse("content://dev.example.ebookviewer.p0.test.documents")
         val granted = requireNotNull(resolver.call(authority, "grant", null, null))
@@ -239,6 +240,10 @@ class DocumentAccessDeviceTest {
             )
             val firstView = try {
                 click(activity, R.string.open_pdf)
+                val imported = CountDownLatch(1)
+                application.library.execute({ it.list() }) { imported.countDown() }
+                assertTrue(imported.await(15, TimeUnit.SECONDS))
+                ui.onMain { (activity as MainActivity).openDocument(uri) }
                 try {
                     ui.awaitReady(activity)
                 } catch (error: AssertionError) {
@@ -286,11 +291,9 @@ class DocumentAccessDeviceTest {
             resolver.call(authority, "revoke", null, null)
             activity = ui.launch()
             ui.onMain { (activity as MainActivity).openDocument(uri) }
-            awaitError(activity, R.string.pdf_access_error)
-            assertEquals(previous, savedRecord(uri))
-            resolver.call(authority, "grant", null, null)
-            click(activity, R.string.retry_document)
             view = ui.awaitReady(activity)
+            assertNotNull(previous.managedCopy)
+            assertEquals(previous.managedCopy, savedRecord(uri).managedCopy)
             assertEquals(position, ui.onMain { view.readingPosition() })
             ui.assertCacheBound(view)
         } finally {
@@ -303,24 +306,33 @@ class DocumentAccessDeviceTest {
 
     private fun awaitError(activity: Activity, resource: Int) {
         ui.await("Expected document error was not shown") {
+            val root = recovery(activity)?.window?.decorView ?: return@await false
             activity.findViewById<View>(R.id.home_screen).isShown &&
-                ui.views(activity.window.decorView).filterIsInstance<TextView>().any {
-                    it.isShown && it.text == activity.getString(resource)
-                }
+                ui.views(root)
+                    .filterIsInstance<TextView>().any {
+                        it.isShown && it.text == activity.getString(resource)
+                    }
         }
         ui.onMain {
             assertTrue(
-                ui.views(activity.window.decorView).filterIsInstance<Button>().any {
-                    it.isShown && it.text == activity.getString(R.string.retry_document)
-                }
+                ui.views(requireNotNull(requireNotNull(recovery(activity)).window).decorView)
+                    .filterIsInstance<Button>().any {
+                        it.isShown && it.text == activity.getString(R.string.retry_document)
+                    }
             )
         }
     }
 
     private fun click(activity: Activity, resource: Int) = ui.onMain {
-        ui.views(activity.window.decorView).filterIsInstance<Button>()
+        val root = recovery(activity)?.window?.decorView ?: activity.window.decorView
+        ui.views(root).filterIsInstance<Button>()
             .single { it.isShown && it.text == activity.getString(resource) }.performClick()
     }
+
+    private fun recovery(activity: Activity): android.app.Dialog? = MainActivity::class.java
+        .getDeclaredField("recoveryDialog").apply {
+            isAccessible = true
+        }.get(activity) as? android.app.Dialog
 
     private fun savedRecord(uri: Uri): ReadingRecord = library { store ->
         store.list().single { it.uri == uri.toString() }
