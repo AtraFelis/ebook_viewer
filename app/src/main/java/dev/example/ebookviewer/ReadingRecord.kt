@@ -36,7 +36,7 @@ object ReadingRecordsCodec {
         val data = DataInputStream(input)
         require(data.readInt() == MAGIC) { "Unsupported reading records" }
         val version = data.readInt()
-        require(version in 1..7) { "Unsupported reading records" }
+        require(version in 1..8) { "Unsupported reading records" }
         val count = data.readInt()
         require(count in 0..10_000)
         val records = List(count) {
@@ -81,7 +81,7 @@ object ReadingRecordsCodec {
                 if (version >= 7 && data.readBoolean()) data.readUTF() else null
             )
         }
-        val catalog = if (version >= 5) {
+        var catalog = if (version >= 5) {
             val shelfCount = data.readInt().also { require(it in 0..1_000) }
             val shelves = List(shelfCount) { Bookshelf(data.readUTF(), data.readUTF()) }
             val orderCount = data.readInt().also { require(it == count) }
@@ -110,6 +110,12 @@ object ReadingRecordsCodec {
         } else {
             LibraryCatalog(records.sortedByDescending { it.openedAt })
         }
+        if (version >= 8) {
+            val hiddenCount = data.readInt().also { require(it in 0..count) }
+            val hidden = List(hiddenCount) { data.readUTF() }
+            require(hidden.distinct().size == hidden.size)
+            catalog = catalog.copy(hiddenRecents = hidden.toSet())
+        }
         require(data.read() == -1)
         return catalog
     }
@@ -122,7 +128,7 @@ object ReadingRecordsCodec {
         val records = catalog.records
         val data = DataOutputStream(output)
         data.writeInt(MAGIC)
-        data.writeInt(7)
+        data.writeInt(8)
         data.writeInt(records.size)
         for (record in records) {
             data.writeUTF(record.uri)
@@ -161,6 +167,8 @@ object ReadingRecordsCodec {
             data.writeInt(shelves.size)
             shelves.sorted().forEach(data::writeUTF)
         }
+        data.writeInt(catalog.hiddenRecents.size)
+        catalog.hiddenRecents.sorted().forEach(data::writeUTF)
         data.flush()
     }
 

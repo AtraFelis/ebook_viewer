@@ -223,8 +223,8 @@ class ImmersiveDeviceTest {
             repeat(4) { ui.drag(view, true) }
             val before = ui.state(view)
             ui.tap(view)
-            clickSettings(activity)
-            clickDialogText(activity.getString(R.string.orientation_landscape))
+            activity = clickSettings(activity, monitor)
+            chooseOrientation(activity, activity.getString(R.string.orientation_landscape))
             activity =
                 awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
             view = ui.awaitReady(activity)
@@ -232,8 +232,8 @@ class ImmersiveDeviceTest {
             assertImmersive(activity)
             assertEquals(OrientationMode.LANDSCAPE, setting { repository.load(it) })
             ui.tap(view)
-            clickSettings(activity)
-            clickDialogText(activity.getString(R.string.orientation_portrait))
+            activity = clickSettings(activity, monitor)
+            chooseOrientation(activity, activity.getString(R.string.orientation_portrait))
             activity = awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
             view = ui.awaitReady(activity)
             assertAnchor(before, ui.state(view))
@@ -258,8 +258,8 @@ class ImmersiveDeviceTest {
             )
             view = ui.awaitReady(activity)
             ui.tap(view)
-            clickSettings(activity)
-            clickDialogText(activity.getString(R.string.orientation_auto))
+            activity = clickSettings(activity, monitor)
+            chooseOrientation(activity, activity.getString(R.string.orientation_auto))
             activity =
                 awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
             assertEquals(OrientationMode.AUTO, setting { repository.load(it) })
@@ -297,8 +297,8 @@ class ImmersiveDeviceTest {
             repeat(2) { ui.drag(view, true) }
             val before = ui.state(view)
             ui.tap(view)
-            clickSettings(activity)
-            clickDialogText(activity.getString(R.string.orientation_reverse_portrait))
+            activity = clickSettings(activity, monitor)
+            chooseOrientation(activity, activity.getString(R.string.orientation_reverse_portrait))
             activity = awaitOrientation(
                 activity,
                 monitor,
@@ -312,16 +312,16 @@ class ImmersiveDeviceTest {
             assertImmersive(activity)
             assertEquals(OrientationMode.REVERSE_PORTRAIT, setting { repository.load(it) })
             ui.tap(view)
-            clickSettings(activity)
-            clickDialogText(activity.getString(R.string.orientation_landscape))
+            activity = clickSettings(activity, monitor)
+            chooseOrientation(activity, activity.getString(R.string.orientation_landscape))
             activity =
                 awaitOrientation(activity, monitor, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
             view = ui.awaitReady(activity)
             assertAnchor(before, ui.state(view))
             val landscapeRotation = ui.onMain { rotation(activity) }
             ui.tap(view)
-            clickSettings(activity)
-            clickDialogText(activity.getString(R.string.orientation_reverse_landscape))
+            activity = clickSettings(activity, monitor)
+            chooseOrientation(activity, activity.getString(R.string.orientation_reverse_landscape))
             activity = awaitOrientation(
                 activity,
                 monitor,
@@ -405,14 +405,51 @@ class ImmersiveDeviceTest {
         }
     }
 
-    private fun clickSettings(activity: Activity) {
+    private fun clickSettings(
+        activity: Activity,
+        monitor: android.app.Instrumentation.ActivityMonitor
+    ): Activity {
         instrumentation.runOnMainSync {
             ui.views(activity.window.decorView).filterIsInstance<Button>()
                 .single {
                     it.isShown && it.text == activity.getString(R.string.settings)
                 }.performClick()
         }
-        clickDialogText(activity.getString(R.string.orientation_settings))
+        var latest = activity
+        var stableSince = SystemClock.uptimeMillis()
+        ui.await("General settings did not settle under the system policy") {
+            val next = monitor.lastActivity ?: activity
+            val parentFocused = settingsDialog(next, "settingsHomeDialog")
+                ?.window?.decorView?.hasWindowFocus() == true
+            val ready = !next.isDestroyed &&
+                next.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED &&
+                parentFocused
+            if (!ready || next !== latest) stableSince = SystemClock.uptimeMillis()
+            latest = next
+            ready && SystemClock.uptimeMillis() - stableSince >= 250
+        }
+        clickDialogText(latest.getString(R.string.orientation_settings))
+        return latest
+    }
+
+    private fun chooseOrientation(activity: Activity, label: String) {
+        clickDialogText(label)
+        ui.await("Orientation choice did not finish saving") {
+            val child = settingsDialog(activity) ?: return@await false
+            ui.views(requireNotNull(child.window).decorView)
+                .filterIsInstance<android.widget.ListView>().any { it.isEnabled }
+        }
+        ui.onMain {
+            settingsDialog(activity)
+                ?.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick()
+        }
+        ui.await("Orientation child did not return to its parent") {
+            settingsDialog(activity) === settingsDialog(activity, "settingsHomeDialog")
+        }
+        ui.onMain {
+            settingsDialog(activity, "settingsHomeDialog")
+                ?.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.performClick()
+        }
     }
 
     private fun clickDialogText(text: String) {
@@ -453,7 +490,7 @@ class ImmersiveDeviceTest {
         initial: Activity,
         monitor: android.app.Instrumentation.ActivityMonitor,
         requested: Int,
-        expectChild: Boolean = true
+        expectChild: Boolean = false
     ): Activity {
         var latest = initial
         val target = when (requested) {
@@ -471,7 +508,7 @@ class ImmersiveDeviceTest {
             val decor = latest.window.decorView
             val child = settingsDialog(latest)
             val parent = settingsDialog(latest, "settingsHomeDialog")
-            // Selection must retain its child; a cold launch intentionally has no settings open.
+            // General settings use the system policy; the reader lock applies after closing them.
             val focusReady = if (expectChild) {
                 parent?.isShowing == true &&
                     child != null &&

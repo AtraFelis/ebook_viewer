@@ -23,6 +23,16 @@ class DocumentLibrary(file: File) {
     }
     private val beforeVersionSix = AtomicFile(File(file.parentFile, "${file.name}.before-v6"))
     private val beforeVersionSeven = AtomicFile(File(file.parentFile, "${file.name}.before-v7"))
+    private val beforeVersionEight = AtomicFile(File(file.parentFile, "${file.name}.before-v8"))
+    private var versionEightBackupRequired = try {
+        atomic.openRead().use {
+            val data = DataInputStream(it)
+            data.readInt()
+            data.readInt() in 1..7
+        }
+    } catch (_: FileNotFoundException) {
+        false
+    }
     private var versionSevenBackupRequired = try {
         atomic.openRead().use {
             val data = DataInputStream(it)
@@ -49,6 +59,14 @@ class DocumentLibrary(file: File) {
     fun list(): List<ReadingRecord> = catalog.records.toList()
 
     fun snapshot(): LibraryCatalog = catalog
+
+    fun hideRecent(uris: Set<String>) {
+        write(catalog.hideRecent(uris))
+    }
+
+    fun revealRecent(uris: Set<String>) {
+        if (catalog.hiddenRecents.any { it in uris }) write(catalog.revealRecent(uris))
+    }
 
     fun put(record: ReadingRecord, replacedUri: String? = null, replaceCopy: Boolean = false) {
         val previous = catalog.records.filter { it.uri == replacedUri || it.uri == record.uri }
@@ -151,6 +169,19 @@ class DocumentLibrary(file: File) {
     }
 
     private fun write(updated: LibraryCatalog) {
+        if (versionEightBackupRequired) {
+            if (!beforeVersionEight.baseFile.exists()) {
+                val backup = beforeVersionEight.startWrite()
+                try {
+                    atomic.openRead().use { it.copyTo(backup) }
+                    beforeVersionEight.finishWrite(backup)
+                } catch (error: Exception) {
+                    beforeVersionEight.failWrite(backup)
+                    throw error
+                }
+            }
+            versionEightBackupRequired = false
+        }
         if (versionSevenBackupRequired) {
             if (!beforeVersionSeven.baseFile.exists()) {
                 val backup = beforeVersionSeven.startWrite()

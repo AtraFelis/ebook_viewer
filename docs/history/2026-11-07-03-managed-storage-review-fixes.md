@@ -17,3 +17,11 @@ android-env.ps1 이후 CI 동일 assembleDebug/assembleDebugAndroidTest/testDebu
 추가 단위2개는 Windows 실제 임시 파일에서 삭제가 실패하도록 구성했다. 출력 닫힘 뒤 pending 경로를 비어 있지 않은 디렉터리로 바꾸고 취소 대용 InterruptedException을 던져 같은 예외 객체가 보존되는지 확인한다. recover가 실패 항목을 남겨도 다른 고아 파일을 지우고 참조 중인 복사본을 보존하며, 방해 파일을 제거한 다음 회수에 성공한다. 별도 검사는 명시적 remove 실패가 계속 ManagedStorageException으로 전달되는지 확인한다. 실제 Android OperationCanceledException/기기 파일 권한 상황의 새 계측 결과로 확대하지 않는다.
 
 이 수정은 파일 정리 실패 경로이며 UI/제스처/렌더링은 변경하지 않았다. 이번에는 휴대폰 설치·기기/성능/장시간 검사를 실행하지 않았고 이전11개 결과를 새 앱의 기기 통과로 재보고하지 않는다. 로그는 위 ignored 폴더에 보존했다. 같은 PR에 검증한 변경과 상태 기록을 함께 일반 push하고 인라인에 두 지적/검증을 답변한다. 작은 두 정리 수정의 전체 수동 리뷰는 중복 호출하지 않는다. 원격 CI·봇 후속 확인과 사용자 병합은 별도로 기록한다.
+
+## 게시 결과
+
+후속 작업 시작 시 PR #37 MERGED/4e707f9bdc1db234ff9e9ed76fed98eb98131add와 d50fde6의 Android check 두 건 COMPLETED/SUCCESS를 확인했다. 아래 IN_PROGRESS는 당시 조회 결과다.
+
+사용자 파일2개 해시와 stash7개 보존 true·공백 검사 성공 후9파일을 d50fde6713dcc203cce831ab73f607af013ae330으로 커밋/일반 push했다. 사용자 디자인/로컬 버전·ignored 자료는 포함하지 않았다. PR 설명에95개 검증과 이번 기기 미실행을 구분하고 인라인 답변4501261660에 두 지적과 근거를 게시했다. Markdown134개/상대 로컬 링크348개 누락0을 확인했다. 원격 head 일치, 새 CI42363080616/job128375330552와42363076955/job128375319830은 IN_PROGRESS로 시작했다. 전체 수동 리뷰는 중복 호출하지 않았고 봇 후속/최종 CI는 실제 확인 뒤 상태만의 추가 push 없이 모아 기록한다.
+
+봇 답변4501267277은 실제 d50fde6과 회귀2개의 코드를 확인해 recover의 계속 처리·copy의 기존 예외 보존·명시적 remove 실패 보고 유지를 확인하고 PRRT_kwDOVLKYJM60zDuH를 해결했다. 봇은 자체 테스트 재실행이 없었다고 명시했다. 이후 조회에서 미해결 인라인0·동일 head, CI 두 건 IN_PROGRESS를 확인했다. 최종 외부 확인 기록은 로컬 SESSION/CHECKLIST/본 이력에만 보관했으며 상태만의 push는 하지 않았다. 사용자 파일2개와 기존 stash는 보존한다.

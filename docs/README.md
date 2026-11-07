@@ -1,6 +1,6 @@
 # 문서 목차
 
-2026-11-07 기준. 현재 상태는 [SESSION](../SESSION.md), 완료 판정은 [CHECKLIST](../CHECKLIST.md), 개발 제약은 [AGENTS](../AGENTS.md)가 기준이다. PR #36까지 사용자 병합됐으며 현재 후속은 [앱 전용 복사본·중앙 오류 복구](history/2026-11-07-02-managed-pdf-storage.md)다. 기존 정리/보존 기준은 [문서 정리 이력](history/2026-10-29-01-documentation-and-cleanup.md)을 참고한다.
+2026-11-07 기준. 현재 상태는 [SESSION](../SESSION.md), 완료 판정은 [CHECKLIST](../CHECKLIST.md), 개발 제약은 [AGENTS](../AGENTS.md)가 기준이다. PR #37까지 사용자 병합됐으며 현재 후속은 [최근 목록 삭제 분리·설정 방향](plan/recent-history-removal.md)이다. 기존 정리/보존 기준은 [문서 정리 이력](history/2026-10-29-01-documentation-and-cleanup.md)을 참고한다.
 
 ## 시작과 운영
 
@@ -14,6 +14,7 @@
 
 ## 구조와 결정
 
+- [최근 목록 숨김·v8 기록](adr/0023-recent-history-visibility.md) / [일반 설정의 기기 방향](adr/0024-settings-system-orientation.md)
 - [앱 전용 PDF 복사본·v7 기록](adr/0022-managed-pdf-copies.md) / [복구·저장 계획](plan/managed-pdf-storage-and-recovery.md) / [실행 이력](history/2026-11-07-02-managed-pdf-storage.md)
 
 - [본문 방향 범위·최근 5개·내부 합성 자료](adr/0021-reader-orientation-scope-and-recent-documents.md) / [후속 계획](plan/home-orientation-and-recent-documents.md)

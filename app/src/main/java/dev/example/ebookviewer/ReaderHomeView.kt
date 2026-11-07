@@ -22,9 +22,10 @@ internal class ReaderHomeView(
     onRemoveFromShelf: (Set<String>, String) -> Unit = { _, _ -> },
     onShelfAction: (Bookshelf) -> Unit = {},
     onShelfReorder: (String, Int) -> Unit = { _, _ -> },
-    onEditShelves: () -> Unit = onShelves
+    onEditShelves: () -> Unit = onShelves,
+    onRemoveRecent: (ReadingRecord) -> Unit = {}
 ) {
-    private val header = ReaderMainHeader(context, onSettings, onPick, onOpen, onRemove)
+    private val header = ReaderMainHeader(context, onSettings, onPick, onOpen, onRemoveRecent)
     private val library = BookshelfLibraryView(
         context, status, retry, reselect, onSettings, onPick, onOpen,
         onRemove, onRemoveMany, onMove, onReorder, onShelves,

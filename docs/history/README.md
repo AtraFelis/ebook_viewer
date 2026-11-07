@@ -4,6 +4,7 @@
 
 ## 주요 완료 근거
 
+- [2026-11-07 최근 목록 삭제 분리·설정 방향](2026-11-07-04-recent-history-and-settings-orientation.md)
 - [2026-11-07 PR #37 파일 정리 리뷰 보완](2026-11-07-03-managed-storage-review-fixes.md)
 
 - [2026-11-07 앱 전용 복사본·중앙 오류 복구](2026-11-07-02-managed-pdf-storage.md)

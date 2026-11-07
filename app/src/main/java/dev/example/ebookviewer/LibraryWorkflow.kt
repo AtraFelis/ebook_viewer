@@ -68,6 +68,13 @@ internal class LibraryWorkflow(
         )
     }
 
+    fun hideRecent(uri: String) = start(
+        Bundle().apply {
+            putString("mode", "forgetRecent")
+            putStringArrayList("uris", arrayListOf(uri))
+        }
+    )
+
     fun actions(shelf: Bookshelf) = start(
         Bundle().apply {
             putString("mode", "actions")
@@ -211,7 +218,7 @@ internal class LibraryWorkflow(
         if (paused || !live()) return
         val draft = state ?: return
         val mode = draft.getString("mode", "edit")
-        val confirmation = mode == "confirm" || mode == "remove"
+        val confirmation = mode in setOf("confirm", "remove", "forgetRecent")
         val source = draft.getString("source", "")
         val shelf = catalog.shelves.firstOrNull { it.id == source }
         val full = mode == "edit" ||
@@ -255,6 +262,7 @@ internal class LibraryWorkflow(
             }
         }
         val title = when (mode) {
+            "forgetRecent" -> R.string.remove_recent_record
             "move" -> R.string.move_to_bookshelf
             "remove" -> if (draft.getBoolean(
                     "single"
@@ -328,7 +336,7 @@ internal class LibraryWorkflow(
         val content = column()
         if (confirmation) content.setPadding(0, style.dp(16), 0, style.dp(24))
         val footer = column()
-        val scrollable = mode in setOf("actions", "name", "confirm", "remove")
+        val scrollable = mode in setOf("actions", "name", "confirm", "remove", "forgetRecent")
         val body = if (scrollable) ScrollView(activity).apply { addView(content) } else content
         root.addView(body, LayoutParams(-1, 0, 1f))
         root.addView(footer)
@@ -430,9 +438,11 @@ internal class LibraryWorkflow(
                 }
             }
             "name" -> nameForm(content, footer, draft)
-            "remove" -> {
+            "remove", "forgetRecent" -> {
                 val uris = selected("uris")
-                val message = if (draft.getBoolean("single")) {
+                val message = if (mode == "forgetRecent") {
+                    activity.getString(R.string.remove_recent_record_message)
+                } else if (draft.getBoolean("single")) {
                     activity.getString(R.string.remove_record_message)
                 } else {
                     activity.getString(R.string.remove_selected_message, uris.size)
@@ -444,7 +454,9 @@ internal class LibraryWorkflow(
                     }
                 )
                 confirmationActions(footer, title) {
-                    write({ it.removeAll(uris) }) { dismiss() }
+                    write({
+                        if (mode == "forgetRecent") it.hideRecent(uris) else it.removeAll(uris)
+                    }) { dismiss() }
                 }
             }
             "confirm" -> {

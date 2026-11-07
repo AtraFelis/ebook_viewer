@@ -71,6 +71,7 @@ class MainActivity : Activity() {
     private var settingsDialog: AlertDialog? = null
     private var settingsHomeDialog: AlertDialog? = null
     private var settingsChildLoading = false
+    private var settingsUseSystemOrientation = false
     private var orientationSettingsOpen = false
     private var orientationPopup: android.widget.PopupWindow? = null
     private var quickOrientationOpen = false
@@ -115,6 +116,8 @@ class MainActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Restore the screen policy before opening its underlying document, avoiding rotation loops.
+        settingsUseSystemOrientation = savedInstanceState?.getBoolean("settingsOpen") == true
         orientationMode = savedInstanceState?.getString("readerOrientation")?.let { name ->
             OrientationMode.entries.firstOrNull { it.name == name }
         } ?: OrientationMode.AUTO
@@ -146,6 +149,12 @@ class MainActivity : Activity() {
             onLoaded = {
                 loadingCopy = null
                 val first = !loaded
+                if (first && activeRecord != null) {
+                    val recentUris = setOfNotNull(activeRecord?.uri, replacedUri)
+                    library.execute({ it.revealRecent(recentUris) }) { result ->
+                        if (!isDestroyed) result.onFailure { reportError(R.string.save_error) }
+                    }
+                }
                 loaded = true
                 updateDisplayWindow()
                 activeRecord = activeRecord?.copy(pageCount = expectedPages)
@@ -246,6 +255,7 @@ class MainActivity : Activity() {
             },
             onOpen = { openDocument(Uri.parse(it.uri)) },
             onRemove = ::confirmRemoveRecord,
+            onRemoveRecent = { libraryWorkflow.hideRecent(it.uri) },
             onRemoveMany = { libraryWorkflow.remove(it) },
             onMove = { libraryWorkflow.move(it, homePresentation.shelfFilter) },
             onReorder = libraryManagement::reorder,
@@ -753,7 +763,7 @@ class MainActivity : Activity() {
 
     private fun showLibrary() {
         dismissReadingHint()
-        closeSettings()
+        closeSettings(restoreOrientation = false)
         closePageText()
         saveReading()
         discardLoadingCopy()
@@ -804,7 +814,7 @@ class MainActivity : Activity() {
         loaded = false
         pendingNavigation = null
         navigationDialog?.dismiss()
-        settingsDialog?.dismiss()
+        closeSettings(restoreOrientation = false)
         showLibrary()
         failedOpen = failed
         val message =
@@ -1213,6 +1223,7 @@ class MainActivity : Activity() {
         )
         settingsDialog = dialog
         settingsHomeDialog = dialog
+        settingsUseSystemOrientation = true
         dialog.setOnDismissListener {
             if (settingsHomeDialog === dialog) {
                 closeSettings()
@@ -1221,6 +1232,7 @@ class MainActivity : Activity() {
         }
         dialog.window?.setWindowAnimations(0)
         dialog.show()
+        applyOrientation(orientationMode)
     }
 
     private fun showViewSettings(draft: Bundle? = null) {
@@ -1687,13 +1699,14 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
-    private fun closeSettings() {
+    private fun closeSettings(restoreOrientation: Boolean = true) {
         closeViewSettings()
         if (::viewer.isInitialized) viewer.observeCropPreview(null)
         val child = settingsDialog
         val parent = settingsHomeDialog
         settingsDialog = null
         settingsHomeDialog = null
+        settingsUseSystemOrientation = false
         settingsChildLoading = false
         orientationSettingsOpen = false
         orientationPopup?.dismiss()
@@ -1712,12 +1725,14 @@ class MainActivity : Activity() {
             parent?.setOnDismissListener(null)
             parent?.dismiss()
         }
+        if (restoreOrientation && !isDestroyed && !isFinishing) applyOrientation(orientationMode)
     }
 
     private fun applyOrientation(mode: OrientationMode) {
         orientationMode = mode
         toolsPresentation.updateOrientation(mode)
-        val requested = when (if (reading) mode else OrientationMode.AUTO) {
+        val selected = if (reading && !settingsUseSystemOrientation) mode else OrientationMode.AUTO
+        val requested = when (selected) {
             OrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             OrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             OrientationMode.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -1873,7 +1888,7 @@ class MainActivity : Activity() {
         updateDisplayWindow()
         navigationDialog?.dismiss()
         navigationDialog = null
-        closeSettings()
+        closeSettings(restoreOrientation = false)
         cancelSave()
         opening++
         viewer.setRenderingEnabled(false)
@@ -1893,7 +1908,7 @@ class MainActivity : Activity() {
         outState.putBoolean("viewSettingsOpen", viewSettingsOpen)
         viewSettingsDialog?.let { outState.putBundle("viewSettingsDraft", it.capture()) }
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.
-        outState.putBoolean("settingsOpen", settingsHomeDialog?.isShowing == true)
+        outState.putBoolean("settingsOpen", settingsUseSystemOrientation)
         outState.putBoolean("orientationSettingsOpen", orientationSettingsOpen)
         outState.putBoolean("quickOrientationOpen", quickOrientationOpen)
         val form = editableSettingsForm
