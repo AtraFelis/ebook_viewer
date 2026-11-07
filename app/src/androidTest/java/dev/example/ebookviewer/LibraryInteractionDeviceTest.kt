@@ -256,7 +256,7 @@ class LibraryInteractionDeviceTest {
                 assertTrue(
                     ui.views(root()).filterIsInstance<TextView>().none {
                         it.isShown &&
-                            it.text == activity.getString(R.string.last_read_document)
+                            it.text == activity.getString(R.string.recent_documents)
                     }
                 )
                 grid.getChildAt(0).performLongClick()

@@ -47,3 +47,21 @@ MainActivity는 방향 선택을 Bundle/필드에 유지하고 현재 읽기 여
 문서 파일131개/상대 로컬 링크340개를 검사해 누락0, `git diff --check -- . ':(exclude)docs/design.md' ':(exclude)gradle.properties'` 종료0을 확인했다. 사용자 디자인/로컬 버전2개는 시작 해시와 동일하고 기존 stash7개도 동일하다. 사용자 변경과 원래 미게시 리뷰 완료 기록을 보존했으며 사용자 두 파일은 커밋에서 제외한다. UI 콜백의 onSample은 main 소스에서 사라졌고 sample_pdf 참조는 내부 합성 본문 제목에만 남아 있다.
 
 기기9개 검증 완료 뒤 사용자 확인 요청을 보냈으며 아직 답변을 받기 전에는 개인 체감 수용으로 표시하지 않는다. 관련 구현/검증을 묶어 PR을 준비하고 리뷰 접수/CI 상태는 뒤에서 실제 조회 결과로 기록한다. 키/정식 APK 생성·공개 배포는 이번 범위가 아니다.
+
+## 사용자 수용과 게시
+
+사용자는 개발용 앱의 방향 분리·최근5개/이어 읽기·합성 메뉴 제거를 확인하고 ‘다 괜찮은 것 같아’로 수용했다. 개인용 키/정식 서명 APK 업데이트와는 구분한다.
+
+b55d76f13af0a282fda0a7fe61a66e5c0d891578을 기능 브랜치에 일반 push하고 PR #36을 main 대상으로 게시/채팅 첨부했다. 사용자 수용 대기 중 Draft로 게시했고 응답 뒤 해제·설명을 갱신했다. CodeRabbit은 마무리된 구현/검증 head에 수동6702728200 한 번을 요청했으며 초기 Draft 자동 제외 뒤 봇6702731007의 Review triggered 접수를 확인했다. 중복 요청은 없으며 실제 완료 리뷰 결과는 아직 대기다.
+
+최신 원격 head와 로컬 커밋 일치를 확인했다. 게시 당시 Android checks42342176243/42342148133 두 건은 IN_PROGRESS였다. 이후 실패와 수정은 아래에 기록한다. CodeRabbit SUCCESS 체크를 완료 리뷰로 보지 않으며 병합은 사용자다.
+
+## CI 실패와 수정 — 2026-11-07
+
+사용자가 CI 확인을 우선 요청했다. 두 실행의 실제 job128311964818/128312051571 로그에서 같은 release Lint 오류1개/경고0을 확인했다. last_read_document는 최근5개 개편 뒤 계측의 옛 헤더 부재 검사에만 남아 release에서는 UnusedResources 오류였다. 이전 로컬 debug Lint 통과를 release 검증으로 확대하면 안 되며 release Lint를 빠뜨린 것이 원격에서 처음 발견한 이유다. APK 빌드·단위는 원격 로그에서 성공했지만 전체 CI는 실패다.
+
+main strings.xml의 옛 문자열을 제거하고 LibraryInteractionDeviceTest의 문서 목록 헤더 부재 검사는 현재 recent_documents를 참조하도록 갱신했다. Lint 억제/기준선·버전/의존성 변경은 없다.
+
+로컬에서 android-env.ps1 뒤 CI 동일 Gradle 명령(assembleDebug/assembleDebugAndroidTest/testDebugUnitTest/lintDebug/assembleRelease/lintRelease/ktlintCheck, --dependency-verification strict --console=plain)을 실행했다. 29초 성공(124작업:75실행/49재사용), 단위86개 실패/오류/건너뜀0, 두 Lint XML 오류/경고0을 확인했다. check-build-identities.ps1도 개발/정식 ID·로컬0.1.2/code4·debuggable 구분 성공이다. 개인용 키/서명은 사용하지 않은 unsigned release이며 배포/설치는 하지 않았다. 로그는 ignored local-artifacts/home-follow-up-20261107/ci-fix-checks.log다. 문자열 제거와 검사 참조 보완만으로 기기 검사를 반복하지 않았다.
+
+앱 전용 복사본과 파일 오류 팝업은 이 CI 우선 처리 뒤 재개한다. 원본 보존·앱 복사본/기록 정리는 사용자 승인된 삭제 정책이다. 현재 변경에는 해당 기능 구현을 섞지 않는다. 사용자 docs/design.md/gradle.properties 시작 해시는 동일하며 수정 커밋에서 제외한다. CI 수정은 같은 PR 브랜치에 일반 push하고 실제 원격 결과를 확인한다. 작은 문자열 정리만으로 CodeRabbit 전체 수동 리뷰를 중복 요청하지 않는다.
