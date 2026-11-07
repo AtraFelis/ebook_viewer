@@ -4,6 +4,8 @@
 
 ## 주요 완료 근거
 
+- [2026-11-07 PR #37 파일 정리 리뷰 보완](2026-11-07-03-managed-storage-review-fixes.md)
+
 - [2026-11-07 앱 전용 복사본·중앙 오류 복구](2026-11-07-02-managed-pdf-storage.md)
 
 - [2026-11-07 메인 방향·최근 문서·합성 메뉴](2026-11-07-01-home-orientation-and-recent-documents.md)

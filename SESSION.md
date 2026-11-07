@@ -4,13 +4,17 @@
 
 ## 현재 상태
 
+PR #37 실제 리뷰5810562680의 잔여 파일 회수 실패/복사 finally의 원래 예외 가림 지적2개를 채택했다. 자동 정리는 실패 항목을 남겨 재시도하고 명시적 삭제 실패 보고는 유지했다. 단위95개와 CI 동일 strict debug/계측/release 빌드·두 Lint0/0·ktlint·APK ID 검사를 통과했다. 이번 수정에는 기기 설치/검사를 반복하지 않았다. [리뷰 보완 이력](docs/history/2026-11-07-03-managed-storage-review-fixes.md)을 따르며 같은 PR 브랜치에 검증한 변경을 모아 게시한다. 아래 한도 거부는 최초 요청 당시 기록이다.
+
 PR #36 사용자 병합 e8e8fd1을 확인하고 변경5개를 ignored local-artifacts/managed-storage-20261107에 백업했다. origin fetch 후 파일 내용이 동일한 병합 커밋 기준으로 현재 체크아웃에서 codex/managed-pdf-storage를 만들었다. 사용자 docs/design.md/gradle.properties와 stash7개는 보존한다.
 
 현재 후속은 [앱 전용 복사본·파일 오류 팝업](docs/plan/managed-pdf-storage-and-recovery.md)/[ADR0022](docs/adr/0022-managed-pdf-copies.md)다. v7 기록에 안전한 UUID 토큰을 추가하고 원래 URI/앵커·북마크·책장 키는 유지한다. 새 등록은 앱 filesDir/documents로 복사하며 기존 등록은 다음 읽기에 전환한다. 최초 v7 쓰기 전 before-v7 백업과 기존 before-v6를 보존한다. 본문/표지는 복사본을 읽고 본문 추출은 같은 열린 FD를 복제한다. 원본을 건드리지 않고 앱 등록 삭제 뒤 복사본을 정리한다. 책장 관계 삭제로는 복사본을 지우지 않는다. 실패 시에는 목록 사이 안내 대신 중앙 복구 창에서 다시 시도·파일 다시 선택·문서 삭제를 제공한다. 앱 제거/데이터 초기화 시 복사본도 지워진다.
 
 strict CI 동일 debug/계측/release 빌드·단위93개(실패/오류/건너뜀0)·두 Lint0/0·ktlint·APK ID/로컬 버전 확인이 성공했다. API33 관련 검사와 최초 실패·보완/최종 앱 설치·수용/게시 여부는 [이번 실행 이력](docs/history/2026-11-07-02-managed-pdf-storage.md)에 별도 기록한다. 아래 방향/최근 문서 문단은 PR #36의 완료 이력이다.
 
-API33 관련 고유11개를 분할 성공했고 마지막 보완 뒤5개가 다시 성공했다. 앱/계측·ADB 종료0, 사용자 방향 선택/글꼴 복원과 이전 합성 잔여물의 엄격한 조건 확인/정리·나머지 카탈로그 보존을 확인했다. 최종 APK의 전체11개/기본96개 단일 성공은 아니다. 사용자는 평소 PDF 열기·읽기·이어 읽기를 ‘괜찮은 것 같아’로 수용했다. 정식판 서명/설치는 별도이며 이번 변경을 모아 새 PR을 준비한다.
+API33 관련 고유11개를 분할 성공했고 마지막 보완 뒤5개가 다시 성공했다. 앱/계측·ADB 종료0, 사용자 방향 선택/글꼴 복원과 이전 합성 잔여물의 엄격한 조건 확인/정리·나머지 카탈로그 보존을 확인했다. 최종 APK의 전체11개/기본96개 단일 성공은 아니다. 사용자는 평소 PDF 열기·읽기·이어 읽기를 ‘괜찮은 것 같아’로 수용했다. 정식판 서명/설치는 별도다.
+
+9b029e8을 기능 브랜치에 일반 push하고 [PR #37](https://github.com/AtraFelis/ebook_viewer/pull/37)을 main 대상으로 게시/채팅 첨부했다. 사용자 수용 후 Ready 상태다. Android checks42346212477/42346151798 두 건 모두 completed/success를 확인했다. CodeRabbit 수동6703255826 한 번에 봇6703256647이 Review rate limited/Action not completed로 거부했다. 무료 OSS 한도 안내는 약3분 뒤 초기화였고 자동 SUCCESS를 실제 리뷰로 세지 않는다. 연속 재요청은 하지 않았다. 사용자 디자인/로컬 버전만 원래 dirty로 남고, 실제 CI/리뷰 결과 기록은 상태만의 head 변경 없이 로컬에 모은다. 남은 외부 확인은 실제 리뷰와 사용자 병합이며 정식판 APK 빌드/설치는 별도다.
 
 사용자 후속3개를 [계획](docs/plan/home-orientation-and-recent-documents.md)/[ADR0021](docs/adr/0021-reader-orientation-scope-and-recent-documents.md)로 정리하고 구현했다. 본문 고정 방향은 저장/복원하되 메인·책장은 기기 정책을 따르고, 최근 읽은 실제 기록 최대5개를 메인에서 연다. 최신 카드는 유지하고 나머지는 작은 항목이다. 합성100페이지 사용자 메뉴/콜백은 제거하고 내부 openSample 계측 경로는 유지했다. 새 의존성/저장 형식·원본 PDF/사용자 버전 변경은 없다.
 

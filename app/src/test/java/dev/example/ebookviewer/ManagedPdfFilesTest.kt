@@ -3,12 +3,14 @@ package dev.example.ebookviewer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -86,6 +88,51 @@ class ManagedPdfFilesTest {
         assertTrue(files.file(retained).exists())
         assertFalse(files.file(orphan).exists())
         assertEquals("Keep", unrelated.readText())
+    }
+
+    @Test
+    fun failedCleanupPreservesCancellationAndRetriesWithoutBlockingOtherOrphans() {
+        val folder = temporary.newFolder("blocked-cleanup")
+        val files = ManagedPdfFiles(folder) { Long.MAX_VALUE }
+        val cancelled = InterruptedException("Synthetic cancellation")
+        var checks = 0
+        var blocked: File? = null
+        val failure = assertThrows(InterruptedException::class.java) {
+            files.copy(ByteArrayInputStream(byteArrayOf(1))) {
+                // The final cancellation check runs after the output closes, including on Windows.
+                if (++checks == 3) {
+                    val pending = folder.listFiles().orEmpty().single()
+                    assertTrue(pending.delete())
+                    assertTrue(pending.mkdir())
+                    File(pending, "hold").writeText("Prevent deletion")
+                    blocked = pending
+                    throw cancelled
+                }
+            }
+        }
+        assertSame(cancelled, failure)
+        val pending = requireNotNull(blocked)
+        assertTrue(pending.exists())
+        val orphan = files.copy(ByteArrayInputStream(byteArrayOf(2))) {}
+        val retained = files.copy(ByteArrayInputStream(byteArrayOf(3))) {}
+        files.recover(setOf(retained))
+        assertTrue(pending.exists())
+        assertFalse(files.file(orphan).exists())
+        assertTrue(files.file(retained).exists())
+        assertTrue(File(pending, "hold").delete())
+        files.recover(setOf(retained))
+        assertFalse(pending.exists())
+        assertTrue(files.file(retained).exists())
+    }
+
+    @Test
+    fun explicitRemovalStillReportsDeletionFailure() {
+        val files = ManagedPdfFiles(temporary.newFolder("explicit-delete")) { Long.MAX_VALUE }
+        val token = "01234567-89ab-4cde-8fab-0123456789ab"
+        val blocked = files.file(token).apply { mkdir() }
+        File(blocked, "hold").writeText("Prevent deletion")
+        assertThrows(ManagedStorageException::class.java) { files.remove(token) }
+        assertTrue(blocked.exists())
     }
 
     @Test

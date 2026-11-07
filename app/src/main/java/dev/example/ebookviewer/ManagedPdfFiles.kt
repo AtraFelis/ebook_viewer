@@ -47,7 +47,7 @@ internal class ManagedPdfFiles(private val directory: File, private val availabl
             }
             return token
         } finally {
-            if (pending.exists() && !pending.delete()) throw ManagedStorageException()
+            tryDiscard(pending)
         }
     }
 
@@ -63,8 +63,17 @@ internal class ManagedPdfFiles(private val directory: File, private val availabl
             if (validToken(token) &&
                 (entry.extension == "pending" || entry.extension == "pdf" && token !in referenced)
             ) {
-                if (!entry.delete()) throw ManagedStorageException()
+                tryDiscard(entry)
             }
+        }
+    }
+
+    private fun tryDiscard(file: File) {
+        // Incidental cleanup must not block the catalog or mask cancellation; startup retries it.
+        try {
+            file.delete()
+        } catch (_: SecurityException) {
+            // Leave the file in place for a later recovery attempt with normal access.
         }
     }
 

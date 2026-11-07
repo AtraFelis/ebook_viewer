@@ -32,7 +32,7 @@
 | 목적 | Windows 명령 | 현재 상태 |
 | --- | --- | --- |
 | 빌드 | `./gradlew.bat :app:assembleDebug` | 로컬 통과 |
-| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | Windows 단위93개 통과(실패/오류/건너뜀0). 기존86개와 복사/취소·공간 부족·안전 토큰·회수·v7/v6 호환7개. 기기 검증과 별도이며 [이번 실제 실행/제한](docs/history/2026-11-07-02-managed-pdf-storage.md)을 따른다 |
+| 단위 테스트 | `./gradlew.bat :app:testDebugUnitTest` | Windows 단위95개 통과(실패/오류/건너뜀0). 기존93개와 정리 실패 시 취소 보존·재회수/명시적 삭제 오류2개. 이번 리뷰 수정의 기기 검사는 미실행이며 [실제 실행/제한](docs/history/2026-11-07-03-managed-storage-review-fixes.md)을 따른다 |
 | Android Lint | `./gradlew.bat :app:lintDebug` | 오류/경고 0, 버전 권고는 정보 |
 | 기기 테스트 | `./scripts/device-smoke.ps1` | API33 리뷰 보완 관련3개/각 실패0: 공유 표지 구독·실제 격리 표지/오류 대체·빈 책장 안내. [리뷰 보완 결과](docs/history/2026-10-24-08-bookshelf-review-fixes.md). 이전 최종 중앙 삭제 확인 관련1개/실패0(2026-10-24). 중앙 배치·취소/복원·원본/다른 소속 보존, 사용자 시각 수용 완료. [최종 결과](docs/history/2026-10-24-06-centered-delete-confirmation.md). 이전 문서 선택/삭제 관련3개는 분할 성공, 이동 시트 간격만의 변경은 빌드/설치로 확인. [최신 결과/제한](docs/history/2026-10-24-05-document-selection-and-deletion-sheets.md). 이전 사진 기반4개/표시1개는 [편집 이력](docs/history/2026-10-24-04-bookshelf-reference-polish.md). 이전 조작7개/표시1개는 [조작 이력](docs/history/2026-10-24-03-library-interaction-implementation.md). 이전 내장 책장4개/표지·기록 변환은 [개편 이력](docs/history/2026-10-23-05-bookshelf-redesign-implementation.md), 본문 UI14개·시각 보완2개는 [본문 결과](docs/history/2026-10-23-02-compact-reader-tools.md)·[이전 시각 보완](docs/history/2026-10-23-03-plain-reader-actions.md)에 보존. 기본 기대96개 전체 미실행. 전체 제한900초/개별 선택 지원, 실제 OOM/다른 API 검증 아님 |
 
