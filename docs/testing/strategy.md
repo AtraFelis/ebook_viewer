@@ -1,8 +1,10 @@
 # 검증 전략
 
-갱신: 2026-10-31. 변경 위험에 맞춰 단위/빌드/Lint·기기/성능을 선택한다. 문서/캐시 정리에는 앱·장시간 검사를 반복하지 않는다. 실행하지 않은 검사와 과거 결과 재사용을 새 통과로 보고하지 않는다.
+갱신: 2026-11-07. 변경 위험에 맞춰 단위/빌드/Lint·기기/성능을 선택한다. 문서/캐시 정리에는 앱·장시간 검사를 반복하지 않는다. 실행하지 않은 검사와 과거 결과 재사용을 새 통과로 보고하지 않는다.
 
-현재 `scripts/device-smoke.ps1`의 기본 기대 수는 96개다. 마지막 앱 변경에서 단위 84개(실패/오류/건너뜀 0), strict debug/계측·Lint 0/0·ktlint/unsigned release와 API 33 관련 검사만 실행했고 최종 기본 96개 전체는 미실행이다. [리뷰 보완](../history/2026-10-24-08-bookshelf-review-fixes.md), [마지막 API 분기 검사](../history/2026-10-24-09-cover-test-api-guards.md)의 실행 범위를 따른다.
+현재 `scripts/device-smoke.ps1`의 기본 기대 수는 96개다. 2026-11-07 후속은 단위86개(실패/오류/건너뜀0)·strict debug/계측/Lint0/0·ktlint와 API33 관련9개를 분할 검증했다. 새 HomeNavigationDeviceTest4개는 기본96개에 자동 합산하지 않는 opt-in이며 `-e methodClass home -e method 실제@Test함수명`으로 실행한다. 기존 방향 검사도 `methodClass immersive`로 선택할 수 있다. [후속 실제 범위/실패 보완](../history/2026-11-07-01-home-orientation-and-recent-documents.md)을 따른다. 기본96개 전체·성능/장시간을 새로 실행한 결과가 아니다.
+
+기존 PR #33의 단위84개·unsigned release/기기 관련 결과는 [리뷰 보완](../history/2026-10-24-08-bookshelf-review-fixes.md), [당시 최종 API 분기 검사](../history/2026-10-24-09-cover-test-api-guards.md)에 보존한다.
 
 P3 당시 기본 91개는 최초 전체 중단 후 분할 보완했다. 후속 코드/표시 수정 뒤 관련 검사를 추가했으며 단일 최종 전체 성공으로 합산하지 않는다. P2/P3의 성능·10분/20분 측정도 당시 앱/자료에만 적용한다. 실제 OOM/다른 API 기기·임의 PDF 안전성을 보장하지 않는다. 현재 개인 API 33가 완료 대상이고 TalkBack 전용 후속/수동 검증은 제외하며 큰 글꼴·일반 터치·본문 읽기는 유지한다.
 

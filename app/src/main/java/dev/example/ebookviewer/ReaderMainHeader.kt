@@ -6,12 +6,13 @@ import android.text.TextUtils
 import android.text.format.DateUtils
 import android.view.Gravity
 import android.view.View
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams
 import android.widget.ProgressBar
 import android.widget.TextView
 
-/** The existing main heading and resume card stay above the new bookshelf section. */
+/** A bounded recent list shares the main scroll; the newest document keeps its resume card. */
 internal class ReaderMainHeader(
     private val context: Context,
     onSettings: () -> Unit,
@@ -21,7 +22,7 @@ internal class ReaderMainHeader(
 ) {
     private val style = ReaderStyle(context)
     private val controls = LibraryControls(context)
-    private val resume = column()
+    private val resume = column().apply { id = R.id.recent_documents }
     val view = column().apply {
         setPadding(style.dp(24), style.dp(24), style.dp(24), 0)
         addView(
@@ -43,10 +44,11 @@ internal class ReaderMainHeader(
 
     fun render(catalog: LibraryCatalog) {
         resume.removeAllViews()
-        val last = catalog.records.filter { it.position != null }.maxByOrNull { it.openedAt }
-        if (last != null) {
-            resume.addView(secondaryLabel(R.string.last_read_document, 14f))
-            resume.spaced(resumeCard(last), 16)
+        val recent = catalog.recentlyRead()
+        if (recent.isNotEmpty()) {
+            resume.addView(secondaryLabel(R.string.recent_documents, 14f))
+            resume.spaced(resumeCard(recent.first()), 16)
+            recent.drop(1).forEach { resume.spaced(recentRow(it), 8) }
         } else {
             resume.addView(
                 card(24).apply {
@@ -76,19 +78,34 @@ internal class ReaderMainHeader(
             4
         )
         spaced(
-            style.button(R.string.continue_reading, true) { onOpen(record) }.apply {
-                id = R.id.home_record
-                contentDescription = context.getString(
-                    R.string.resume_document,
-                    entryDescription(record)
-                )
-                setOnLongClickListener {
-                    onRemove(record)
-                    true
-                }
-            },
+            style.button(R.string.continue_reading, true) { onOpen(record) }
+                .apply { bindRecord(record) },
             16
         )
+    }
+
+    private fun recentRow(record: ReadingRecord): Button =
+        controls.action(R.string.continue_reading, LibraryIcon.DOCUMENT) { onOpen(record) }.apply {
+            bindRecord(record)
+            text = context.getString(
+                R.string.recent_document_row,
+                record.title,
+                metadata(record).text
+            )
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            maxLines = 3
+            ellipsize = TextUtils.TruncateAt.END
+            minHeight = style.dp(64)
+            minimumHeight = style.dp(64)
+        }
+
+    private fun Button.bindRecord(record: ReadingRecord) {
+        id = R.id.home_record
+        contentDescription = context.getString(R.string.resume_document, entryDescription(record))
+        setOnLongClickListener {
+            onRemove(record)
+            true
+        }
     }
 
     private fun title(record: ReadingRecord, size: Float = 16f, strong: Boolean = false): TextView =

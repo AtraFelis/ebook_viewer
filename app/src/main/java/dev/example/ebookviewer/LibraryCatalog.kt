@@ -36,6 +36,13 @@ data class LibraryCatalog(
         }
     }
 
+    /** Recents are derived from read records, independently of shelf membership and manual order. */
+    internal fun recentlyRead(): List<ReadingRecord> = records.asSequence()
+        .filter { it.position != null }
+        .sortedWith(compareByDescending<ReadingRecord> { it.openedAt }.thenBy { it.uri })
+        .take(5)
+        .toList()
+
     /** Build the presentation index once per catalog snapshot, preserving the saved document order. */
     internal fun documentsByShelf(): Map<String, List<ReadingRecord>> {
         val byUri = records.associateBy { it.uri }

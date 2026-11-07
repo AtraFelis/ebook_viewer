@@ -224,7 +224,6 @@ class LibraryInteractionDeviceTest {
                         {
                         }, {
                         }, {
-                        }, {
                             opened++
                         }, {}, {}, { moved = it }, { _, _, _ -> }, {}, preferences = preferences
                     ).also {

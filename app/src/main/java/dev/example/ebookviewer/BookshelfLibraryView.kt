@@ -32,7 +32,6 @@ internal class BookshelfLibraryView(
     reselect: Button,
     private val onSettings: () -> Unit,
     @Suppress("unused") private val onPick: () -> Unit,
-    private val onSample: () -> Unit,
     private val onOpen: (ReadingRecord) -> Unit,
     @Suppress("unused") private val onRemove: (ReadingRecord) -> Unit,
     private val onRemoveMany: (Set<String>) -> Unit,
@@ -539,10 +538,6 @@ internal class BookshelfLibraryView(
             }
             menu.add(R.string.library_refresh_covers).setOnMenuItemClickListener {
                 covers.clear()
-                true
-            }
-            menu.add(R.string.sample_pdf).setOnMenuItemClickListener {
-                onSample()
                 true
             }
             show()

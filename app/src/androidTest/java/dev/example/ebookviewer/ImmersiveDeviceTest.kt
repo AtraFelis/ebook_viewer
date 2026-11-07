@@ -244,10 +244,20 @@ class ImmersiveDeviceTest {
             activity = awaitOrientation(
                 activity,
                 monitor,
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
                 expectChild = false
             )
             assertTrue(activity.findViewById<View>(R.id.home_screen).isShown)
+            assertEquals(OrientationMode.PORTRAIT, setting { repository.load(it) })
+            instrumentation.runOnMainSync { (activity as MainActivity).openSample() }
+            activity = awaitOrientation(
+                activity,
+                monitor,
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+                expectChild = false
+            )
+            view = ui.awaitReady(activity)
+            ui.tap(view)
             clickSettings(activity)
             clickDialogText(activity.getString(R.string.orientation_auto))
             activity =
@@ -273,6 +283,8 @@ class ImmersiveDeviceTest {
         val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         var activity = ui.launch()
         try {
+            assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED, activity.requestedOrientation)
+            instrumentation.runOnMainSync { (activity as MainActivity).openSample() }
             activity = awaitOrientation(
                 activity,
                 monitor,
@@ -280,7 +292,7 @@ class ImmersiveDeviceTest {
                 expectChild = false
             )
             val portraitRotation = ui.onMain { rotation(activity) }
-            var view = ui.sample(activity)
+            var view = ui.awaitReady(activity)
             repeat(2) { ui.pinch(view) }
             repeat(2) { ui.drag(view, true) }
             val before = ui.state(view)
@@ -325,6 +337,8 @@ class ImmersiveDeviceTest {
             instrumentation.runOnMainSync { activity.finish() }
             instrumentation.waitForIdleSync()
             activity = ui.launch()
+            assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED, activity.requestedOrientation)
+            instrumentation.runOnMainSync { (activity as MainActivity).openSample() }
             activity = awaitOrientation(
                 activity,
                 monitor,

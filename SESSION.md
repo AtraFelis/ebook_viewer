@@ -1,14 +1,20 @@
 # SESSION.md — 세션 인수인계
 
-최종 갱신: 2026-10-31 (Asia/Seoul).
+최종 갱신: 2026-11-07 (Asia/Seoul).
 
 ## 현재 상태
 
+사용자 후속3개를 [계획](docs/plan/home-orientation-and-recent-documents.md)/[ADR0021](docs/adr/0021-reader-orientation-scope-and-recent-documents.md)로 정리하고 구현했다. 본문 고정 방향은 저장/복원하되 메인·책장은 기기 정책을 따르고, 최근 읽은 실제 기록 최대5개를 메인에서 연다. 최신 카드는 유지하고 나머지는 작은 항목이다. 합성100페이지 사용자 메뉴/콜백은 제거하고 내부 openSample 계측 경로는 유지했다. 새 의존성/저장 형식·원본 PDF/사용자 버전 변경은 없다.
+
+PR #35는 사용자 병합 d5f7fd3을 확인했다. 기존 변경5개를 로컬 백업/해시로 보존하고 같은 체크아웃의 codex/home-orientation-recent-documents에서 구현한다. 단위86개(실패/오류/건너뜀0) 실제 실행과 strict debug/계측·Lint0/0·ktlint를 통과했고 후속 계측만의 보완 뒤에도 재빌드/Lint/서식이 통과했다. 기기/사용자 수용·게시 상태는 [이번 이력](docs/history/2026-11-07-01-home-orientation-and-recent-documents.md)에 실제 결과로 기록한다. 아래 문서 PR 단계는 과거 완료 근거다.
+
 P0·P1·합의한 P2/P3, 읽기 도구와 책장 후속 개선은 완료했다. [PR #33](https://github.com/AtraFelis/ebook_viewer/pull/33)은 책장 구현/리뷰 보완을, [PR #34](https://github.com/AtraFelis/ebook_viewer/pull/34)는 개인용 정식판 완료 문서를 반영했다. 이번 GitHub 조회에서 #34 MERGED/병합 `674c8d8`을 확인했다. PR #34의 문서 지적은 `9c4df30`과 봇의 실제 문서 확인으로 해소됐다. Markdown 전용 Android checks 미실행을 앱 검사 통과로 세지 않는다.
 
-현재 작업은 문서 최신화·캐시 정리 뒤 PR #35 리뷰 보완이다. 체크아웃 경로는 `C:\Users\cotjs\workspace\ebook_viewer`, 작업 브랜치는 `codex/project-docs-cleanup`, 기준은 병합된 main의 `674c8d8`이다. 기존 변경 5개를 유지한 채 동일 트리에서 브랜치를 만들었다. main 브랜치 자체는 이번에 갱신하지 않았다. 원격 상태·로컬 상태와 정리 검증은 [정리 이력](docs/history/2026-10-29-01-documentation-and-cleanup.md)에 기록한다.
+문서 정리 당시 체크아웃은 `C:\Users\cotjs\workspace\ebook_viewer`, 브랜치는 `codex/project-docs-cleanup`, 기준은 main의 `674c8d8`이었다. 당시 main 브랜치 자체는 갱신하지 않았다. 정리 검증은 [정리 이력](docs/history/2026-10-29-01-documentation-and-cleanup.md)에 기록한다.
 
-문서 34개를 e15629e로 일반 push하고 [PR #35](https://github.com/AtraFelis/ebook_viewer/pull/35)를 main 대상으로 게시했다. CodeRabbit 수동 요청6488610493/접수6488612097 뒤 실제 완료 리뷰5693252929의 지적2개를 확인했다. 검색 보류와 검증 표의 충돌, 기기 검사/정리 오류 보존 안내를 채택해 수정했다. 문서 예제의 성공/검사 실패/정리 실패/양쪽 실패 합성4개는 모두 기대 조건을 통과했다. [리뷰 판단·실행 이력](docs/history/2026-10-31-01-documentation-review-fixes.md)을 따른다. 같은 PR 브랜치에 검증 후 일반 push하며 Markdown 전용 Android checks는 경로 필터 대상이다. 앱 검사는 반복하지 않는다.
+문서 34개를 e15629e로 일반 push하고 [PR #35](https://github.com/AtraFelis/ebook_viewer/pull/35)를 main 대상으로 게시했다. CodeRabbit 수동 요청6488610493/접수6488612097 뒤 실제 완료 리뷰5693252929의 지적2개를 확인했다. 검색 보류와 검증 표의 충돌, 기기 검사/정리 오류 보존 안내를 채택해 수정했다. 문서 예제의 성공/검사 실패/정리 실패/양쪽 실패 합성4개는 모두 기대 조건을 통과했다. [리뷰 판단·실행 이력](docs/history/2026-10-31-01-documentation-review-fixes.md)을 따른다. a0053c4로 같은 PR 브랜치에 일반 push해 원격 head 일치를 확인했다. 두 지적 답변4431858855/4431859182에 봇4431859734/4431859835가 실제 문서를 확인해 해소를 확인했고 미해결 스레드0·병합 가능 상태다. Markdown 전용 Android checks는 경로 필터 대상이며 앱 검사는 반복하지 않았다. 작은 지적 보완의 전체 수동 리뷰나 상태만의 추가 push는 하지 않는다. 병합은 사용자다.
+
+API33 관련 고유9개를 분할 실행해 각 실패0이다. 신규4개/기존 방향2개가 성공한 뒤 설정 검사의 오래된 글자 버튼 탐색 실패를 현재 톱니바퀴 탐색으로 고치고 남은 설정·줌 회전·큰 글꼴3개를 성공했다. 실패 원문을 보존했다. 최신 계측 APK의 전체9개/기본96개 단일 실행으로 합산하지 않는다. 앱/계측·ADB 종료와 원래 글꼴 복원은 완료했고 사용자 확인을 요청했다.
 
 ## 현재 구현
 
@@ -21,9 +27,9 @@ P0·P1·합의한 P2/P3, 읽기 도구와 책장 후속 개선은 완료했다. 
 
 ## 검증 근거와 제한
 
-마지막 앱 변경의 단위 84개(실패/오류/건너뜀 0), strict debug/계측 빌드·Lint 0/0·ktlint 및 unsigned release/release Lint 성공은 [PR #33 리뷰 보완](docs/history/2026-10-24-08-bookshelf-review-fixes.md)에 기록돼 있다. 최종 테스트 API 분기 수정의 API 33 관련 2개는 각 실패 0이며 최종 CI 두 건도 성공했다([최종 이력](docs/history/2026-10-24-09-cover-test-api-guards.md)).
+이번 후속 이전 PR #33의 단위 84개(실패/오류/건너뜀 0), strict debug/계측 빌드·Lint 0/0·ktlint 및 unsigned release/release Lint 성공은 [PR #33 리뷰 보완](docs/history/2026-10-24-08-bookshelf-review-fixes.md)에 기록돼 있다. 최종 테스트 API 분기 수정의 API 33 관련 2개는 각 실패 0이며 최종 CI 두 건도 성공했다([최종 이력](docs/history/2026-10-24-09-cover-test-api-guards.md)).
 
-이는 현재 기본 96개 전체를 한 APK에서 새로 실행한 결과가 아니다. P2/P3 성능·장시간 결과도 각 당시 자료·앱에 한정한다. 다른 기기/API·실제 OOM·임의 PDF 안전성·모든 문서의 무지연을 보장하지 않는다. 이번 문서/캐시 정리에서는 앱 빌드·기기 검사·서명 빌드를 반복하지 않는다.
+이는 현재 기본 96개 전체를 한 APK에서 새로 실행한 결과가 아니다. P2/P3 성능·장시간 결과도 각 당시 자료·앱에 한정한다. 다른 기기/API·실제 OOM·임의 PDF 안전성·모든 문서의 무지연을 보장하지 않는다. 2026-10-29 문서/캐시 정리에서는 앱 빌드·기기 검사·서명 빌드를 반복하지 않았다. 이번 앱 후속의 실제 검사 범위는 상단과 새 이력을 따른다.
 
 ## 개인용 배포와 보존
 
@@ -35,6 +41,6 @@ P0·P1·합의한 P2/P3, 읽기 도구와 책장 후속 개선은 완료했다. 
 
 ## 다음 행동
 
-현재 합의 범위의 필수 기능 개발과 개인용 설치 준비는 끝났다. 다음 기능은 사용 피드백으로 정한다. 검색·선택/복사 UI·EPUB·OCR·동기화, 코드 LICENSE·공개/스토어 배포, 다른 API/기기 확대는 별도 보류다. TalkBack 전용 추가 개발/수동 검증은 사용자 결정으로 완료 조건에서 제외하며 기존 구현·과거 검증은 보존한다.
+기존 기능과 개인용 설치 준비는 끝났으며 이번3개 후속은 관련 기기 검증·사용자 확인/게시로 마무리한다. 검색·선택/복사 UI·EPUB·OCR·동기화, 코드 LICENSE·공개/스토어 배포, 다른 API/기기 확대는 별도 보류다. TalkBack 전용 추가 개발/수동 검증은 사용자 결정으로 완료 조건에서 제외하며 기존 구현·과거 검증은 보존한다.
 
 새 변경은 관련 위험에 맞는 검사만 실행하고 CodeRabbit은 검토할 변경이 모였을 때 요청한다. PR 병합은 사용자다. 이번 정리의 게시 여부·검증 결과는 이번 이력과 최종 응답으로 구분하며 과거의 ‘게시 대기’를 현재 작업으로 재개하지 않는다.

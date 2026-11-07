@@ -4,6 +4,7 @@
 
 ## 주요 완료 근거
 
+- [2026-11-07 메인 방향·최근 문서·합성 메뉴](2026-11-07-01-home-orientation-and-recent-documents.md)
 - [2026-10-31 PR #35 문서 리뷰 보완](2026-10-31-01-documentation-review-fixes.md)
 - [2026-10-29 문서 최신화·캐시 정리](2026-10-29-01-documentation-and-cleanup.md)
 - [2026-10-24 main 동기화·개인용 설치/키 백업 확인](2026-10-24-10-main-sync-and-release-closeout.md)

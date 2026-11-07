@@ -15,6 +15,35 @@ class LibraryCatalogTest {
     private val shelf = Bookshelf("s1", "내 책장")
 
     @Test
+    fun recentReadingsExcludeUnreadRecordsAndIgnoreManualOrderAndShelves() {
+        val read = (1..7).map { a.copy(uri = "read:$it", openedAt = it.toLong()) }
+        val unread = b.copy(openedAt = 100)
+        val value = LibraryCatalog(listOf(unread) + read)
+            .addShelf(shelf)
+            .addToShelves(setOf("read:7", "read:6"), setOf(shelf.id))
+            .let { it.copy(order = it.order.reversed()) }
+        assertEquals((7 downTo 3).map { "read:$it" }, value.recentlyRead().map { it.uri })
+        assertEquals(listOf("read:7", "read:6"), value.visible(shelf.id).map { it.uri })
+        assertEquals(emptyList<ReadingRecord>(), LibraryCatalog(listOf(b, c)).recentlyRead())
+    }
+
+    @Test
+    fun recentReadingsSurviveCodecAndReopenDeleteRelinkWithoutDuplicates() {
+        val initial = LibraryCatalog(listOf(a, a.copy(uri = "other")))
+        val output = ByteArrayOutputStream()
+        ReadingRecordsCodec.writeCatalog(output, initial)
+        val restored = ReadingRecordsCodec.readCatalog(ByteArrayInputStream(output.toByteArray()))
+        assertEquals(listOf("a", "other"), restored.recentlyRead().map { it.uri })
+        val reopened = restored.put(a.copy(uri = "other", openedAt = 50))
+        assertEquals(listOf("other", "a"), reopened.recentlyRead().map { it.uri })
+        assertEquals(initial.order, reopened.order)
+        val relinked = reopened.put(a.copy(uri = "new", openedAt = 60), "other")
+        assertEquals(listOf("new", "a"), relinked.recentlyRead().map { it.uri })
+        assertEquals(a.position, relinked.recentlyRead().first().position)
+        assertEquals(listOf(a), relinked.remove(setOf("new")).recentlyRead())
+    }
+
+    @Test
     fun roundTripRetainsShelfNamesOrderAssignmentsAndReadingAnchors() {
         val value = LibraryCatalog(listOf(c, b, a))
             .addShelf(shelf).addShelf(Bookshelf("s2", "빈 책장"))

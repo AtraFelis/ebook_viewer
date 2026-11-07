@@ -121,6 +121,8 @@ class P0Instrumentation : Instrumentation() {
                 "bookshelfRedesign" -> BookshelfRedesignDeviceTest::class.java
                 "libraryInteraction" -> LibraryInteractionDeviceTest::class.java
                 "libraryDeletion" -> LibraryDeletionDeviceTest::class.java
+                "home" -> HomeNavigationDeviceTest::class.java
+                "immersive" -> ImmersiveDeviceTest::class.java
                 else -> error("Unsupported individual test class")
             }
         }

@@ -1,6 +1,6 @@
 # 문서 목차
 
-2026-10-29 기준. 현재 상태는 [SESSION](../SESSION.md), 완료 판정은 [CHECKLIST](../CHECKLIST.md), 개발 제약은 [AGENTS](../AGENTS.md)가 기준이다. P0~합의한 P3와 후속 책장 개편/개인용 준비는 완료했고 PR #34까지 병합됐다. 상세 제한은 [최신 정리](history/2026-10-29-01-documentation-and-cleanup.md)를 참고한다.
+2026-11-07 기준. 현재 상태는 [SESSION](../SESSION.md), 완료 판정은 [CHECKLIST](../CHECKLIST.md), 개발 제약은 [AGENTS](../AGENTS.md)가 기준이다. PR #35까지 사용자 병합됐으며 현재 후속은 [본문/메인 방향·최근5개·합성 메뉴](history/2026-11-07-01-home-orientation-and-recent-documents.md)다. 기존 정리/보존 기준은 [문서 정리 이력](history/2026-10-29-01-documentation-and-cleanup.md)을 참고한다.
 
 ## 시작과 운영
 
@@ -14,6 +14,7 @@
 
 ## 구조와 결정
 
+- [본문 방향 범위·최근 5개·내부 합성 자료](adr/0021-reader-orientation-scope-and-recent-documents.md) / [후속 계획](plan/home-orientation-and-recent-documents.md)
 - [연속 스크롤·좌표·자원 수명](architecture/continuous-viewer.md)
 - [도구·렌더러 구성](adr/0001-p0-toolchain-and-renderer.md)
 - [현재 페이지 본문 읽기 격리](adr/0015-bounded-current-page-text-and-accessibility.md)

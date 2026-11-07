@@ -56,7 +56,7 @@ class BookshelfRedesignDeviceTest {
                     activity, TextView(activity).apply { visibility = View.GONE },
                     Button(activity).apply { visibility = View.GONE },
                     Button(activity).apply { visibility = View.GONE },
-                    {}, {}, {}, {}, {}, {}, {}, { _, _, _ -> }, { added++ },
+                    {}, {}, {}, {}, {}, {}, { _, _, _ -> }, { added++ },
                     onShelfAction = { managed++ }
                 ).also {
                     it.render(catalog)
@@ -173,7 +173,7 @@ class BookshelfRedesignDeviceTest {
                 }
                 home = ReaderHomeView(
                     activity, status, retry, Button(activity).apply { visibility = View.GONE },
-                    {}, {}, {}, {}, {}, {}, {}, { _, _, _ -> }, {}
+                    {}, {}, {}, {}, {}, {}, { _, _, _ -> }, {}
                 ).also {
                     it.render(catalog)
                     activity.setContentView(it.view)
@@ -234,7 +234,7 @@ class BookshelfRedesignDeviceTest {
                     activity, TextView(activity).apply { visibility = View.GONE },
                     Button(activity).apply { visibility = View.GONE },
                     Button(activity).apply { visibility = View.GONE },
-                    {}, {}, {}, {}, {}, {}, {}, { _, _, _ -> }, {}
+                    {}, {}, {}, {}, {}, {}, { _, _, _ -> }, {}
                 ).also {
                     it.restoreState(state)
                     it.render(catalog)
@@ -268,7 +268,7 @@ class BookshelfRedesignDeviceTest {
             TextView(activity),
             Button(activity).apply { visibility = View.GONE },
             Button(activity).apply { visibility = View.GONE },
-            {}, {}, {}, { opened++ }, {}, {}, {}, { _, _, _ -> }, {}
+            {}, {}, { opened++ }, {}, {}, {}, { _, _, _ -> }, {}
         )
         val records = (0 until 200).map { ReadingRecord("fixture:$it", "Fixture $it", it.toLong()) }
         val catalog = LibraryCatalog(records).addShelf(Bookshelf("s", "학습"))
@@ -550,7 +550,7 @@ class BookshelfRedesignDeviceTest {
                         val style = ReaderStyle(context)
                         val home = BookshelfLibraryView(
                             context, TextView(context), Button(context), Button(context),
-                            {}, {}, {}, {}, {}, {}, {}, { _, _, _ -> }, {}
+                            {}, {}, {}, {}, {}, {}, { _, _, _ -> }, {}
                         )
                         try {
                             val records = listOf(ReadingRecord("public", "긴 문서 이름".repeat(15), 1))

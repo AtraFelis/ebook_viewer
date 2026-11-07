@@ -70,9 +70,19 @@ class GestureDeviceTest {
         val instrumentation = PdfRendererDeviceTest.instrumentation
         val ui = DeviceGestures(instrumentation)
         setting { settings.save(OrientationMode.LANDSCAPE, it) }
-        val activity = ui.launch()
+        var activity = ui.launch()
+        val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         try {
-            val view = ui.sample(activity)
+            instrumentation.runOnMainSync { (activity as MainActivity).openSample() }
+            ui.await("Reader landscape did not settle") {
+                activity = monitor.lastActivity ?: activity
+                !activity.isDestroyed &&
+                    activity.hasWindowFocus() &&
+                    activity.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE &&
+                    activity.resources.configuration.orientation ==
+                    android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            }
+            val view = ui.awaitReady(activity)
             val initial = ui.state(view).getDouble("zoom")
             ui.pinch(view)
             val zoom = ui.state(view).getDouble("zoom")
@@ -97,7 +107,8 @@ class GestureDeviceTest {
             ui.awaitReady(activity)
             ui.assertCacheBound(view)
         } finally {
-            instrumentation.runOnMainSync { activity.finish() }
+            instrumentation.runOnMainSync { (monitor.lastActivity ?: activity).finish() }
+            instrumentation.removeMonitor(monitor)
         }
     }
 
@@ -122,7 +133,27 @@ class GestureDeviceTest {
             } else {
                 ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
-            instrumentation.runOnMainSync { activity.requestedOrientation = requested }
+            // Use the actual reader choice; direct Activity requests are not persisted app settings.
+            instrumentation.runOnMainSync {
+                view.performClick()
+                activity.findViewById<android.view.View>(R.id.reader_orientation).performClick()
+            }
+            var popup: android.widget.PopupWindow? = null
+            ui.await("Reader direction menu did not open") {
+                val field = MainActivity::class.java.getDeclaredField("orientationPopup")
+                field.isAccessible = true
+                popup = field.get(activity) as android.widget.PopupWindow?
+                popup?.isShowing == true
+            }
+            val mode = if (requested == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                OrientationMode.LANDSCAPE
+            } else {
+                OrientationMode.PORTRAIT
+            }
+            instrumentation.runOnMainSync {
+                (requireNotNull(popup).contentView as android.widget.ListView)
+                    .performItemClick(null, mode.ordinal, mode.ordinal.toLong())
+            }
             activity = requireNotNull(instrumentation.waitForMonitorWithTimeout(monitor, 10_000))
             val restored = ui.awaitReady(activity)
             val after = ui.state(restored)
