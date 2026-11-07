@@ -13,7 +13,6 @@ internal class ReaderHomeView(
     reselect: Button,
     onSettings: () -> Unit,
     onPick: () -> Unit,
-    onSample: () -> Unit,
     onOpen: (ReadingRecord) -> Unit,
     onRemove: (ReadingRecord) -> Unit,
     onRemoveMany: (Set<String>) -> Unit,
@@ -27,7 +26,7 @@ internal class ReaderHomeView(
 ) {
     private val header = ReaderMainHeader(context, onSettings, onPick, onOpen, onRemove)
     private val library = BookshelfLibraryView(
-        context, status, retry, reselect, onSettings, onPick, onSample, onOpen,
+        context, status, retry, reselect, onSettings, onPick, onOpen,
         onRemove, onRemoveMany, onMove, onReorder, onShelves,
         onRemoveFromShelf = onRemoveFromShelf,
         onShelfAction = onShelfAction,

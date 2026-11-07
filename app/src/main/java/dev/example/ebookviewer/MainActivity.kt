@@ -89,6 +89,7 @@ class MainActivity : Activity() {
     private data class PageTarget(val page: Int, val y: Double? = null)
     private var pendingNavigation: PageTarget? = null
     private var reading = false
+    private var orientationMode = OrientationMode.AUTO
     private val library get() = (application as ReaderApplication).library
     private val settings get() = (application as ReaderApplication).settings
     private val bookmarks get() = (application as ReaderApplication).bookmarks
@@ -109,6 +110,9 @@ class MainActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        orientationMode = savedInstanceState?.getString("readerOrientation")?.let { name ->
+            OrientationMode.entries.firstOrNull { it.name == name }
+        } ?: OrientationMode.AUTO
         val restoredTheme = savedInstanceState?.getString("displayTheme")?.let { name ->
             ReaderTheme.entries.firstOrNull { it.name == name }
         } ?: ReaderTheme.SYSTEM
@@ -236,7 +240,6 @@ class MainActivity : Activity() {
                 reselectRecord = null
                 pickDocument()
             },
-            onSample = { openSample() },
             onOpen = { openDocument(Uri.parse(it.uri)) },
             onRemove = ::confirmRemoveRecord,
             onRemoveMany = { libraryWorkflow.remove(it) },
@@ -385,9 +388,8 @@ class MainActivity : Activity() {
         settings.load { result ->
             if (isDestroyed) return@load
             result.onSuccess {
-                // AUTO preserves the platform's rotation policy across Activity recreation.
-                toolsPresentation.updateOrientation(it)
-                if (it != OrientationMode.AUTO) applyOrientation(it)
+                // A late load must use the current destination, not restore a reader lock on home.
+                applyOrientation(it)
             }.onFailure { reportError(R.string.settings_error) }
         }
         settings.loadInversion { result ->
@@ -423,6 +425,7 @@ class MainActivity : Activity() {
                     pendingImportMessage = null
                 }
                 refreshLibrary()
+                applyOrientation(orientationMode)
             } else {
                 openDocument(
                     Uri.parse(uri),
@@ -684,6 +687,7 @@ class MainActivity : Activity() {
 
     private fun showReader() {
         reading = true
+        applyOrientation(orientationMode)
         updateDisplayWindow()
         root.setBackgroundColor(viewer.outsideBackgroundColor())
         homeScreen.visibility = View.GONE
@@ -728,6 +732,7 @@ class MainActivity : Activity() {
         pendingImportMessage = null
         updatePageIndicator()
         refreshLibrary()
+        applyOrientation(orientationMode)
     }
 
     private fun clearFailedOpen() {
@@ -1617,8 +1622,9 @@ class MainActivity : Activity() {
     }
 
     private fun applyOrientation(mode: OrientationMode) {
+        orientationMode = mode
         toolsPresentation.updateOrientation(mode)
-        val requested = when (mode) {
+        val requested = when (if (reading) mode else OrientationMode.AUTO) {
             OrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             OrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             OrientationMode.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -1786,6 +1792,7 @@ class MainActivity : Activity() {
         outState.putString("importShelf", importShelf)
         outState.putString("pendingImportMessage", pendingImportMessage)
         outState.putString("displayTheme", displaySettings.theme.name)
+        outState.putString("readerOrientation", orientationMode.name)
         outState.putBoolean("viewSettingsOpen", viewSettingsOpen)
         viewSettingsDialog?.let { outState.putBundle("viewSettingsDraft", it.capture()) }
         // Applying a theme or orientation can recreate the Activity; return to settings, not the PDF.

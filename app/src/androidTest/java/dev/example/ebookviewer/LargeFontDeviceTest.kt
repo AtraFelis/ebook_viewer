@@ -48,6 +48,12 @@ class LargeFontDeviceTest {
                         false
                     )
                     try {
+                        // Home follows the device; only entering the reader applies the saved mode.
+                        ui.await("Home font configuration did not settle") {
+                            requireNotNull(activity).resources.configuration.fontScale == scale
+                        }
+                        checkControls(requireNotNull(activity).findViewById(R.id.home_screen), 3)
+                        ui.onMain { (activity as MainActivity).openSample() }
                         var stableSince = SystemClock.uptimeMillis()
                         ui.await("Font/orientation configuration did not settle") {
                             val latest = monitor.lastActivity ?: activity
@@ -94,9 +100,7 @@ class LargeFontDeviceTest {
     }
 
     private fun checkActivity(activity: Activity) {
-        val home = activity.findViewById<View>(R.id.home_screen)
-        checkControls(home, 3)
-        val viewer = ui.sample(activity)
+        val viewer = ui.awaitReady(activity)
         ui.onMain { viewer.performClick() }
         val tools = activity.findViewById<View>(R.id.reader_tools)
         checkControls(tools)

@@ -8,6 +8,7 @@ import android.view.KeyEvent
 import android.view.ViewTreeObserver
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -288,8 +289,13 @@ class SettingsNavigationDeviceTest {
     private fun openRoot(activity: Activity, viewer: PdfCanvasView? = null): AlertDialog {
         ui.onMain {
             viewer?.performClick()
-            ui.views(activity.window.decorView).filterIsInstance<Button>().first {
-                it.isShown && it.text == activity.getString(R.string.settings)
+            val label = activity.getString(R.string.settings)
+            ui.views(activity.window.decorView).first {
+                it.isShown &&
+                    (
+                        (it is Button && it.text == label) ||
+                            (it is ImageButton && it.contentDescription == label)
+                        )
             }.performClick()
         }
         ui.await("Main settings missing") {
